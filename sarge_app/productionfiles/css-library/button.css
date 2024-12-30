@@ -1,0 +1,71 @@
+.btn{
+    border-radius: 25px;
+    padding: 05px 30px 05px 30px;
+    border: 3px solid#0056b3;
+    background-color: #0056b3;
+    color:  whitesmoke;
+    font-size: 20px;
+}
+
+.btn:hover{
+    background-color: #70b1ff;
+    transform: scale(1.05);
+}
+
+.btn-grn{
+    background-color: #4CAF50; /* Green */
+    border: none;
+    color: white;
+    padding: 15px 32px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 4px 2px;
+    cursor: pointer;
+    border-radius: 12px; /* Rounded corners */
+    transition: background-color 0.3s, transform 0.3s; /* Hover effect */
+}
+
+.btn-grn:hover{
+    background-color: #70b1ff;
+    transform: scale(1.05);
+}
+
+
+
+.btn-hol{
+    border-radius: 25px;
+    padding: 05px 30px 05px 30px;
+    border: 3px solid #70b1ff;
+    background-color:#70b1ff ;
+    color:  whitesmoke;
+    font-size: 20px;
+}
+
+.btn-hol:hover{
+    background-color:#0056b3;
+    transform: scale(1.05);
+}
+
+  
+.button-card {
+	display: block;
+	font-size: 1rem;
+	background: #9E829C;
+	border: 1px solid #9E829C;
+	padding: 10px 15px;
+	color: white;
+	text-decoration: none;
+	font-weight: 700;
+	text-align: center; }
+.button-card:hover, .button-card:focus {
+	  background: #9E829C;
+	  border: 1px solid #9E829C; }
+
+.button-links{
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin: auto;
+     } 

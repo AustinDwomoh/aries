@@ -1,0 +1,33 @@
+.container-lm{
+	max-width:1920px;
+	width:100%;
+	margin:0 auto;
+	position:relative;
+	padding-left: 20px;
+	padding-right: 20px;
+}
+
+.container-fl{
+	width:100%;
+	display:inline-block;
+	padding-bottom:20px;
+}
+
+ .container-fl img{
+	width: 100%;
+} 
+.container-card{
+	max-width:1920px;
+	width:100%;
+	margin:0 auto;
+	position:relative;
+	padding-left: 100px;
+	padding-right: 100px;
+}
+
+@media only screen and (max-width:720px){
+	.container-card{
+	padding-left: 10px;
+	padding-right: 10px;
+	}
+}

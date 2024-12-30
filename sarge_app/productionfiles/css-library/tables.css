@@ -1,0 +1,88 @@
+.tour-table{
+	width:100%;
+	border:1px;
+    border-collapse: collapse;
+}
+
+.team-cell {
+    display: flex;
+    align-items: center;
+    text-align: left;
+    width: 270px;
+}
+.team-cell img {
+    display: block;
+    width: 20%;
+    border-radius: 50%;
+    margin-right: 10px; 
+    /* Space between image and text */
+}
+
+.td-rank{
+    padding: 5px 8px;
+}
+.td-points{
+    border-top-left-radius: 5px;
+    border-bottom-left-radius: 5px;
+    border-left: 3px solid white ;
+}
+.player-cell{
+    text-align: center;
+}
+.fst{
+    border-left: 3px solid green;
+}
+.snd{
+    border-left: 3px solid yellow;
+}
+
+.trd{
+    border-left: 3px solid blue;
+}
+
+.team-name {
+    font-size: 18px;
+}
+.short{
+    display:none
+}
+th{
+    border: none;
+    padding: 5px 8px;
+    text-align: center;
+}
+tr{
+    margin-bottom: 20px;
+}
+td { 
+    text-align: center;
+    padding: 1px;
+    padding-top: 10px;
+    padding-bottom: 5px;
+}
+
+@media only screen and (max-width:720px){
+    .team-cell {
+        width:100px;
+    }
+    .team-cell img {
+        align-items: center;
+        width: 30%;
+        border-radius: 50%;
+        margin-right: 10px; /* Space between image and text */
+    }
+    .tour-table{
+        width:100%;
+        margin: auto;
+    }
+    .team-name {
+        display: none;
+    }
+    .short{
+        display:block;
+    }
+
+    .hide{display:none}
+    
+}
+
