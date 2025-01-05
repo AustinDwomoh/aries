@@ -3,6 +3,6 @@
 *.pyo
 __pycache__/
 
-# Ignore IDE-specific folders
-.idea/
-.vscode/
+
+
+django_env/
