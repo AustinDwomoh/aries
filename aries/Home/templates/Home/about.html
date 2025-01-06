@@ -1,5 +1,50 @@
 {% extends "base.html" %}
-{% block title %}About{% endblock title %}About
+{% load static %}
+{% block title %}About{% endblock title %}
 {% block content %}
-<h1>About</h1>
+<div style="position: relative; width: 100%; height: 33vh;">
+    <img src="{% static 'images/areis-2.jpg' %}" alt="hero img" style="width: 100%; height: 100%; object-fit: cover; filter: blur(5px);">
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #C6AC8F; font-size: 40px; font-weight: bolder; text-align: center;">
+        <p>A Gamer bringing his dreams into reality</p>
+    </div>
+</div>
+
+<div class="container-fluid bg-light p-4">
+    <div class="row">
+        <div class="col">
+            <h2>Join us in building a community where gaming dreams become a reality—because together, we’re not just playing the game; we're shaping the future of esports.</h2>
+        </div>
+        <div class="col">
+            <p style="font-size:20px">The goal is to bridge the gap between passion and professionalism in the world of gaming. By offering a seamless, user-friendly platform, we aim to revolutionize clan-based tournaments, making it easier for players, organizers, and teams to connect, compete, and succeed.</p>
+        </div>
+    </div>
+</div>
+
+<div class="container my-4" style="text-align:center">
+    <h1>Behind Areis</h1>
+    <div class="row">
+        <div class="mt-4 col">
+            <div class="card profile-card-5">
+               <div class="card-img-block">
+                  <img class="card-img-top" src="{% static "images/austindwomoh.jpg" %}" alt="Austin Dwomoh">
+               </div>
+               <div class="card-body pt-0">
+                  <h5 class="card-title">Austin Nana Dwomoh</h5>
+                  <p class="card-text">If you can think it you can make it</p>
+                  <div class="icon-block">
+                    <a href="https://austindwomoh.xyz/" role="button"><i class="bi bi-google"></i></a>
+                    <a href="https://www.instagram.com/inphinithy1/" role="button"><i class="bi bi-instagram"></i></a>
+                    <a href="https://www.linkedin.com/in/austin-dwomoh/" role="button"><i class="bi bi-linkedin"></i></a>
+                    <a href="https://github.com/INPHINITHY" role="button"><i class="bi bi-github"></i></a>
+                    <a href="https://austindwomoh.xyz/" role="button"><i class="bi bi-google"></i></a>
+                   </div>
+               </div>
+            </div>
+        </div> 
+    </div>
+</div>
+
+<div>
+    <h1>This will be a create account or register</h1>
+</div>
 {% endblock content %}
