@@ -16,12 +16,14 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path,include
+from users import views as user_veiws
 
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('Home.urls') ),
     path('clubs/',include('clubs.urls')),
+    path('register/',user_veiws.register,name='register'),
     path('users/', include('users.urls')),
     path('organistions/',include('orgs.urls')),
     path('tournaments/',include('tournaments.urls'))

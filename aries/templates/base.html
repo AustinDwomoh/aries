@@ -17,7 +17,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playwrite+AU+SA:wght@100..400&display=swap" rel="stylesheet">
     <title>{% block title %}{% endblock %}</title>
-    <link rel="stylesheet" href="{% static "css/card.css" %}">
+    <link rel="stylesheet" href="{% static "css/style.css" %}">
 </head>
 <body style='color:#212121;  background-color: #E0E0E0'>
     <header>
@@ -29,18 +29,25 @@
               </button>
               <div class="collapse navbar-collapse" id="navbarSupportedContent">
                 <ul class="navbar-nav ms-auto align-items-center">
-                  <li class="nav-item"><a class="nav-link mx-2" href="{% url "Home" %}">Home</a></li>
-                  <li class="nav-item"><a class="nav-link mx-2" href="{% url "clubs-home" %}">Club</a></li>
-                  <li class="nav-item"><a class="nav-link mx-2" href="{% url "organisation-home" %}">Organisation</a></li>
-                  <li class="nav-item"><a class="nav-link mx-2" href="{% url "tournament-home" %}">Tournament</a></li>
-                  <li class="nav-item"><a class="nav-link mx-2" href="{% url "About" %}">About</a></li>
-                  <li class="nav-item ms-3"><a class="btn btn-black btn-rounded" href="#!">Sign in</a></li>
+                  <li class="nav-item"> <a class="nav-link mx-2" href="{% url "Home" %}">Home</a></li>
+                  <li class="nav-item"> <a class="nav-link mx-2" href="{% url "clubs-home" %}">Club</a></li>
+                  <li class="nav-item"> <a class="nav-link mx-2" href="{% url "organisation-home" %}">Organisation</a></li>
+                  <li class="nav-item"> <a class="nav-link mx-2" href="{% url "tournament-home" %}">Tournament</a></li>
+                  <li class="nav-item"> <a class="nav-link mx-2" href="{% url "About" %}">About</a></li>
+                  <li class="nav-item ms-3"><a class="btn btn-black btn-rounded" href="{% url "register" %}">Sign Up</a></li>
                 </ul>
               </div>
             </div>
           </nav> 
     </header>
     <div style='margin-top:100px' class="container-fluid">
+        {% if messages %}
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+            </div>
+            {% endfor %}
+        {% endif %}
         {% block  content%}{% endblock content %}
     </div>
    
@@ -57,16 +64,17 @@
                     <p>Guided by the spirit of Aries, where creativity fuels progress, and gamers forge their legacy.</p>
                 </div>
                 <div class="col-lg-2 col-md-6 mb-4 mb-md-0">
-                    <h5 class="text-uppercase">Links</h5>
+                    <h5 class="text-uppercase">Important Links</h5>
                     <ul class="list-unstyled mb-0">
-                    <li><a href="#!" class="text-white">Link 1</a></li>
-                    <li><a href="#!" class="text-white">Link 2</a></li>
-                    <li><a href="#!" class="text-white">Link 3</a></li>
-                    <li><a href="#!" class="text-white">Link 4</a></li>
+                    <li><a class="text-white" href="{% url "Home" %}">Home</a></li>
+                    <li><a class="text-white" href="{% url "clubs-home" %}">Club</a></li>
+                    <li><a class="text-white" href="{% url "organisation-home" %}">Organisation</a></li>
+                    <li><a class="text-white" href="{% url "tournament-home" %}">Tournament</a></li>
+                    <li><a class="text-white" href="{% url "About" %}">About</a></li>
                     </ul>
                 </div>
                 <div class="col-lg-2 col-md-6 mb-4 mb-md-0">
-                    <h5 class="text-uppercase">Links</h5>
+                    <h5 class="text-uppercase">Contact Us</h5>
     
                     <ul class="list-unstyled mb-0">
                     <li><a href="#!" class="text-white">Link 1</a></li>
@@ -75,36 +83,7 @@
                     <li><a href="#!" class="text-white">Link 4</a></li>
                     </ul>
                 </div>
-                <div class="col-lg-2 col-md-6 mb-4 mb-md-0">
-                    <h5 class="text-uppercase">Links</h5>
-                    <ul class="list-unstyled mb-0">
-                    <li><a href="#!" class="text-white">Link 1</a></li>
-                    <li><a href="#!" class="text-white">Link 2</a></li>
-                    <li><a href="#!" class="text-white">Link 3</a></li>
-                    <li><a href="#!" class="text-white">Link 4</a></li>
-                    </ul>
-                </div>
-                {% comment %} Links {% endcomment %}
-                <div class="col-lg-2 col-md-6 mb-4 mb-md-0">
-                    <h5 class="text-uppercase">Links</h5>
-                    <ul class="list-unstyled mb-0">
-                    <li><a href="#!" class="text-white">Link 1</a></li>
-                    <li><a href="#!" class="text-white">Link 2</a></li>
-                    <li><a href="#!" class="text-white">Link 3</a></li>
-                    <li><a href="#!" class="text-white">Link 4</a></li>
-                    </ul>
-                </div>
             </div>
-            </section>
-            <hr class="mb-4" />
-            {% comment %} Newsletter? {% endcomment %}
-            <section class="">
-                <p class="d-flex justify-content-center align-items-center">
-                <span class="me-3">Register for free</span>
-                <button type="button" class="btn btn-outline-light btn-rounded">
-                    Sign up!
-                </button>
-                </p>
             </section>
             <hr class="mb-4" />
             {% comment %} Icons {% endcomment %}

@@ -1,5 +1,11 @@
 from django.shortcuts import render
+from .models import Clans
 
-# Create your views here.
+
 def clubs(request):
-    return render(request, 'clubs/clubs.html')
+    
+    context = {
+        'clans': Clans.objects.all().order_by('-date_joined')
+    }
+    
+    return render(request, 'clubs/clubs.html', context)
