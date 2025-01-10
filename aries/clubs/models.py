@@ -12,7 +12,7 @@ class Clans(models.Model):
     clan_name = models.CharField(max_length=255)
     clan_tag = models.CharField(max_length=10)
     clan_description = models.TextField()
-    clan_logo = models.ImageField(upload_to='static/images/clan_logos/', blank=True, null=True)
+    clan_logo = models.ImageField(upload_to='clan_logos')
     clan_website = models.URLField(blank=True, null=True)
     date_joined = models.DateTimeField(default=timezone.now)
     primary_game = models.CharField(max_length=255, blank=True, null=True) #which games they mainly play

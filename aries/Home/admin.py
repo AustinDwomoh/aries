@@ -1,7 +1,7 @@
 from django.contrib import admin
 from clubs.models import Clans
-from users.models import ClanMembers
+from users.models import Profile
 
 # Register your models here. all models for admisn will be registered here
 admin.site.register(Clans)
-admin.site.register(ClanMembers)
+admin.site.register(Profile)

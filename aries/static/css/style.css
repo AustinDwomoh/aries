@@ -1,2 +1,10 @@
 @import url(./form.css);
 @import url(./card.css);
+
+html, body {
+    height: 100%; /* Ensure the body takes up full height */
+    margin: 0; /* Remove default margins */
+  }
+
+
+  
