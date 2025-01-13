@@ -4,6 +4,32 @@ Clubs
 {% endblock %}
 {% block content %}
 Lorem ipsum dolor, sit amet consectetur adipisicing elit. Dolorem, facilis. Totam sapiente id, voluptates quos aut pariatur odit optio vero quae cum dolore, accusantium alias at incidunt porro. Soluta, nemo!
+<style>
+  /* Optional: Smooth transition for content change */
+  .content-section {
+      display: none;
+      transition: opacity 0.5s ease-in-out;
+  }
+
+  .active-content {
+      display: block;
+      opacity: 1;
+  }
+</style>
+Lorem ipsum dolor sit amet consectetur adipisicing elit. Facere, quis deserunt! Quisquam voluptatibus obcaecati earum, harum quasi ea cum culpa sequi sunt totam eveniet illum aperiam dolores explicabo enim iure.
+<nav class="navbar navbar-expand-lg">
+  <div class="container-fluid">
+      <ul class="list-inline d-flex justify-content-center w-100">
+          <li class="list-inline-item mx-2">
+              <a class="nav-link mini-nav active" href="#" data-target="#section1">Clan</a>
+          </li>
+          <li class="list-inline-item mx-2">
+              <a class="nav-link mini-nav" href="#" data-target="#section2">Individuals</a>
+          </li>
+      </ul>
+  </div>
+</nav>
+
 <div class="container-fluid my-4">
   <h2 class="text-center">All Players</h2>
   <div class="row">

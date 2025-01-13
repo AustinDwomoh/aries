@@ -99,10 +99,11 @@ class ClanMatch(models.Model):
 
         for player1, player2 in zip(team_1_players, team_2_players):
             match_results["matches"][match_id] = {
-                "player1": {"name": player1, "goals": 0},
-                "player2": {"name": player2, "goals": 0},
+                "player1": {"name": player1.user.username, "goals": 0},
+                "player2": {"name": player2.user.username, "goals": 0},
             }
             match_id += 1
+        self.match_data = match_results
 
     def calculate_player_match_result(self):
         match_results = self.match_data
@@ -136,8 +137,8 @@ class ClanMatch(models.Model):
         self.update_clan_stats()
 
     def update_player_stats(self,player1,player2):
-        p1 = player1['name']
-        p2 = player2['name']
+        p1 = User.objects.get(username=player1['name'])
+        p2 = User.objects.get(username=player2['name'])
         if player1['goals'] > player2['goals']:
             p1.stats.total_wins += 1
             p2.stats.total_losses += 1

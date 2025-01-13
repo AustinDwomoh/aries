@@ -4,9 +4,11 @@ from clubs.models import Clans
 from .models import ClanMatch, IndiMatch, ClanTournament, IndiTournament
 
 class ClanMatchScoreForm(forms.ModelForm):
+    match_data = forms.JSONField(required=False)
+
     class Meta:
         model = ClanMatch
-        fields = ['team_1_score', 'team_2_score']
+        fields = ['match_data']  # Include only the fields you want to update
 
 class IndiMatchScoreForm(forms.ModelForm):
     class Meta:
@@ -14,19 +16,11 @@ class IndiMatchScoreForm(forms.ModelForm):
         fields = ['player_1_score', 'player_2_score']
 
 class ClanTournamentForm(forms.ModelForm):
-    class Meta:
-        model = ClanTournament
-        fields = ['name', 'start_date', 'end_date', 'description', 'teams']
+    match_data = forms.JSONField(required=False)
 
-        widgets = {
-            'start_date': forms.DateInput(attrs={'type': 'date'}),
-            'end_date': forms.DateInput(attrs={'type': 'date'}),
-        }
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-            
-            # Example of filtering the teams to show only active teams or based on some other condition
-            self.fields['teams'].queryset = Clans.objects.filter(is_active=True)  # Adjust as per your conditionn
+    class Meta:
+        model = ClanMatch
+        fields = ['match_data']
 
 class IndiTournamentForm(forms.ModelForm):
     class Meta:
@@ -37,3 +31,7 @@ class IndiTournamentForm(forms.ModelForm):
             'start_date': forms.DateInput(attrs={'type': 'date'}),
             'end_date': forms.DateInput(attrs={'type': 'date'}),
         }
+
+
+
+    

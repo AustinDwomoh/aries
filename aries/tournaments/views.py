@@ -1,20 +1,33 @@
 
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect,get_object_or_404
 from .forms import ClanMatchScoreForm, IndiMatchScoreForm, ClanTournamentForm, IndiTournamentForm
 from .models import ClanMatch, IndiMatch,ClanTournament, IndiTournament
 def tours(request):
     cvc_tournaments = ClanTournament.objects.all()
     indi_tournaments = IndiTournament.objects.all()
-    return render(request,'tournaments/tours.html',{"cvc_tournaments": cvc_tournaments,"indi_tournaments":indi_tournaments})
+    
+    # Fetch matches for the CVC tournaments
+    cvc_matches = ClanMatch.objects.filter(tournament__in=cvc_tournaments)
+    context = {"cvc_tournaments": cvc_tournaments,
+               "indi_tournaments":indi_tournaments,
+                "cvc_matches": cvc_matches,}
+    return render(request,'tournaments/tours.html',context)
 
-# For Clan Matches
-def input_clan_scores(request, match_id):
-    match = ClanMatch.objects.get(id=match_id)
-    if request.method == 'POST':
+""" # For Clan Matches
+def input_clan_scores(request, pk):
+    match = get_object_or_404(ClanMatch, pk=pk)
+
+    if request.method == "POST":
         form = ClanMatchScoreForm(request.POST, instance=match)
         if form.is_valid():
-            form.save()  # This will update the match scores and automatically update stats
-            return redirect('tournaments/match_results', match_id=match.id)
+            # Save the updated match data
+            form.save()
+
+            # Call model methods to process updates
+            match.calculate_player_match_result()
+
+            # Redirect to a success page or the match detail
+            return redirect('match_detail', pk=match.pk)
     else:
         form = ClanMatchScoreForm(instance=match)
     return render(request, 'tournaments/input_clan_scores.html', {'form': form, 'match': match})
@@ -69,4 +82,4 @@ def create_indi_tournament(request):
 
 def list_indi_tournaments(request):
     tournaments = IndiTournament.objects.all()
-    return render(request, 'tournaments/list_indi_tournament.html', {'tournaments': tournaments})
+    return render(request, 'tournaments/list_indi_tournament.html', {'tournaments': tournaments})"""
