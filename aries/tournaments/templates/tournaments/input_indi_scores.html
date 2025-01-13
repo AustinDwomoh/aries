@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}
+tournaments
+{% endblock title %}
+{% block content %}
+<!-- input_indi_scores.html -->
+<h1>Input Individual Match Scores</h1>
+
+<p>Match between {{ match.player_1 }} and {{ match.player_2 }}</p>
+
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Save Scores</button>
+</form>
+
+{% endblock content %}
