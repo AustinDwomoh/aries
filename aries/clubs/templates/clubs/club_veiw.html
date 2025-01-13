@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+{% block title %}
+{{ clan.clan_name }}
+{% endblock %}
+{% block content %}
+<section>
+    <div class="rounded-top text-white d-flex flex-row" style="background-image: url('{{ clan.clan_profile_pic.url }}'); background-size: cover; background-position: center; height: 220px;">
+      <div class="ms-2 mt-5 d-flex flex-column" style="width: 150px;">
+        <img src="{{ clan.clan_logo.url }}" 
+             alt="Inphinithy"  class="img-fluid img-thumbnail mt-4 mb-2" style="width: 150px; z-index: 1">
+      </div>
+    </div>
+    
+    <div class="d-flex justify-content-between align-items-center py-2 px-3 text-body bg-light rounded shadow-sm" style="width: 100%;">
+      <div class="text-left">
+        <h5>{{ clan.clan_name }} [{{ clan.clan_tag }}]</h5>
+        {% if clan.is_recruiting %}
+          <p>Recruitment Status:True</p>
+        {% else %}
+        <p>Recruitment Status:False</p>
+        {% endif %}
+        {% if match_results %}
+        <p>
+          {% for result in match_results %}
+              <span class="badge {% if result == 'W' %}bg-success{% elif result == 'L' %}bg-danger{% else %}bg-warning{% endif %} ">
+                  {% if result == 'W' %}
+                      W
+                  {% elif result == 'L' %}
+                      L
+                  {% else %}
+                      D
+                  {% endif %}
+              </span>
+          {% endfor %}
+      </p>
+      {% endif %}
+      </div>
+        
+        
+      <div class="d-flex text-center ">
+        <div class="mx-2">
+          <p class="mb-1 h6 text-primary">{{ stats.win_rate }}%</p>
+          <p class="small text-muted mb-0">Win Rate</p>
+        </div>
+        <div class="mx-2">
+          <p class="mb-1 h6 text-success">{{ stats.total_matches }}</p>
+          <p class="small text-muted mb-0">Matches</p>
+        </div>
+        <div class="mx-2">
+          <p class="mb-1 h6 text-warning">{{ stats.ranking}}</p>
+          <p class="small text-muted mb-0">Ranking</p>
+        </div>
+      </div>
+    </div>
+    <h2 class="mt-3">About</h2>
+    <section class=" d-flex justify-content-between align-items-center py-2 px-3 text-body bg-light rounded shadow-sm" style="width: 100%;">
+        <p>{{ clan.clan_description }}</p>
+    </section>
+    <div class="card-body p-4 text-black">
+      <div class="mb-5  text-body">
+        <div class="row">
+          <div class="container mt-5">
+            <div class="row">
+              <div class="col-md-6">
+                <div class="card shadow-sm">
+                  <div class="card-body">
+                    <h2 class="card-title text-center mb-4">Matches Stats</h2>
+                    <ul class="list-inline text-center">
+                      <li class="list-inline-item mx-3">
+                        <span>{{ stats.total_wins }}</span>
+                        <span class="badge bg-success px-3 py-2">Win</span>
+                      </li>
+                      <li class="list-inline-item mx-3">
+                        <span>{{ stats.total_draws }}</span>
+                        <span class="badge bg-warning px-3 py-2">Draw</span>
+                      </li>
+                      <li class="list-inline-item mx-3">
+                        <span>{{ stats.total_losses }}</span>
+                        <span class="badge bg-danger px-3 py-2">Loss</span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="card shadow-sm">
+                  <div class="card-body">
+                    <h2 class="card-title text-center mb-4">Goals Stats</h2>
+                    <ul class="list-inline text-center">
+                      <li class="list-inline-item mx-3">
+                        <span>{{ stats.gf }}</span>
+                        <span class="badge bg-success px-3 py-2">Scored</span>
+                      </li>
+                      <li class="list-inline-item mx-3">
+                        <span>{{ stats.gd }}</span>
+                        <span class="badge bg-warning px-3 py-2">Difference</span>
+                      </li>
+                      <li class="list-inline-item mx-3">
+                        <span>{{ stats.ga }}</span>
+                        <span class="badge bg-danger px-3 py-2">Against</span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+  
+    </div>
+    <h2>Members</h2>
+    <div class="row">
+        {% for player in players %}
+        {% if player.profile.clan.clan_name == clan.clan_name %}
+        <div class="col-md-4">
+            <!-- Player Card -->
+            <div class="card my-3">
+                <div class="card-body text-center" style="background-image: url('{{ player.profile.clan.clan_profile_pic.url }}');background-size: cover; background-position: center;text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);color:white">
+                    <!-- Avatar -->
+                    {% if player.profile.profile_picture %}
+                    <img src="{{ player.profile.profile_picture.url }}" alt="{{ player.username }}'s avatar" class="img-fluid rounded-circle mb-3" style="width: 100px; height: 100px;">
+                    {% endif %}
+
+                    <!-- Player Name -->
+                    <h5 class="card-title">{{ player.username }}</h5>
+                    <p>{{ player.profile.clan.clan_name }} </p>
+                    {% if match_results %}
+                        <p>
+                            {% for result in match_results %}
+                                <span class="badge {% if result == 'W' %}bg-success{% elif result == 'L' %}bg-danger{% else %}bg-warning{% endif %} ">
+                                    {% if result == 'W' %}
+                                        W
+                                    {% elif result == 'L' %}
+                                        L
+                                    {% else %}
+                                        D
+                                    {% endif %}
+                                </span>
+                            {% endfor %}
+                        </p>
+                        {% endif %}
+                    <p class="card-text">
+                        <div class="d-flex justify-content-between text-center ">
+                            <div class="mx-2">
+                              <p class="mb-1 h6 text-primary">{{ player.profile.clan.win_rate }}%</p>
+                              <p class="small  mb-0">Win Rate</p>
+                            </div>
+                            <div class="mx-2">
+                              <p class="mb-1 h6 text-success">{{ player.profile.clan.total_matches }}</p>
+                              <p class="small  mb-0">Matches</p>
+                            </div>
+                            <div class="mx-2">
+                              <p class="mb-1 h6 text-warning">{{ player.profile.stats.rank }}</p>
+                              <p class="small  mb-0">Rank</p>
+                        </div>
+                    </div>
+                    </p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        {% endfor %}
+    </div>
+    
+    <div class="container my-4">
+      <div class="d-flex justify-content-center align-items-center position-relative bg-dark text-light rounded py-4" style="height: 200px;">
+          <!-- Left Team -->
+          <div class="team position-relative text-center" style="z-index: 2; width: 25%;">
+              <img src="" alt="" class="img-fluid rounded-circle" style="width: 100px; height: 100px; object-fit: cover; margin-bottom: 10px;">
+              <h5 class="mb-1"></h5>
+              <p class="small mb-1">Goals: <strong></strong></p>
+          </div>
+      
+          <!-- VS Section -->
+          <div class="vs text-center mx-3" style="z-index: 1; width: 10%;">
+              <h1 class="text-danger fw-bold">VS</h1>
+          </div>
+      
+          <!-- Right Team -->
+          <div class="team position-relative text-center" style="z-index: 2; width: 25%;">
+              <img src="" alt="" class="img-fluid rounded-circle" style="width: 100px; height: 100px; object-fit: cover; margin-bottom: 10px;">
+              <h5 class="mb-1"></h5>
+              <p class="small mb-1">Goals: <strong></strong></p>
+          </div>
+      
+          <!-- Background Design -->
+          <div class="position-absolute w-100 h-100" style="top: 0; left: 0; background: linear-gradient(to right, #000000 50%, #222222 50%); clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); z-index: 0;"></div>
+      </div>
+  
+      <!-- Last 5 Matches -->
+      <div class="container my-4">
+        <h4 class="text-center my-4">Last 5 Matches</h4>
+        <div class="row">
+            
+        </div>
+    
+        <!-- View All Matches Button -->
+        <div class="text-center mt-4">
+            <a href="" class="btn btn-primary">View All Matches</a>
+        </div>
+    </div>
+    
+  </div>
+    
+  </section>
+<section id="events">
+    <h2>Events</h2>
+    {% for event in events %}
+        <div class="event">
+            <h3>{{ event.name }}</h3>
+            <p>{{ event.date }} | {{ event.location }}</p>
+        </div>
+    {% empty %}
+        <p>No events available.</p>
+    {% endfor %}
+</section>
+
+
+
+<section id="discussions">
+    <h2>Discussions</h2>
+    {% for discussion in discussions %}
+        <div class="discussion">
+            <h3>{{ discussion.title }}</h3>
+            <p>{{ discussion.content }}</p>
+        </div>
+    {% empty %}
+        <p>No discussions yet.</p>
+    {% endfor %}
+</section>
+
+<section id="gallery">
+    <h2>Gallery</h2>
+    {% for item in gallery_items %}
+        <img src="{{ item.image.url }}" alt="Gallery Image">
+    {% empty %}
+        <p>No gallery items available.</p>
+    {% endfor %}
+</section>
+
+{% endblock %}

@@ -15,6 +15,11 @@
     <link rel="manifest" href="{% static 'images/site.webmanifest' %}">
     <title>{% block title %}{% endblock %}</title>
     <link rel="stylesheet" href="{% static "css/style.css" %}">
+    <style>
+        a{
+            text-decoration:none
+        }
+    </style>
 </head>
 <body style='color:#212121;background-color: #E0E0E0' >
     <header>
@@ -43,8 +48,13 @@
                             <li>
                                 <a class="dropdown-item" href="#" id="logout-link">Edit profile</a>
                             </li>
+                            {% if user.profile.role == 'admin' %}
                             <li>
-                                <a class="dropdown-item" href="#" id="logout-link">Log Out</a>
+                                <a class="dropdown-item" href="{% url "clan_login" %}" id="clan_dashboard">Manage Club </a>
+                            </li>
+                            {% endif %}
+                            <li>
+                                <a class="dropdown-item" href="{% url "logout" %}" id="logout-link">Log Out</a>
                             </li>
                            
                         </ul>
@@ -107,6 +117,7 @@
                     <ul class="list-unstyled mb-0 text-center">
                     <li><a class="text-white" href="{% url 'register' %}">Sign Up</a></li>
                     <li><a href="{% url 'login' %}" class="text-white">Log In</a></li>
+                    <li><a href="{% url 'clan_register' %}" class="text-white">Register Club</a></li>
                     </ul>
                 </div>
 

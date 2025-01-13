@@ -3,7 +3,8 @@
 Clubs
 {% endblock %}
 {% block content %}
-Lorem ipsum dolor, sit amet consectetur adipisicing elit. Dolorem, facilis. Totam sapiente id, voluptates quos aut pariatur odit optio vero quae cum dolore, accusantium alias at incidunt porro. Soluta, nemo!
+
+
 <style>
   /* Optional: Smooth transition for content change */
   .content-section {
@@ -34,7 +35,9 @@ Lorem ipsum dolor sit amet consectetur adipisicing elit. Facere, quis deserunt! 
   <h2 class="text-center">All Players</h2>
   <div class="row">
       {% for clan in clans %}
+      
       <div class="col-md-4">
+        <a href="{% url 'clan_details' clan.id %}">
           <!-- Player Card -->
           <div class="card my-3">
               <div class="card-body text-center" style="background-image: url('{{ clan.clan_profile_pic.url }}');background-size: cover; background-position: center;text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);color:white">
@@ -78,9 +81,11 @@ Lorem ipsum dolor sit amet consectetur adipisicing elit. Facere, quis deserunt! 
                   </p>
               </div>
           </div>
-      </div>
+        </a></div>
+    
       {% endfor %}
-  </div>
+      
+    </div>
 </div>
 {% comment %} <div class="container my-4">
     <div class="d-flex justify-content-center align-items-center position-relative rounded overflow-hidden" 

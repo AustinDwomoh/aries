@@ -1,5 +1,6 @@
-from django.shortcuts import render,redirect
-from .models import Clans
+from django.shortcuts import render,redirect,get_object_or_404
+from .models import Clans,ClanStats
+from django.contrib.auth.models import User
 from django.contrib.sessions.models import Session
 from django.contrib.auth.decorators import login_required
 from .forms import ClanRegistrationForm,ClanLoginForm
@@ -16,6 +17,18 @@ def clubs(request):
     members = clan.members.all()  # All profiles linked to the clan
     return render(request, 'clan_detail.html', {'clan': clan, 'members': members}) """
 
+
+def club_view(request,clan_id):
+    clan_members = get_object_or_404(Clans, id=clan_id)
+    clan = get_object_or_404(Clans, id=clan_id)
+    clan_stats = get_object_or_404(ClanStats, id=clan_id)
+    members = User.objects.all()
+    context = {
+        'clan' : clan,
+        'stats': clan_stats,
+        'players':members
+    }
+    return render(request, 'clubs/club_veiw.html', context)
 
 @login_required
 def clan_register(request):

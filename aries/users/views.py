@@ -1,5 +1,6 @@
 from django.shortcuts import render,redirect,get_object_or_404
 from django.contrib import messages
+from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
 from .forms import UserRegisterForm
 from .models import Clans
@@ -23,6 +24,11 @@ def register(request):
 def profile(request):
     return render(request, 'users/profile.html',)
 
+def logout_view(request):
+    logout(request)
+    return redirect('Home')
+
+@login_required
 def all_gamers(request):
     players = User.objects.all()
     return render(request,'users/gamers.html',{'players':players})
