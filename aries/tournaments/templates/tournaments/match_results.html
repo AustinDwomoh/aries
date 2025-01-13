@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}
+tournaments
+{% endblock title %}
+{% block content %}
+<!-- match_results.html -->
+<h1>Match Results</h1>
+
+<p>Match between {{ match.team_1 }} and {{ match.team_2 }}:</p>
+<p>Score: {{ match.team_1_score }} - {{ match.team_2_score }}</p>
+<p>Winner: {{ match.winner }}</p>
+
+{% endblock content %}

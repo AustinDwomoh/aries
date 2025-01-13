@@ -1,101 +1,156 @@
 {% extends "base.html" %}
-{% block title %}Login{% endblock title %}
+{% load static %}
+{% block title %}{{ user.username }} {% endblock title %}
 {% load crispy_forms_tags %}
 {% block content %}
-<style>
-  .gradient-custom-2 {
-/* fallback for old browsers */
-background: #fbc2eb;
+<STYle>
+  body{
+    background-color: #fff !important;
+  }
+</STYle>
 
-/* Chrome 10-25, Safari 5.1-6 */
-background: -webkit-linear-gradient(to right, rgba(251, 194, 235, 1), rgba(166, 193, 238, 1));
-
-/* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
-background: linear-gradient(to right, rgba(251, 194, 235, 1), rgba(166, 193, 238, 1))
-}
-</style>
-
-<section class="h-100 gradient-custom-2">
-  <div class="container py-5 h-100">
-    <div class="row d-flex justify-content-center">
-      <div class="col col-lg-9 col-xl-8">
-        <div class="card">
-          <div class="rounded-top text-white d-flex flex-row" style="background-color: #000; height:200px;">
-            <div class="ms-4 mt-5 d-flex flex-column" style="width: 150px;">
-              <img src="{{ user.profile.profile_picture.url }}"
-                alt="{{ user.username }}" class="img-fluid img-thumbnail mt-4 mb-2"
-                style="width: 150px; z-index: 1">
-              <button  type="button" data-mdb-button-init data-mdb-ripple-init class="btn btn-outline-dark text-body" data-mdb-ripple-color="dark" style="z-index: 1;">
-                Edit profile
-              </button>
-            </div>
-            <div class="ms-3" style="margin-top: 130px;">
-              <h5>Andy Horwitz</h5>
-              <p>New York</p>
-            </div>
-          </div>
-          <div class="p-4 text-black bg-body-tertiary">
-            <div class="d-flex justify-content-end text-center py-1 text-body">
-              <div>
-                <p class="mb-1 h5">253</p>
-                <p class="small text-muted mb-0">Win Rate</p>
-              </div>
-              <div class="px-3">
-                <p class="mb-1 h5">1026</p>
-                <p class="small text-muted mb-0">Tournamnets</p>
-              </div>
-              <div>
-                <p class="mb-1 h5">478</p>
-                <p class="small text-muted mb-0">Think</p>
-              </div>
-            </div>
-          </div>
-          <div class="card-body p-4 text-black">
-            <div class="mb-5  text-body">
-              <p class="lead fw-normal mb-1">Stats</p>
-              <div class="p-4 bg-body-tertiary">
-                <div class="row">
-                  <div class="col">
-                    <p class="font-italic mb-1">Web Developer</p>
-                    <p class="font-italic mb-1">Lives in New York</p>
-                    <p class="font-italic mb-0">Photographer</p>
-                  </div>
-                  <div class="col">
-                    <p class="font-italic mb-1">Web Developer</p>
-                    <p class="font-italic mb-1">Lives in New York</p>
-                    <p class="font-italic mb-0">Photographer</p>
-                  </div>
+<section>
+  <div class="rounded-top text-white d-flex flex-row" style="background-image: url('{{ user.profile.clan.clan_profile_pic.url }}'); background-size: cover; background-position: center; height: 200px;">
+    <div class="ms-2 mt-5 d-flex flex-column" style="width: 150px;">
+      <img src="{{ user.profile.profile_picture.url }}" 
+           alt="Inphinithy"  class="img-fluid img-thumbnail mt-4 mb-2" style="width: 150px; z-index: 1">
+    </div>
+  </div>
+  <div class="d-flex justify-content-between align-items-center py-2 px-3 text-body bg-light rounded shadow-sm" style="width: 100%;">
+    <div class="text-left">
+      <h5>Username:{{ user.username }} [{{ user.profile.role|slice:":1"}}]</h5>
+      {% if user.profile.clan.clan_name %}
+        <p>Clan:{{ user.profile.clan.clan_name }} [{{user.profile.clan.clan_tag}}]</p>
+      {% else %}
+        <p>Clanless</p>
+      {% endif %}
+      {% if match_results %}
+      <p>
+        {% for result in match_results %}
+            <span class="badge {% if result == 'W' %}bg-success{% elif result == 'L' %}bg-danger{% else %}bg-warning{% endif %} ">
+                {% if result == 'W' %}
+                    W
+                {% elif result == 'L' %}
+                    L
+                {% else %}
+                    D
+                {% endif %}
+            </span>
+        {% endfor %}
+    </p>
+    {% endif %}
+    </div>
+      
+      
+    <div class="d-flex text-center ">
+      <div class="mx-2">
+        <p class="mb-1 h6 text-primary">75%</p>
+        <p class="small text-muted mb-0">Win Rate</p>
+      </div>
+      <div class="mx-2">
+        <p class="mb-1 h6 text-success">1026</p>
+        <p class="small text-muted mb-0">Tournaments</p>
+      </div>
+      <div class="mx-2">
+        <p class="mb-1 h6 text-warning">150</p>
+        <p class="small text-muted mb-0">Trophies</p>
+      </div>
+    </div>
+  </div>
+  <div class="card-body p-4 text-black">
+    <div class="mb-5  text-body">
+      <div class="row">
+        <div class="container mt-5">
+          <div class="row">
+            <div class="col-md-6">
+              <div class="card shadow-sm">
+                <div class="card-body">
+                  <h2 class="card-title text-center mb-4">CvC</h2>
+                  <ul class="list-inline text-center">
+                    <li class="list-inline-item mx-3">
+                      <span class="badge bg-success px-3 py-2">Win</span>
+                    </li>
+                    <li class="list-inline-item mx-3">
+                      <span class="badge bg-warning px-3 py-2">Draw</span>
+                    </li>
+                    <li class="list-inline-item mx-3">
+                      <span class="badge bg-danger px-3 py-2">Loss</span>
+                    </li>
+                    <li class="list-inline-item mx-3">
+                      <span class="badge bg-info px-3 py-2">Goals</span>
+                    </li>
+                  </ul>
                 </div>
               </div>
             </div>
-            <div class="d-flex justify-content-between align-items-center mb-4 text-body">
-              <p class="lead fw-normal mb-0">Recent Matches</p>
-              <p class="mb-0"><a href="#!" class="text-muted">Show all</a></p>
-            </div>
-            <div class="row g-2">
-              <div class="col mb-2">
-                <img src="https://mdbcdn.b-cdn.net/img/Photos/Lightbox/Original/img%20(112).webp" alt="image 1"
-                  class="w-100 rounded-3">
-              </div>
-              <div class="col mb-2">
-                <img src="https://mdbcdn.b-cdn.net/img/Photos/Lightbox/Original/img%20(107).webp" alt="image 1"
-                  class="w-100 rounded-3">
-              </div>
-            </div>
-            <div class="row g-2">
-              <div class="col">
-                <img src="https://mdbcdn.b-cdn.net/img/Photos/Lightbox/Original/img%20(108).webp" alt="image 1"
-                  class="w-100 rounded-3">
-              </div>
-              <div class="col">
-                <img src="https://mdbcdn.b-cdn.net/img/Photos/Lightbox/Original/img%20(114).webp" alt="image 1"
-                  class="w-100 rounded-3">
+            <div class="col-md-6">
+              <div class="card shadow-sm">
+                <div class="card-body">
+                  <h2 class="card-title text-center mb-4">Individuals</h2>
+                  <ul class="list-inline text-center">
+                    <li class="list-inline-item mx-3">
+                      <span class="badge bg-success px-3 py-2">Win</span>
+                    </li>
+                    <li class="list-inline-item mx-3">
+                      <span class="badge bg-warning px-3 py-2">Draw</span>
+                    </li>
+                    <li class="list-inline-item mx-3">
+                      <span class="badge bg-danger px-3 py-2">Loss</span>
+                    </li>
+                    <li class="list-inline-item mx-3">
+                      <span class="badge bg-info px-3 py-2">Goals</span>
+                    </li>
+                  </ul>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
     </div>
+
   </div>
+  
+  <div class="container my-4">
+    <div class="d-flex justify-content-center align-items-center position-relative bg-dark text-light rounded py-4" style="height: 200px;">
+        <!-- Left Team -->
+        <div class="team position-relative text-center" style="z-index: 2; width: 25%;">
+            <img src="" alt="" class="img-fluid rounded-circle" style="width: 100px; height: 100px; object-fit: cover; margin-bottom: 10px;">
+            <h5 class="mb-1"></h5>
+            <p class="small mb-1">Goals: <strong></strong></p>
+        </div>
+    
+        <!-- VS Section -->
+        <div class="vs text-center mx-3" style="z-index: 1; width: 10%;">
+            <h1 class="text-danger fw-bold">VS</h1>
+        </div>
+    
+        <!-- Right Team -->
+        <div class="team position-relative text-center" style="z-index: 2; width: 25%;">
+            <img src="" alt="" class="img-fluid rounded-circle" style="width: 100px; height: 100px; object-fit: cover; margin-bottom: 10px;">
+            <h5 class="mb-1"></h5>
+            <p class="small mb-1">Goals: <strong></strong></p>
+        </div>
+    
+        <!-- Background Design -->
+        <div class="position-absolute w-100 h-100" style="top: 0; left: 0; background: linear-gradient(to right, #000000 50%, #222222 50%); clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); z-index: 0;"></div>
+    </div>
+
+    <!-- Last 5 Matches -->
+    <div class="container my-4">
+      <h4 class="text-center my-4">Last 5 Matches</h4>
+      <div class="row">
+          
+      </div>
+  
+      <!-- View All Matches Button -->
+      <div class="text-center mt-4">
+          <a href="" class="btn btn-primary">View All Matches</a>
+      </div>
+  </div>
+  
+</div>
+  
 </section>
+
 {% endblock content %}

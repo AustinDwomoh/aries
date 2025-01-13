@@ -10,3 +10,7 @@ def clubs(request):
     }
     
     return render(request, 'clubs/clubs.html', context)
+""" def clan_detail(request, clan_id):
+    clan = Clans.objects.get(id=clan_id)
+    members = clan.members.all()  # All profiles linked to the clan
+    return render(request, 'clan_detail.html', {'clan': clan, 'members': members}) """

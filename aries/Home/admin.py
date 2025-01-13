@@ -1,7 +1,36 @@
-from django.contrib import admin
 from clubs.models import Clans
 from users.models import Profile
+from django.contrib import admin
+from tournaments.models import ClanMatch,ClanTournament,IndiMatch,IndiTournament
 
-# Register your models here. all models for admisn will be registered here
-admin.site.register(Clans)
 admin.site.register(Profile)
+
+@admin.register(ClanMatch)
+class ClanMatchAdmin(admin.ModelAdmin):
+    def save_model(self, request, obj, form, change):
+        # Ensure both teams are assigned before saving the match
+        if not obj.team_1 or not obj.team_2:
+            raise ValueError("Both teams must be assigned for a match.")
+        super().save_model(request, obj, form, change)
+
+@admin.register(ClanTournament)
+class ClanTournamentAdmin(admin.ModelAdmin):
+    def save_model(self, request, obj, form, change):
+        # Save the tournament first to ensure it has an ID
+        obj.save()
+        super().save_model(request, obj, form, change)
+
+
+admin.site.register(IndiMatch)
+admin.site.register(IndiTournament)
+
+class ProfileInline(admin.TabularInline):
+    model = Profile
+    extra = 0
+
+# Custom admin for Clans
+@admin.register(Clans)
+class ClansAdmin(admin.ModelAdmin):
+    inlines = [ProfileInline]
+
+
