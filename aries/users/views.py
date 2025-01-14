@@ -33,6 +33,11 @@ def all_gamers(request):
     players = User.objects.all()
     return render(request,'users/gamers.html',{'players':players})
 
+@login_required
+def gamer_view(request,player_id):
+    player = get_object_or_404(User, id=player_id)
+    return render(request,'users/profile_veiw.html',{'player':player})
+
 """ 
 def clan_profile(request, clan_id):
     clan = Clans.objects.get(id=clan_id)

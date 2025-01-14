@@ -13,6 +13,44 @@ def tours(request):
                 "cvc_matches": cvc_matches,}
     return render(request,'tournaments/tours.html',context)
 
+def tours_cvc_view(request,tour_id):
+    cvc_tournaments = get_object_or_404(ClanTournament, id=tour_id)
+    
+    return render(request,'tournaments/cvc_tours_veiw.html',{'cvc_tour':cvc_tournaments})
+
+def tours_indi_view(request,tour_id):
+    tournament = get_object_or_404(IndiTournament, id=tour_id)
+
+    # Fetch matches related to the tournament
+    matches = IndiMatch.objects.filter(tournament=tournament).select_related(
+        'player_1', 'player_2', 'winner'
+    )
+
+    # Gather player statistics
+    players = tournament.players.all()
+    player_stats = []
+    for player in players:
+        matches_played = matches.filter(player_1=player) | matches.filter(player_2=player)
+        total_wins = matches.filter(winner=player).count()
+        total_draws = matches.filter(is_draw=True, player_1=player) | matches.filter(is_draw=True, player_2=player)
+        total_losses = matches_played.count() - (total_wins + total_draws.count())
+        
+        player_stats.append({
+            'player': player,
+            'total_matches': matches_played.count(),
+            'wins': total_wins,
+            'draws': total_draws.count(),
+            'losses': total_losses,
+            'win_rate': round((total_wins / matches_played.count() * 100), 2) if matches_played.count() else 0,
+        })
+
+    context = {
+        'tournament': tournament,
+        'matches': matches,
+        'players': player_stats,
+        'recent_matches': matches.order_by('-match_date')[:5],  # Last 5 matches
+    }
+    return render(request,'tournaments/indi_tours_veiw.html',context)
 """ # For Clan Matches
 def input_clan_scores(request, pk):
     match = get_object_or_404(ClanMatch, pk=pk)

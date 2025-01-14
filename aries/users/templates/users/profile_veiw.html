@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ user.username }} {% endblock title %}
+{% load crispy_forms_tags %}
+{% block content %}
+<STYle>
+  body{
+    background-color: #fff !important;
+  }
+</STYle>
+
+<section>
+  <div class="rounded-top text-white d-flex flex-row" style="background-image: url('{{ player.profile.clan.clan_profile_pic.url }}'); background-size: cover; background-position: center; height: 220px;">
+    <div class="ms-2 mt-5 d-flex flex-column" style="width: 150px;">
+      <img src="{{ player.profile.profile_picture.url }}" 
+           alt="Inphinithy"  class="img-fluid img-thumbnail mt-4 mb-2" style="width: 150px; z-index: 1">
+    </div>
+  </div>
+  <div class="d-flex justify-content-between align-items-center py-2 px-3 text-body bg-light rounded shadow-sm" style="width: 100%;">
+    <div class="text-left">
+      <h5>Username:{{ player.username }} [{{ player.profile.role|slice:":1"}}]</h5>
+      {% if player.profile.clan.clan_name %}
+        <p>Clan:{{ player.profile.clan.clan_name }} [{{player.profile.clan.clan_tag}}]</p>
+      {% else %}
+        <p>Clanless</p>
+      {% endif %}
+      {% if match_results %}
+      <p>
+        {% for result in match_results %}
+            <span class="badge {% if result == 'W' %}bg-success{% elif result == 'L' %}bg-danger{% else %}bg-warning{% endif %} ">
+                {% if result == 'W' %}
+                    W
+                {% elif result == 'L' %}
+                    L
+                {% else %}
+                    D
+                {% endif %}
+            </span>
+        {% endfor %}
+    </p>
+    {% endif %}
+    </div>
+      
+      
+    <div class="d-flex text-center ">
+      <div class="mx-2">
+        <p class="mb-1 h6 text-primary">75%</p>
+        <p class="small text-muted mb-0">Win Rate</p>
+      </div>
+      <div class="mx-2">
+        <p class="mb-1 h6 text-success">1026</p>
+        <p class="small text-muted mb-0">Tournaments</p>
+      </div>
+      <div class="mx-2">
+        <p class="mb-1 h6 text-warning">150</p>
+        <p class="small text-muted mb-0">Trophies</p>
+      </div>
+    </div>
+  </div>
+  <div class="card-body p-4 text-black">
+    <div class="mb-5  text-body">
+      <div class="row">
+        <div class="container mt-5">
+          <div class="row">
+            <div class="col-md-6">
+              <div class="card shadow-sm">
+                <div class="card-body">
+                  <h2 class="card-title text-center mb-4">CvC</h2>
+                  <ul class="list-inline text-center">
+                    <li class="list-inline-item mx-3">
+                      <span class="badge bg-success px-3 py-2">Win</span>
+                    </li>
+                    <li class="list-inline-item mx-3">
+                      <span class="badge bg-warning px-3 py-2">Draw</span>
+                    </li>
+                    <li class="list-inline-item mx-3">
+                      <span class="badge bg-danger px-3 py-2">Loss</span>
+                    </li>
+                    <li class="list-inline-item mx-3">
+                      <span class="badge bg-info px-3 py-2">Goals</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="card shadow-sm">
+                <div class="card-body">
+                  <h2 class="card-title text-center mb-4">Individuals</h2>
+                  <ul class="list-inline text-center">
+                    <li class="list-inline-item mx-3">
+                      <span class="badge bg-success px-3 py-2">Win</span>
+                    </li>
+                    <li class="list-inline-item mx-3">
+                      <span class="badge bg-warning px-3 py-2">Draw</span>
+                    </li>
+                    <li class="list-inline-item mx-3">
+                      <span class="badge bg-danger px-3 py-2">Loss</span>
+                    </li>
+                    <li class="list-inline-item mx-3">
+                      <span class="badge bg-info px-3 py-2">Goals</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  
+  <div class="container my-4">
+    <div class="d-flex justify-content-center align-items-center position-relative bg-dark text-light rounded py-4" style="height: 200px;">
+        <!-- Left Team -->
+        <div class="team position-relative text-center" style="z-index: 2; width: 25%;">
+            <img src="" alt="" class="img-fluid rounded-circle" style="width: 100px; height: 100px; object-fit: cover; margin-bottom: 10px;">
+            <h5 class="mb-1"></h5>
+            <p class="small mb-1">Goals: <strong></strong></p>
+        </div>
+    
+        <!-- VS Section -->
+        <div class="vs text-center mx-3" style="z-index: 1; width: 10%;">
+            <h1 class="text-danger fw-bold">VS</h1>
+        </div>
+    
+        <!-- Right Team -->
+        <div class="team position-relative text-center" style="z-index: 2; width: 25%;">
+            <img src="" alt="" class="img-fluid rounded-circle" style="width: 100px; height: 100px; object-fit: cover; margin-bottom: 10px;">
+            <h5 class="mb-1"></h5>
+            <p class="small mb-1">Goals: <strong></strong></p>
+        </div>
+    
+        <!-- Background Design -->
+        <div class="position-absolute w-100 h-100" style="top: 0; left: 0; background: linear-gradient(to right, #000000 50%, #222222 50%); clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); z-index: 0;"></div>
+    </div>
+
+    <!-- Last 5 Matches -->
+    <div class="container my-4">
+      <h4 class="text-center my-4">Last 5 Matches</h4>
+      <div class="row">
+          
+      </div>
+  
+  </div>
+  
+</div>
+  
+</section>
+
+{% endblock content %}

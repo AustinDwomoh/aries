@@ -37,6 +37,7 @@ Lorem ipsum dolor sit amet consectetur adipisicing elit. Facere, quis deserunt! 
             {% for tours in cvc_tournaments %}
             <div class="col-md-4">
                 <!-- Player Card -->
+                <a href="{% url 'cvc_details' tours.id %}">
                 <div class="card my-3">
                     <div class="card-body text-center" >
                         <div class="card-body text-center"  style="background-image: url('{{ tours.created_by.profile.profile_picture.url  }}');background-size: cover; background-position: center;text-shadow: 2px 2px 4px rgba(0, 0, 0,1);color:white">
@@ -63,7 +64,7 @@ Lorem ipsum dolor sit amet consectetur adipisicing elit. Facere, quis deserunt! 
                     </div>
                     </div>
                 </div>
-            </div>
+            </a></div>
             {% endfor %}
         </div>
     </div>
@@ -74,7 +75,8 @@ Lorem ipsum dolor sit amet consectetur adipisicing elit. Facere, quis deserunt! 
         <div class="row">
             {% for tours in indi_tournaments %}
             <div class="col-md-4">
-                <!-- Player Card -->
+                <a href="{% url 'indi_details' tours.id %}">
+                 
                 <div class="card my-3">
                     <div class="card-body text-center"  style="background-image: url('{{ tours.created_by.profile.profile_picture.url }}');background-size: cover; background-position: center;text-shadow: 2px 2px 4px rgba(0, 0, 0, 1);color:white"  >
                         <img src="{{  tours.logo.url }}" alt="{{  tours.name }}'s avatar" class="img-fluid rounded-circle mb-3" style="width: 100px; height: 100px;">
@@ -98,6 +100,7 @@ Lorem ipsum dolor sit amet consectetur adipisicing elit. Facere, quis deserunt! 
                         </p>
                     </div>
                 </div>
+            </a>
             </div>
             {% endfor %}
         </div>

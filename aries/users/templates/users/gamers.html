@@ -8,6 +8,7 @@
         {% for player in players %}
         <div class="col-md-4">
             <!-- Player Card -->
+            <a href="{% url 'player_details' player.id %}">
             <div class="card my-3">
                 <div class="card-body text-center" style="background-image: url('{{ player.profile.clan.clan_profile_pic.url }}');background-size: cover; background-position: center;text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);color:white">
                     <!-- Avatar -->
@@ -36,11 +37,11 @@
                     <p class="card-text">
                         <div class="d-flex justify-content-between text-center ">
                             <div class="mx-2">
-                              <p class="mb-1 h6 text-primary">{{ player.profile.clan.win_rate }}%</p>
+                              <p class="mb-1 h6 text-primary">{{ player.profile.stats.win_rate }}%</p>
                               <p class="small  mb-0">Win Rate</p>
                             </div>
                             <div class="mx-2">
-                              <p class="mb-1 h6 text-success">{{ player.profile.clan.total_matches }}</p>
+                              <p class="mb-1 h6 text-success">{{ player.profile.stats.games_played }}</p>
                               <p class="small  mb-0">Matches</p>
                             </div>
                             <div class="mx-2">
@@ -51,7 +52,7 @@
                     </p>
                 </div>
             </div>
-        </div>
+        </a></div>
         {% endfor %}
     </div>
 </div>

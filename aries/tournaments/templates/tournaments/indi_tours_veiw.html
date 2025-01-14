@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}{{ tournament.name }}{% endblock %}
+{% block content %}
+<section>
+  <div class="tournament-header">
+    <h1>{{ tournament.name }}</h1>
+    <p>{{ tournament.description }}</p>
+    <p><strong>Start Date:</strong> {{ tournament.start_date }}</p>
+    <p><strong>End Date:</strong> {{ tournament.end_date }}</p>
+  </div>
+
+  <h2>Players</h2>
+  <div class="row">
+    {% for player_stat in players %}
+      <div class="col-md-4">
+        <div class="card">
+          <div class="card-body">
+            <h5>{{ player_stat.player.user.username }}</h5>
+            <p>Total Matches: {{ player_stat.total_matches }}</p>
+            <p>Wins: {{ player_stat.wins }}</p>
+            <p>Draws: {{ player_stat.draws }}</p>
+            <p>Losses: {{ player_stat.losses }}</p>
+            <p>Win Rate: {{ player_stat.win_rate }}%</p>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <h2>Matches</h2>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Player 1</th>
+        <th>Player 2</th>
+        <th>Score</th>
+        <th>Winner</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for match in matches %}
+        <tr>
+          <td>{{ match.player_1.user.username }}</td>
+          <td>{{ match.player_2.user.username }}</td>
+          <td>{{ match.player_1_score }} - {{ match.player_2_score }}</td>
+          <td>{{match.winner.user.username}}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h2>Recent Matches</h2>
+  <div class="recent-matches">
+    {% for match in recent_matches %}
+      <p>{{ match.player_1.username }} vs {{ match.player_2.username }} on {{ match.match_date }}</p>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}
