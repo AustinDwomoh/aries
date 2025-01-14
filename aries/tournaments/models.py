@@ -4,43 +4,53 @@ from clubs.models import Clans
 from users.models import Profile
 from django.utils import timezone
 from django.db.models import Q
+from .tourmanager import TourManager
 
 # Create your models here.
 class ClanTournament(models.Model):
+    TOUR_CHOICES = [
+        ('league', 'League'),
+        ('cup', 'Cup'),
+        ('league_knockout', 'League + Knockout'),
+        ('groups_knockout', 'Groups + Knockout'),
+    ]
     name = models.CharField(max_length=255)
     start_date = models.DateField()
     end_date = models.DateField()
     description = models.TextField(blank=True, null=True)
     created_by = models.ForeignKey(User, on_delete=models.CASCADE)
     teams = models.ManyToManyField(Clans, related_name="ClanMatch")  # Many-to-many relation with Clans
-    logo = models.ImageField(default="tours-defualt.jpg",upload_to='tour_logos')
+    logo = models.ImageField(default="tours-defualt.jpg", upload_to='tour_logos')
+    tour_type = models.CharField(max_length=100, choices=TOUR_CHOICES, blank=True, null=True)
+    match_data = models.JSONField(blank=True, null=True)
 
     def __str__(self):
         return self.name
 
-class ClanMatch(models.Model):
-    match_date = models.DateTimeField(default=timezone.now)
-    tournament = models.ForeignKey('ClanTournament', on_delete=models.CASCADE, related_name='matches')
-    team_1 = models.ForeignKey(Clans, on_delete=models.CASCADE, related_name='team_1_matches')
-    team_2 = models.ForeignKey(Clans, on_delete=models.CASCADE, related_name='team_2_matches')
-    team_1_score = models.IntegerField(default=0)
-    team_2_score = models.IntegerField(default=0)
-    is_draw = models.BooleanField(default=False)
-    winner = models.ForeignKey(Clans, on_delete=models.SET_NULL, null=True, blank=True)
-    match_data = models.JSONField(blank=True, null=True)
+    def create_matches(self):
+        # Ensure there are enough teams
+        team_names = [team.clan_name for team in self.teams.all()]
+        print(self.teams.all())  # Debugging print statement
+    
+        if self.match_data is None:
+            self.match_data = {}
+        # Create matches with a tournament manager
+        tour_manager = TourManager(self.match_data, team_names, self.tour_type)
+        matches = tour_manager.create_tournament()
+        self.match_data = {'matches': matches}  # Store match data
+        self.save()  # Save the updated match data
 
     def save(self, *args, **kwargs):
-        if not self.team_1 or not self.team_2:
-            raise ValueError("Both teams must be specified before saving the match.")
-
-        # Prevent recursion
         if not hasattr(self, '_saving'):
-            self._saving = True  
-            self.create_match_data()
-            super().save(*args, **kwargs) 
-            del self._saving  # Clear the flag after saving
+                self._saving = True  
+                self.create_matches()
+                super().save(*args, **kwargs) 
+                del self._saving  # Clear the flag after saving
         else:
-            super().save(*args, **kwargs)  # If we're already saving, just save the model
+            super().save(*args, **kwargs)
+
+        
+    """
 
 
     def update_clan_stats(self):
@@ -74,8 +84,6 @@ class ClanMatch(models.Model):
         self.team_2.stat.save()
 
     def create_match_data(self):
-        """Update match data for both teams and store team wins."""
-
         # Pair players up from both teams (assuming they're ordered in the same way)
         team_1_players = list(self.team_1.members.all())
         team_2_players = list(self.team_2.members.all())
@@ -159,7 +167,7 @@ class ClanMatch(models.Model):
         p2.stat.gf = player2['goals']
         p2.stat.ga =  player1['goals']
         p2.stat.save()
-
+ """
 
 
 class IndiTournament(models.Model):
@@ -170,22 +178,13 @@ class IndiTournament(models.Model):
     created_by = models.ForeignKey(User, on_delete=models.CASCADE)
     players = models.ManyToManyField(Profile, related_name="IndiMatch")  # Many-to-many relation with Players
     logo = models.ImageField(default="tours-defualt.jpg",upload_to='tour_logos')
+    match_data = models.JSONField(blank=True, null=True)
 
     def __str__(self):
         return self.name
 
-class IndiMatch(models.Model):
-    match_date = models.DateTimeField(default=timezone.now)
-    tournament = models.ForeignKey('IndiTournament', on_delete=models.CASCADE, related_name='matches')
-    player_1 = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='player_1_matches')
-    player_2 = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='player_2_matches')
-    player_1_score = models.IntegerField(default=0)
-    player_2_score = models.IntegerField(default=0)
-    is_draw = models.BooleanField(default=False)
-    winner = models.ForeignKey(Profile, on_delete=models.SET_NULL, null=True, blank=True)
-
+""" 
     def save(self, *args, **kwargs):
-        """Calculate winner and update Player statistics on match save."""
         if self.player_1_score > self.player_2_score:
             self.winner = self.player_1
         elif self.player_2_score > self.player_1_score:
@@ -199,7 +198,6 @@ class IndiMatch(models.Model):
         self.update_player_stats()
 
     def update_player_stats(self):
-        """Update stats for both participating players in an Individual Match."""
         for player in [self.player_1, self.player_2]:
             player_stats = player.stats
             matches = IndiMatch.objects.filter(Q(player_1=player) | Q(player_2=player))
@@ -209,3 +207,4 @@ class IndiMatch(models.Model):
             player_stats.total_draws = matches.filter(is_draw=True).count()
             player_stats.win_rate = (player_stats.total_wins / player_stats.games_played) * 100 if player_stats.games_played > 0 else 0
             player_stats.save()
+ """

@@ -1,16 +1,16 @@
 
 from django.shortcuts import render, redirect,get_object_or_404
 from .forms import ClanMatchScoreForm, IndiMatchScoreForm, ClanTournamentForm, IndiTournamentForm
-from .models import ClanMatch, IndiMatch,ClanTournament, IndiTournament
+from .models import ClanTournament, IndiTournament
 def tours(request):
     cvc_tournaments = ClanTournament.objects.all()
     indi_tournaments = IndiTournament.objects.all()
     
     # Fetch matches for the CVC tournaments
-    cvc_matches = ClanMatch.objects.filter(tournament__in=cvc_tournaments)
+    #cvc_matches = ClanMatch.objects.filter(tournament__in=cvc_tournaments)
     context = {"cvc_tournaments": cvc_tournaments,
                "indi_tournaments":indi_tournaments,
-                "cvc_matches": cvc_matches,}
+                }
     return render(request,'tournaments/tours.html',context)
 
 def tours_cvc_view(request,tour_id):
@@ -22,7 +22,7 @@ def tours_indi_view(request,tour_id):
     tournament = get_object_or_404(IndiTournament, id=tour_id)
 
     # Fetch matches related to the tournament
-    matches = IndiMatch.objects.filter(tournament=tournament).select_related(
+    """ matches = IndiMatch.objects.filter(tournament=tournament).select_related(
         'player_1', 'player_2', 'winner'
     )
 
@@ -49,8 +49,8 @@ def tours_indi_view(request,tour_id):
         'matches': matches,
         'players': player_stats,
         'recent_matches': matches.order_by('-match_date')[:5],  # Last 5 matches
-    }
-    return render(request,'tournaments/indi_tours_veiw.html',context)
+    } """
+    return render(request,'tournaments/indi_tours_veiw.html')
 """ # For Clan Matches
 def input_clan_scores(request, pk):
     match = get_object_or_404(ClanMatch, pk=pk)
