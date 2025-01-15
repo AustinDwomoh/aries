@@ -2,6 +2,19 @@ from django.db.models.signals import m2m_changed
 from django.dispatch import receiver
 from itertools import combinations
 from .models import ClanTournament, IndiTournament
+import os
+from django.db.models.signals import pre_delete
+from django.dispatch import receiver
+
+@receiver(pre_delete, sender=ClanTournament)
+def delete_json_file(sender, instance, **kwargs):
+    file_path = instance.get_json_file_path()  # Get the file path
+    print(f"Signal triggered. File path: {file_path}")  # Debugging
+    if os.path.exists(file_path):
+        os.remove(file_path)
+        print("File deleted via signal.")
+    else:
+        print("File not found via signal.")
 
 
 """ @receiver(m2m_changed, sender=ClanTournament.teams.through)

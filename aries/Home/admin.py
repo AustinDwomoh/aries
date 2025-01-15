@@ -13,7 +13,12 @@ class ClanMatchAdmin(admin.ModelAdmin):
             raise ValueError("Both teams must be assigned for a match.")
         super().save_model(request, obj, form, change)
  """
-admin.site.register(ClanTournament)
+@admin.register(ClanTournament)
+class ClanTournamentAdmin(admin.ModelAdmin):
+    def save_related(self, request, form, formsets, change):
+        super().save_related(request, form, formsets, change)
+        # Ensure matches are created after related objects are saved
+        form.instance.create_matches()
 
 
 

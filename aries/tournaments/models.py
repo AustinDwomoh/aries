@@ -1,10 +1,13 @@
 from django.db import models
+from django.conf import settings
 from django.contrib.auth.models import User
 from clubs.models import Clans
 from users.models import Profile
 from django.utils import timezone
 from django.db.models import Q
 from .tourmanager import TourManager
+import os 
+import json
 
 # Create your models here.
 class ClanTournament(models.Model):
@@ -22,7 +25,35 @@ class ClanTournament(models.Model):
     teams = models.ManyToManyField(Clans, related_name="ClanMatch")  # Many-to-many relation with Clans
     logo = models.ImageField(default="tours-defualt.jpg", upload_to='tour_logos')
     tour_type = models.CharField(max_length=100, choices=TOUR_CHOICES, blank=True, null=True)
-    match_data = models.JSONField(blank=True, null=True)
+    
+
+    def get_json_file_path(self):
+        """Return the file path for the JSON data."""
+        # Use a directory named 'tournament_data' in the media root
+        directory = os.path.join(settings.MEDIA_ROOT, 'tournament_data')
+        os.makedirs(directory, exist_ok=True)  # Ensure the directory exists
+        return os.path.join(directory, f'tournament_{self.pk}.json')
+
+    def save_match_data_to_file(self):
+        """Save match data to a JSON file."""
+        file_path = self.get_json_file_path()
+        with open(file_path, 'w') as json_file:
+            json.dump(self.match_data, json_file)
+
+    def load_match_data_from_file(self):
+        """Load match data from the JSON file."""
+        file_path = self.get_json_file_path()
+        if os.path.exists(file_path):
+            with open(file_path, 'r') as json_file:
+                return json.load(json_file)
+        return {}
+    
+    def delete(self, *args, **kwargs):
+        """Delete the JSON file when the tournament is deleted."""
+        file_path = self.get_json_file_path()  # Get the path to the JSON file
+        if os.path.exists(file_path):  # Check if the file exists
+            os.remove(file_path)  # Delete the file
+        super().delete(*args, **kwargs)
 
     def __str__(self):
         return self.name
@@ -32,20 +63,26 @@ class ClanTournament(models.Model):
         team_names = [team.clan_name for team in self.teams.all()]
         print(self.teams.all())  # Debugging print statement
     
-        if self.match_data is None:
-            self.match_data = {}
+       
+        self.match_data = self.load_match_data_from_file()
         # Create matches with a tournament manager
         tour_manager = TourManager(self.match_data, team_names, self.tour_type)
         matches = tour_manager.create_tournament()
-        self.match_data = {'matches': matches}  # Store match data
-        self.save()  # Save the updated match data
+        print('in model')
+        print(matches)
+        self.match_data = {'matches': matches}  # Update match data
+        self.save_match_data_to_file()
+        print('in model')
+        print(matches)  # Store match data
 
     def save(self, *args, **kwargs):
         if not hasattr(self, '_saving'):
-                self._saving = True  
-                self.create_matches()
-                super().save(*args, **kwargs) 
-                del self._saving  # Clear the flag after saving
+            self._saving = True  
+            super().save(*args, **kwargs)
+            self.create_matches()
+
+            super().save(*args, **kwargs)
+            del self._saving  
         else:
             super().save(*args, **kwargs)
 
