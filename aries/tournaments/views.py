@@ -1,7 +1,7 @@
 
 from django.shortcuts import render, redirect,get_object_or_404
 from .forms import ClanMatchScoreForm, IndiMatchScoreForm, ClanTournamentForm, IndiTournamentForm
-from .models import ClanTournament, IndiTournament
+from .models import ClanTournament, IndiTournament,Clans
 def tours(request):
     cvc_tournaments = ClanTournament.objects.all()
     indi_tournaments = IndiTournament.objects.all()
@@ -15,8 +15,33 @@ def tours(request):
 
 def tours_cvc_view(request,tour_id):
     cvc_tournaments = get_object_or_404(ClanTournament, id=tour_id)
-    
-    return render(request,'tournaments/cvc_tours_veiw.html',{'cvc_tour':cvc_tournaments})
+    match_data = cvc_tournaments.load_match_data_from_file()
+    if cvc_tournaments.tour_type == "cup":
+        for round in match_data["matches"]["rounds"]:
+            for match in round["matches"]:
+                team_a_user = get_object_or_404(Clans, clan_name=match["team_a"])
+                team_b_user = get_object_or_404(Clans, clan_name=match["team_b"])
+                # Assign profiles to match data
+                match["team_a_logo"] = team_a_user.clan_logo
+                match["team_b_logo"] = team_b_user.clan_logo
+    elif cvc_tournaments.tour_type == "league":
+        for round_key, round in match_data["matches"]["fixtures"].items():
+            for match in round:
+                team_a_profile = get_object_or_404(Clans, clan_name=match["team_a"])
+                match["team_a_logo"] = team_a_profile.clan_logo 
+                if match["team_b"] != "Bye":
+                    team_b_profile = get_object_or_404(Clans, clan_name=match["team_b"])
+                    match["team_b_logo"] = team_b_profile.clan_logo 
+                else:
+                    match["team_b_logo"] = None
+        for team_name, team_stats in match_data["matches"]["table"].items():
+            # Get the corresponding team profile from the Clans model
+            team_profile = get_object_or_404(Clans, clan_name=team_name)
+            # Add the team logo to the stats
+            team_stats["team_logo"] = team_profile.clan_logo
+                
+ 
+    return render(request,'tournaments/cvc_tours_veiw.html',{'cvc_tour':cvc_tournaments, 'match_data': match_data  })
 
 def tours_indi_view(request,tour_id):
     tournament = get_object_or_404(IndiTournament, id=tour_id)

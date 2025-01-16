@@ -14,7 +14,6 @@ class ClanTournament(models.Model):
     TOUR_CHOICES = [
         ('league', 'League'),
         ('cup', 'Cup'),
-        ('league_knockout', 'League + Knockout'),
         ('groups_knockout', 'Groups + Knockout'),
     ]
     name = models.CharField(max_length=255)
@@ -43,10 +42,16 @@ class ClanTournament(models.Model):
     def load_match_data_from_file(self):
         """Load match data from the JSON file."""
         file_path = self.get_json_file_path()
-        if os.path.exists(file_path):
+        if os.path.exists(file_path) and os.path.getsize(file_path) > 0:
             with open(file_path, 'r') as json_file:
-                return json.load(json_file)
-        return {}
+                try:
+                    return json.load(json_file)
+                except json.JSONDecodeError:
+                    # Handle invalid JSON
+                    print("Error decoding JSON.")
+                    return {}
+        else:
+            return {}
     
     def delete(self, *args, **kwargs):
         """Delete the JSON file when the tournament is deleted."""
@@ -59,22 +64,13 @@ class ClanTournament(models.Model):
         return self.name
 
     def create_matches(self):
-        # Ensure there are enough teams
         team_names = [team.clan_name for team in self.teams.all()]
-        print(self.teams.all())  # Debugging print statement
-    
-       
         self.match_data = self.load_match_data_from_file()
-        # Create matches with a tournament manager
         tour_manager = TourManager(self.match_data, team_names, self.tour_type)
         matches = tour_manager.create_tournament()
-        print('in model')
-        print(matches)
-        self.match_data = {'matches': matches}  # Update match data
+        self.match_data = {'matches': matches}  
         self.save_match_data_to_file()
-        print('in model')
-        print(matches)  # Store match data
-
+        
     def save(self, *args, **kwargs):
         if not hasattr(self, '_saving'):
             self._saving = True  
