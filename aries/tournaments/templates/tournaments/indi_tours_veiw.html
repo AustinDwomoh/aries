@@ -1,59 +1,49 @@
 {% extends "base.html" %}
-{% block title %}{{ tournament.name }}{% endblock %}
+{% block title %}
+Tournaments
+{% endblock title %}
 {% block content %}
-<section>
-  <div class="tournament-header">
-    <h1>{{ tournament.name }}</h1>
-    <p>{{ tournament.description }}</p>
-    <p><strong>Start Date:</strong> {{ tournament.start_date }}</p>
-    <p><strong>End Date:</strong> {{ tournament.end_date }}</p>
-  </div>
+<style>
+    /* Optional: Smooth transition for content change */
+    .content-section {
+        display: none;
+        transition: opacity 0.5s ease-in-out;
+    }
 
-  <h2>Players</h2>
-  <div class="row">
-    {% for player_stat in players %}
-      <div class="col-md-4">
-        <div class="card">
-          <div class="card-body">
-            <h5>{{ player_stat.player.user.username }}</h5>
-            <p>Total Matches: {{ player_stat.total_matches }}</p>
-            <p>Wins: {{ player_stat.wins }}</p>
-            <p>Draws: {{ player_stat.draws }}</p>
-            <p>Losses: {{ player_stat.losses }}</p>
-            <p>Win Rate: {{ player_stat.win_rate }}%</p>
-          </div>
-        </div>
-      </div>
-    {% endfor %}
-  </div>
+    .active-content {
+        display: block;
+        opacity: 1;
+    }
+</style>
+Lorem ipsum dolor sit amet consectetur adipisicing elit. Facere, quis deserunt! Quisquam voluptatibus obcaecati earum, harum quasi ea cum culpa sequi sunt totam eveniet illum aperiam dolores explicabo enim iure.
+{% if indi_tour.tour_type == 'cup' %}
+{% include "tournaments/cup.html" %}
+{% elif  indi_tour.tour_type == 'league'%}
+{% include "tournaments/league.html" %}
+{% elif  indi_tour.tour_type == 'groups_knockout'%}
+{% include "tournaments/groups_knockout.html" %}
+{% endif %}
+<script>
+    // JavaScript to handle active link switching and content change
+    const navLinks = document.querySelectorAll('.mini-nav');
+    const contentSections = document.querySelectorAll('.content-section');
 
-  <h2>Matches</h2>
-  <table class="table">
-    <thead>
-      <tr>
-        <th>Player 1</th>
-        <th>Player 2</th>
-        <th>Score</th>
-        <th>Winner</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for match in matches %}
-        <tr>
-          <td>{{ match.player_1.user.username }}</td>
-          <td>{{ match.player_2.user.username }}</td>
-          <td>{{ match.player_1_score }} - {{ match.player_2_score }}</td>
-          <td>{{match.winner.user.username}}</td>
-        </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+    navLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault(); 
+            navLinks.forEach(item => item.classList.remove('active'));
 
-  <h2>Recent Matches</h2>
-  <div class="recent-matches">
-    {% for match in recent_matches %}
-      <p>{{ match.player_1.username }} vs {{ match.player_2.username }} on {{ match.match_date }}</p>
-    {% endfor %}
-  </div>
-</section>
-{% endblock %}
+        
+            link.classList.add('active');
+            const target = link.getAttribute('data-target');
+
+            // Hide all sections
+            contentSections.forEach(section => section.classList.remove('active-content'));
+
+            // Show the selected section
+            const targetSection = document.querySelector(target);
+            targetSection.classList.add('active-content');
+        });
+    });
+</script>
+{% endblock content %}

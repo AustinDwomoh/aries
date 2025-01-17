@@ -204,6 +204,11 @@ class ClanTournament(models.Model):
 
 
 class IndiTournament(models.Model):
+    TOUR_CHOICES = [
+        ('league', 'League'),
+        ('cup', 'Cup'),
+        ('groups_knockout', 'Groups + Knockout'),
+    ]
     name = models.CharField(max_length=255)
     start_date = models.DateField()
     end_date = models.DateField()
@@ -211,33 +216,64 @@ class IndiTournament(models.Model):
     created_by = models.ForeignKey(User, on_delete=models.CASCADE)
     players = models.ManyToManyField(Profile, related_name="IndiMatch")  # Many-to-many relation with Players
     logo = models.ImageField(default="tours-defualt.jpg",upload_to='tour_logos')
-    match_data = models.JSONField(blank=True, null=True)
+    tour_type = models.CharField(max_length=100, choices=TOUR_CHOICES, blank=True, null=True)
+    def __str__(self):
+        return self.name
+
+    def get_json_file_path(self):
+        """Return the file path for the JSON data."""
+        # Use a directory named 'tournament_data' in the media root
+        directory = os.path.join(settings.MEDIA_ROOT, 'tournament_data')
+        os.makedirs(directory, exist_ok=True)  # Ensure the directory exists
+        return os.path.join(directory, f'tournament_{self.pk}.json')
+
+    def save_match_data_to_file(self):
+        """Save match data to a JSON file."""
+        file_path = self.get_json_file_path()
+        with open(file_path, 'w') as json_file:
+            json.dump(self.match_data, json_file)
+
+    def load_match_data_from_file(self):
+        """Load match data from the JSON file."""
+        file_path = self.get_json_file_path()
+        if os.path.exists(file_path) and os.path.getsize(file_path) > 0:
+            with open(file_path, 'r') as json_file:
+                try:
+                    return json.load(json_file)
+                except json.JSONDecodeError:
+                    # Handle invalid JSON
+                    print("Error decoding JSON.")
+                    return {}
+        else:
+            return {}
+    
+    def delete(self, *args, **kwargs):
+        """Delete the JSON file when the tournament is deleted."""
+        file_path = self.get_json_file_path()  # Get the path to the JSON file
+        if os.path.exists(file_path):  # Check if the file exists
+            os.remove(file_path)  # Delete the file
+        super().delete(*args, **kwargs)
 
     def __str__(self):
         return self.name
 
-""" 
+    def create_matches(self):
+        team_names = [team.user.username for team in self.players.all()]
+        self.match_data = self.load_match_data_from_file()
+        tour_manager = TourManager(self.match_data, team_names, self.tour_type)
+        matches = tour_manager.create_tournament()
+        self.match_data = {'matches': matches}  
+        self.save_match_data_to_file()
+        
     def save(self, *args, **kwargs):
-        if self.player_1_score > self.player_2_score:
-            self.winner = self.player_1
-        elif self.player_2_score > self.player_1_score:
-            self.winner = self.player_2
+        if not hasattr(self, '_saving'):
+            self._saving = True  
+            super().save(*args, **kwargs)
+            self.create_matches()
+
+            super().save(*args, **kwargs)
+            del self._saving  
         else:
-            self.is_draw = True
-            self.winner = None  # Draw match has no winner
-        super().save(*args, **kwargs)
+            super().save(*args, **kwargs)
 
-        # Update Player stats
-        self.update_player_stats()
-
-    def update_player_stats(self):
-        for player in [self.player_1, self.player_2]:
-            player_stats = player.stats
-            matches = IndiMatch.objects.filter(Q(player_1=player) | Q(player_2=player))
-            player_stats.games_played = matches.count()
-            player_stats.total_wins = matches.filter(winner=player).count()
-            player_stats.total_losses = matches.filter(winner__isnull=False).exclude(winner=player).count()
-            player_stats.total_draws = matches.filter(is_draw=True).count()
-            player_stats.win_rate = (player_stats.total_wins / player_stats.games_played) * 100 if player_stats.games_played > 0 else 0
-            player_stats.save()
- """
+   

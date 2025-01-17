@@ -67,7 +67,7 @@
     <div class="container-fluid">
         <ul class="list-inline d-flex justify-content-center w-100">
             <li class="list-inline-item mx-2">
-                <a class="nav-link mini-nav  fs-1 fw-bold active" 
+                <a class="nav-link mini-nav  active" 
                    href="#section-1" 
                    data-target="#section-1" 
                    aria-controls="section-1">
@@ -76,7 +76,7 @@
             </li>
             {% for rounds in match_data.matches.fixtures %}
             <li class="list-inline-item mx-2">
-                <a class="nav-link mini-nav  fs-1 fw-bold {% if forloop.first %}active{% endif %}" 
+                <a class="nav-link mini-nav   {% if forloop.first %}active{% endif %}" 
                    href="#section{{ forloop.counter }}" 
                    data-target="#section{{ forloop.counter }}" 
                    aria-controls="section{{ forloop.counter }}">
@@ -137,9 +137,42 @@
     </section>
 </div>
 
-{% comment %} {% for round in match_data.matches.rounds %}
+{% for round, matches in match_data.matches.fixtures.items %}
 <div id="section{{ forloop.counter }}" class="content-section active-content">
-    {% for match in round.matches %}
-
+    {% for match in matches %}
+    <div class="card-body  mx-auto">
+        <div class="text-body">
+            <div class="container mt-2">
+                <div class="row justify-content-center">
+                    <div class="col-md-6">
+                        <div class="card shadow-sm">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-center align-items-center">
+                                    <!-- Team A -->
+                                    <div class="text-center">
+                                        <img src="{{  match.team_a_logo.url }}" alt="{{ match.team_a }}"  class="img-fluid img-thumbnail mt-2 mb-1" style="width: 100px; z-index: 1">
+                                        <h3 class="mb-2">{{ match.team_a }}</h3>
+                                    </div>
+                                    <div class="text-center fs-1 fw-bold mx-4 d-flex flex-column align-items-center">
+                                        {% if match.team_a_goals is not None and match.team_b_goals is not None %}
+                                        <span class="badge bg-success px-3 py-2"><span>{{ match.team_a_goals }}</span><span class="vs-text mb-0 "> - </span><span>{{ match.team_b_goals }}</span></span>
+                                        {% else %}
+                                        <span class="badge bg-danger px-3 py-2"><span></span><span class="vs-text mb-0 "> - </span><span></span></span>
+                                        {% endif %}
+                                    </div>
+                                    <!-- Team B -->
+                                    <div class="text-center">
+                                        <img src="{{ match.team_b_logo.url }}" alt="{{ match.team_b }}"  class="img-fluid img-thumbnail mt-2 mb-1" style="width: 100px; z-index: 1">
+                                        <h3 class="mb-2">{{ match.team_b }}</h3>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
 </div>
-{% endfor %} {% endcomment %}
+{% endfor %} 

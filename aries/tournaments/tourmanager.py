@@ -193,9 +193,8 @@ class TourManager:
 
 #                                cup with groups                               #
 # ============================================================================ #
-    def make_groups_knockout(self, groups_count: int =None) -> Dict:
+    def make_groups_knockout(self, groups_count: int =2) -> Dict:
         """Creates a groups + knockout structure."""
-        groups_count = 1
         groups = {}
         group_size = len(self.teams) // groups_count
         remainder = len(self.teams) % groups_count
@@ -203,23 +202,34 @@ class TourManager:
         # Distribute teams into groups
         start_index = 0
         for i in range(groups_count):
-            group_name = f"Group {chr(65 + i)}"
+            group_name = f"Group {chr(65 + i)}"  # Example: "Group A", "Group B"
             end_index = start_index + group_size + (1 if remainder > 0 else 0)
             groups[group_name] = self.teams[start_index:end_index]
             start_index = end_index
             if remainder > 0:
                 remainder -= 1
 
-        group_matches = {}
+        # Create group matches
         for group_name, group_teams in groups.items():
             group_manager = TourManager(self.match_data, group_teams, "league")
-            group_matches[group_name] = group_manager.make_league()
+            self.match_data = group_manager.make_league()
 
-        self.match_data["groups_knockout"] = {
-            "groups": group_matches,
-        }
-        return self.match_data["groups_knockout"]
-   
+        groups_table = {}
+        for group_name, group_teams in groups.items():
+            groups_table[group_name] = {
+                team: {
+                    "wins": 0,
+                    "losses": 0,
+                    "draws": 0,
+                    "points": 0,
+                    "goals_for": 0,
+                    "goals_against": 0,
+                }
+                for team in group_teams
+            }
+
+        return self.match_data,groups_table
+    
     def update_groups_knockout(self, round_number: int, group: int, match_results) -> None:
         """
         Updates match results for a specific round and group in the groups + knockout stage.
