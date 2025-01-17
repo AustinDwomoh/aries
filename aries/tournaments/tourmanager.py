@@ -25,13 +25,13 @@ class TourManager:
                 "fixtures": {},  
                 "table": {}
         }
-       
-
         for round_number in range(n - 1):
             round_matches = []
             for i in range(n // 2):
                 home = self.teams[i]
                 away = self.teams[n - 1 - i]
+                if home == "Bye" or away == "Bye":
+                    continue
                 round_matches.append({
                     "match":i+1,
                     "team_a": home,
@@ -40,8 +40,6 @@ class TourManager:
                     "team_b_goals": None,
                     "winner": None
                 })
-
-            
             round_robin['fixtures'][f"round_{round_number + 1}"] = round_matches
             self.teams.insert(1, self.teams.pop())
         for team in self.teams:
@@ -183,9 +181,11 @@ class TourManager:
 
 #                                cup with groups                               #
 # ============================================================================ #
-    def make_groups_knockout(self, groups_count: int =2) -> Dict:
+    def make_groups_knockout(self, groups_count: int = 2) -> Dict:
         """Creates a groups + knockout structure."""
         groups = {}
+        group_matches = {}  # Initialize group matches
+        random.shuffle(self.teams)
         group_size = len(self.teams) // groups_count
         remainder = len(self.teams) % groups_count
 
@@ -202,23 +202,14 @@ class TourManager:
         # Create group matches
         for group_name, group_teams in groups.items():
             group_manager = TourManager(self.match_data, group_teams, "league")
-            self.match_data = group_manager.make_league()
+            group_matches[group_name] = group_manager.make_league()
 
-        groups_table = {}
-        for group_name, group_teams in groups.items():
-            groups_table[group_name] = {
-                team: {
-                    "wins": 0,
-                    "losses": 0,
-                    "draws": 0,
-                    "points": 0,
-                    "goals_for": 0,
-                    "goals_against": 0,
-                }
-                for team in group_teams
-            }
-
-        return self.match_data,groups_table
+        self.match_data = group_matches
+        return {
+            "groups": groups,
+            "matches": group_matches
+        }
+     
     
     def update_groups_knockout(self, round_number: int, group: int, match_results) -> None:
         """

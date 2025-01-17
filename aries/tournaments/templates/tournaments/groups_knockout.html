@@ -65,18 +65,28 @@
 </style>
 <nav class="navbar navbar-expand-lg">
     <div class="container-fluid">
-        <ul class="list-inline d-flex justify-content-center w-100">
-            <li class="list-inline-item mx-2">
-                <a class="nav-link mini-nav  active" 
-                   href="#section-1" 
-                   data-target="#section-1" 
-                   aria-controls="section-1">
-                   Leaderboard 
-                </a>
-            </li>
-            {% for groups,fixtures in match_data.matches.items %}
-            <li class="list-inline-item mx-2">
-                <a class="nav-link mini-nav   {% if forloop.first %}active{% endif %}" 
+            <!-- Dropdown for Navigation -->
+            <div class="dropdown ">
+                <!-- Current Selection -->
+                <button class="btn btn-secondary dropdown-toggle" 
+                        type="button" 
+                        id="dropdownMenuButton" 
+                        data-bs-toggle="dropdown" 
+                        aria-expanded="false">
+                    -------
+                </button>
+                <ul class="dropdown-menu text-center" aria-labelledby="dropdownMenuButton">
+                    <li>
+                        <a class="dropdown-item active" 
+                           href="#section-1" 
+                           data-target="#section-1" 
+                           aria-controls="section-1">
+                           Leaderboard
+                        </a>
+                    </li>
+            {% for round in rounds %}
+            <li>
+                <a class="dropdown-item {% if forloop.first %}active{% endif %}" 
                    href="#section{{ forloop.counter }}" 
                    data-target="#section{{ forloop.counter }}" 
                    aria-controls="section{{ forloop.counter }}">
@@ -89,6 +99,7 @@
 </nav>
 <div id="section-1" class="content-section active-content">
     <section class="content-info">
+        {%  for group_key, group_stats in match_data.matches.matches.items %}
         <div class="container py-3">
             <div class="row">
                 <div class="col-12">
@@ -108,7 +119,7 @@
                             </tr>
                         </thead>
                         <tbody class="text-center">
-                            {% for team_name, team_stats in match_data.matches.table.items %}
+                            {% for  team_name,team_stats in group_stats.table.items %}
                             <tr>
                                 <td class="text-start">{{ forloop.counter }} <i class="fa fa-caret-up" aria-hidden="true"></i></td>
                                 <td class="text-start">
@@ -134,12 +145,13 @@
                 </div>
             </div>
         </div>
+        {% endfor %}
     </section>
 </div>
 
-{% for round, matches in match_data.matches.fixtures.items %}
+{% for items in rounds %}
 <div id="section{{ forloop.counter }}" class="content-section active-content">
-    {% for match in matches %}
+    {% for match in items.matches %}
     <div class="card-body  mx-auto">
         <div class="text-body">
             <div class="container mt-2">

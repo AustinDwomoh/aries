@@ -8,6 +8,9 @@
         position: relative;
        padding-bottom:100px;
     }
+    .hidden{
+        display: none;
+    }
     
     table {
         width: 100%;
@@ -150,14 +153,14 @@
 {% for round, matches in match_data.matches.fixtures.items %}
 <div id="section{{ forloop.counter }}" class="content-section active-content">
     {% for match in matches %}
-    <div class="card-body  mx-auto">
+    <div class="card-body mx-auto">
         <div class="text-body">
             <div class="container mt-2">
                 <div class="row justify-content-center">
                     <div class="col-md-6">
                         <div class="card shadow-sm">
                             <div class="card-body">
-                                <div class="d-flex justify-content-center align-items-center">
+                                <div class="d-flex justify-content-center align-items-center ">
                                     <!-- Team A -->
                                     <div class="text-center">
                                         <img src="{{  match.team_a_logo.url }}" alt="{{ match.team_a }}"  class="img-fluid img-thumbnail mt-2 mb-1" style="width: 100px; z-index: 1">

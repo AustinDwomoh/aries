@@ -1,1 +1,25 @@
-{"matches": {"rounds": [{"round_number": 1, "matches": [{"team_a": "clan1_profile_1", "team_b": "clan1_profile_2", "team_a_goals": null, "team_b_goals": null, "winner": null}, {"team_a": "clan1_profile_3", "team_b": "inphinithy", "team_a_goals": null, "team_b_goals": null, "winner": null}]}]}}
+{
+    "matches": {
+        "rounds": [
+            {
+                "round_number": 1,
+                "matches": [
+                    {
+                        "team_a": "clan1_profile_1",
+                        "team_b": "clan1_profile_2",
+                        "team_a_goals": null,
+                        "team_b_goals": null,
+                        "winner": null
+                    },
+                    {
+                        "team_a": "clan1_profile_3",
+                        "team_b": "inphinithy",
+                        "team_a_goals": null,
+                        "team_b_goals": null,
+                        "winner": null
+                    }
+                ]
+            }
+        ]
+    }
+}
