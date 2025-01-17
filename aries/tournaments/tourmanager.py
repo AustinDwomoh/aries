@@ -114,11 +114,10 @@ class TourManager:
 # ============================================================================ #
 #                                   knockouts                                  #
 # ============================================================================ #
-    def make_knockout(self, teams=None):
+    def make_knockout(self,teams=None):
         """Creates a knockout structure for cups with bracket-style details."""
-
         if teams is None:
-            teams = self.teams.copy()
+            teams = self.teams
         random.shuffle(teams)
     
         if "knockout" not in self.match_data:
@@ -141,6 +140,7 @@ class TourManager:
                     "winner": None
                 }
                 round_matches.append(match)
+                print('ther')
             
             self.match_data["knockout"]["rounds"].append({
                 "round_number": round_number,
@@ -159,18 +159,13 @@ class TourManager:
         )
         if not current_round:
             raise ValueError(f"Round {round_number} not found in knockout data.")
-
         next_round_teams = []
         updated_matches = []
-
-        # Update match results
         for result in match_results:
             match_number = result["match"]
             match = current_round["matches"][match_number - 1]
-
             match["team_a_goals"] = result["team_a_goals"]
             match["team_b_goals"] = result["team_b_goals"]
-
             if match["team_a_goals"] > match["team_b_goals"]:
                 match["winner"] = match["team_a"]
             elif match["team_a_goals"] < match["team_b_goals"]:
@@ -181,14 +176,9 @@ class TourManager:
             if match["winner"]:
                 next_round_teams.append(match["winner"])
             updated_matches.append(match)
-
-        # Save updated round
         current_round["matches"] = updated_matches
-
-        # Create the next round if there are enough teams
         if next_round_teams:
             self.make_knockout(next_round_teams)
-
         return self.match_data["knockout"]
 
 #                                cup with groups                               #

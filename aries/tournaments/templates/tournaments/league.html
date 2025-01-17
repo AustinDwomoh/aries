@@ -65,28 +65,38 @@
 </style>
 <nav class="navbar navbar-expand-lg">
     <div class="container-fluid">
-        <ul class="list-inline d-flex justify-content-center w-100">
-            <li class="list-inline-item mx-2">
-                <a class="nav-link mini-nav  active" 
-                   href="#section-1" 
-                   data-target="#section-1" 
-                   aria-controls="section-1">
-                   Leaderboard 
-                </a>
-            </li>
-            {% for rounds in match_data.matches.fixtures %}
-            <li class="list-inline-item mx-2">
-                <a class="nav-link mini-nav   {% if forloop.first %}active{% endif %}" 
-                   href="#section{{ forloop.counter }}" 
-                   data-target="#section{{ forloop.counter }}" 
-                   aria-controls="section{{ forloop.counter }}">
-                   Round {{ forloop.counter }}
-                </a>
-            </li>
-            {% endfor %}
-        </ul>
+        <div class="dropdown ">
+            <button class="btn btn-secondary dropdown-toggle" 
+                    type="button" 
+                    id="dropdownMenuButton" 
+                    data-bs-toggle="dropdown" 
+                    aria-expanded="false">
+                --------
+            </button>
+            <ul class="dropdown-menu text-center" aria-labelledby="dropdownMenuButton">
+                <li>
+                    <a class="dropdown-item active" 
+                       href="#section-1" 
+                       data-target="#section-1" 
+                       aria-controls="section-1">
+                       Leaderboard
+                    </a>
+                </li>
+                {% for rounds in match_data.matches.fixtures %}
+                <li>
+                    <a class="dropdown-item {% if forloop.first %}active{% endif %}" 
+                       href="#section{{ forloop.counter }}" 
+                       data-target="#section{{ forloop.counter }}" 
+                       aria-controls="section{{ forloop.counter }}">
+                       Round {{ forloop.counter }}
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
     </div>
 </nav>
+
 <div id="section-1" class="content-section active-content">
     <section class="content-info">
         <div class="container py-3">

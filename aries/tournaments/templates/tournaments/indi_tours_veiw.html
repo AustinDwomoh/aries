@@ -6,13 +6,16 @@ Tournaments
 <style>
     /* Optional: Smooth transition for content change */
     .content-section {
-        display: none;
-        transition: opacity 0.5s ease-in-out;
+        display: none; /* Hide all sections by default */
     }
-
-    .active-content {
-        display: block;
-        opacity: 1;
+    
+    .content-section.active-content {
+        display: block; /* Show only the active section */
+    }
+    
+    .navbar .dropdown-menu .active {
+        background-color: #007bff; /* Highlight the active dropdown item */
+        color: #fff;
     }
 </style>
 Lorem ipsum dolor sit amet consectetur adipisicing elit. Facere, quis deserunt! Quisquam voluptatibus obcaecati earum, harum quasi ea cum culpa sequi sunt totam eveniet illum aperiam dolores explicabo enim iure.
@@ -24,26 +27,58 @@ Lorem ipsum dolor sit amet consectetur adipisicing elit. Facere, quis deserunt! 
 {% include "tournaments/groups_knockout.html" %}
 {% endif %}
 <script>
-    // JavaScript to handle active link switching and content change
-    const navLinks = document.querySelectorAll('.mini-nav');
-    const contentSections = document.querySelectorAll('.content-section');
-
-    navLinks.forEach(link => {
-        link.addEventListener('click', function(e) {
-            e.preventDefault(); 
-            navLinks.forEach(item => item.classList.remove('active'));
-
-        
-            link.classList.add('active');
-            const target = link.getAttribute('data-target');
-
-            // Hide all sections
-            contentSections.forEach(section => section.classList.remove('active-content'));
-
-            // Show the selected section
-            const targetSection = document.querySelector(target);
-            targetSection.classList.add('active-content');
+    document.addEventListener('DOMContentLoaded', () => {
+        const navLinks = document.querySelectorAll('.mini-nav');
+        const contentSections = document.querySelectorAll('.content-section');
+        const dropdownItems = document.querySelectorAll('.dropdown-item');
+        const dropdownButton = document.getElementById('dropdownMenuButton');
+    
+        // Handle navigation link clicks
+        navLinks.forEach(link => {
+            link.addEventListener('click', function (e) {
+                e.preventDefault(); // Prevent default anchor behavior
+    
+                // Remove 'active' class from all links
+                navLinks.forEach(item => item.classList.remove('active'));
+                // Add 'active' class to the clicked link
+                this.classList.add('active');
+    
+                // Hide all content sections
+                contentSections.forEach(section => section.classList.remove('active-content'));
+    
+                // Show the selected section
+                const target = this.getAttribute('data-target');
+                const targetSection = document.querySelector(target);
+                if (targetSection) {
+                    targetSection.classList.add('active-content');
+                }
+            });
+        });
+    
+        // Update dropdown button text and active item when clicked
+        dropdownItems.forEach(item => {
+            item.addEventListener('click', function () {
+                // Update the dropdown button text
+                dropdownButton.textContent = this.textContent;
+    
+                // Remove 'active' class from all dropdown items
+                dropdownItems.forEach(dropdown => dropdown.classList.remove('active'));
+    
+                // Add 'active' class to the clicked item
+                this.classList.add('active');
+    
+                // Hide all content sections
+                contentSections.forEach(section => section.classList.remove('active-content'));
+    
+                // Show the selected section based on the data-target of the clicked item
+                const target = this.getAttribute('data-target');
+                const targetSection = document.querySelector(target);
+                if (targetSection) {
+                    targetSection.classList.add('active-content');
+                }
+            });
         });
     });
+    
 </script>
 {% endblock content %}

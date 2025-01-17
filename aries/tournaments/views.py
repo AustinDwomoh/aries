@@ -2,6 +2,8 @@
 from django.shortcuts import render, redirect,get_object_or_404
 from .forms import ClanMatchScoreForm, IndiMatchScoreForm, ClanTournamentForm, IndiTournamentForm
 from .models import ClanTournament, IndiTournament,Clans
+from users.models import Profile
+from django.contrib.auth.models import User
 def tours(request):
     cvc_tournaments = ClanTournament.objects.all()
     indi_tournaments = IndiTournament.objects.all()
@@ -64,48 +66,45 @@ def tours_indi_view(request,tour_id):
     if indi_tournaments.tour_type == "cup":
         for round in match_data["matches"]["rounds"]:
             for match in round["matches"]:
-                team_a_user = get_object_or_404(Clans, clan_name=match["team_a"])
-                team_b_user = get_object_or_404(Clans, clan_name=match["team_b"])
+                team_a_user = User.objects.get(username=match['team_a'])
+                team_b_user = User.objects.get(username=match['team_b'])
                 # Assign profiles to match data
-                match["team_a_logo"] = team_a_user.clan_logo
-                match["team_b_logo"] = team_b_user.clan_logo
+                match["team_a_logo"] = team_a_user.profile.profile_picture
+                match["team_b_logo"] = team_b_user.profile.profile_picture
     elif indi_tournaments.tour_type == "league":
         for round_key, round in match_data["matches"]["fixtures"].items():
             for match in round:
-                team_a_profile = get_object_or_404(Clans, clan_name=match["team_a"])
-                match["team_a_logo"] = team_a_profile.clan_logo 
+                team_a_user = User.objects.get(username=match['team_a'])
+                match["team_a_logo"] = team_a_user.profile.profile_picture
                 if match["team_b"] != "Bye":
-                    team_b_profile = get_object_or_404(Clans, clan_name=match["team_b"])
-                    match["team_b_logo"] = team_b_profile.clan_logo 
+                    team_b_user = User.objects.get(username=match['team_b'])
+                    match["team_b_logo"] = team_b_user.profile.profile_picture
                 else:
                     match["team_b_logo"] = None
         for team_name, team_stats in match_data["matches"]["table"].items():
-            # Get the corresponding team profile from the Clans model
-            team_profile = get_object_or_404(Clans, clan_name=team_name)
-            # Add the team logo to the stats
-            team_stats["team_logo"] = team_profile.clan_logo
+            team_user = User.objects.get(username=team_name)  # Fetch the User by username
+            team_stats["team_logo"] = team_user.profile.profile_picture
     elif indi_tournaments.tour_type == "groups_knockout":
         for group_key, data in match_data["matches"].items():
             for round_number,matches in data['fixtures'].items():
                 for match in matches:
-                    team_a_profile = get_object_or_404(Clans, clan_name=match["team_a"])
-                    match["team_a_logo"] = team_a_profile.clan_logo
+                    team_a_user = User.objects.get(username=match['team_a'])
+                    match["team_a_logo"] = team_a_user.profile.profile_picture
                     if match["team_b"] != "Bye":
-                        team_b_profile = get_object_or_404(Clans, clan_name=match["team_b"])
-                        match["team_b_logo"] = team_b_profile.clan_logo
+                        team_b_user = User.objects.get(username=match['team_b'])
+                        match["team_b_logo"] = team_b_user.profile.profile_picture
                     else:
                         match["team_b_logo"] = None
 
         if "table" in match_data["matches"]:
             for group_name, group_table in match_data["matches"].items():
                 for team_name, team_stats in group_table.items():
-                    team_profile = get_object_or_404(Clans, clan_name=team_name)
-                    team_stats["team_logo"] = team_profile.clan_logo
+                    team_profile =  User.objects.get(username=match[team_name])
+                    team_stats["team_logo"] = team_profile.profile.profile_picture
 
 
+    return render(request,'tournaments/indi_tours_veiw.html',{'indi_tour':indi_tournaments, 'match_data': match_data  })
 
-    
-    return render(request,'tournaments/indi_tours_veiw.html',{'cvc_tour':cvc_tournaments, 'match_data': match_data  })
 """ # For Clan Matches
 def input_clan_scores(request, pk):
     match = get_object_or_404(ClanMatch, pk=pk)

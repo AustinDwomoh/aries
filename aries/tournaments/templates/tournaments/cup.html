@@ -1,17 +1,29 @@
+
 <nav class="navbar navbar-expand-lg">
     <div class="container-fluid">
-        <ul class="list-inline d-flex justify-content-center w-100">
-            {% for rounds in match_data.matches.rounds %}
-            <li class="list-inline-item mx-2">
-                <a class="nav-link mini-nav  fs-1 fw-bold {% if forloop.first %}active{% endif %}" 
-                   href="#section{{ forloop.counter }}" 
-                   data-target="#section{{ forloop.counter }}" 
-                   aria-controls="section{{ forloop.counter }}">
-                   Round {{ forloop.counter }}
-                </a>
-            </li>
-            {% endfor %}
-        </ul>
+        <!-- Dropdown for Navigation -->
+        <div class="dropdown ">
+            <!-- Current Selection -->
+            <button class="btn btn-secondary dropdown-toggle" 
+                    type="button" 
+                    id="dropdownMenuButton" 
+                    data-bs-toggle="dropdown" 
+                    aria-expanded="false">
+                -------
+            </button>
+            <ul class="dropdown-menu text-center" aria-labelledby="dropdownMenuButton">
+                {% for rounds in match_data.matches.rounds %}
+                <li>
+                    <a class="dropdown-item {% if forloop.first %}active{% endif %}" 
+                       href="#section{{ forloop.counter }}" 
+                       data-target="#section{{ forloop.counter }}" 
+                       aria-controls="section{{ forloop.counter }}">
+                       Round {{ forloop.counter }}
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
     </div>
 </nav>
 
