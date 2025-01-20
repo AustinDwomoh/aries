@@ -4,13 +4,7 @@
         <!-- Dropdown for Navigation -->
         <div class="dropdown ">
             <!-- Current Selection -->
-            <button class="btn btn-secondary dropdown-toggle" 
-                    type="button" 
-                    id="dropdownMenuButton" 
-                    data-bs-toggle="dropdown" 
-                    aria-expanded="false">
-                -------
-            </button>
+            <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">-------</button>
             <ul class="dropdown-menu text-center" aria-labelledby="dropdownMenuButton">
                 {% for rounds in match_data.matches.rounds %}
                 <li>
@@ -37,22 +31,24 @@
                     <div class="col-md-6">
                         <div class="card shadow-sm">
                             <div class="card-body">
+                            <a href="{% if tour_kind == 'cvc' %}{% url 'update_clan_tournament' tour.id %}{% else %}{% url 'update_indi_tournament' tour.id %}{% endif %}?team_a={{ match.team_a }}&team_b={{ match.team_b }}&round={{ round.round_number }}">
                                 <div class="d-flex justify-content-center align-items-center">
-                                    <!-- Team A -->
                                     <div class="text-center">
                                         <img src="{{  match.team_a_logo.url }}" 
                                                 alt="{{ match.team_a }}"  
                                                 class="img-fluid img-thumbnail mt-2 mb-1" 
                                                 style="width: 100px; z-index: 1">
-                                        <h3 class="mb-2">{{ match.team_a }}</h3>
+                                        <p class="mb-2">{{ match.team_a }}</p>
                                     </div>
                                     <div class="text-center fs-1 fw-bold mx-4 d-flex flex-column align-items-center">
                                         {% if match.team_a_goals is not None and match.team_b_goals is not None %}
                                         <span class="badge bg-success px-3 py-2">
+                                            
                                             <span>{{ match.team_a_goals }}</span>
                                             <span class="vs-text mb-0 "> - </span> 
                                             <span>{{ match.team_b_goals }}</span>
                                         </span>
+                                        
                                         {% else %}
                                         <span class="badge bg-danger px-3 py-2">
                                             <span></span>
@@ -67,9 +63,10 @@
                                         alt="{{ match.team_b }}"  
                                         class="img-fluid img-thumbnail mt-2 mb-1" 
                                         style="width: 100px; z-index: 1">
-                                        <h3 class="mb-2">{{ match.team_b }}</h3>
+                                        <p class="mb-2">{{ match.team_b }}</p>
                                     </div>
                                 </div>
+                            </a> 
                             </div>
                         </div>
                     </div>

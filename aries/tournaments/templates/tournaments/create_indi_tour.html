@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Create{% endblock title %}
+{% load crispy_forms_tags %}
+{% block content %}
+<div class="container-fluid">
+    <form method="POST"  class="form" enctype="multipart/form-data">
+        {% csrf_token %}
+        <fieldset class="form-group">
+            {{ form|crispy }}
+        </fieldset>
+        <button type="submit" class="btn btn-primary">Create Tournament</button>
+    </form>
+</div>
+<script type="text/javascript">
+    $(document).ready(function() {
+        $('.select2').select2({
+            placeholder: 'Type and select teams',  // Placeholder for the field
+            minimumInputLength: 1,  // Minimum characters to start searching
+        });
+    });
+</script>
+{% endblock content %}

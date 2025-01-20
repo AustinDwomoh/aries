@@ -14,15 +14,21 @@ Tournaments
         display: block;
         opacity: 1;
     }
+    a{
+        text-decoration:none;
+        color:black
+        
+     }
 </style>
-Lorem ipsum dolor sit amet consectetur adipisicing elit. Facere, quis deserunt! Quisquam voluptatibus obcaecati earum, harum quasi ea cum culpa sequi sunt totam eveniet illum aperiam dolores explicabo enim iure.
-{% if cvc_tour.tour_type == 'cup' %}
+
+{% if tour.tour_type == 'cup' %}
 {% include "tournaments/cup.html" %}
-{% elif  cvc_tour.tour_type == 'league'%}
+{% elif  tour.tour_type == 'league'%}
 {% include "tournaments/league.html" %}
-{% elif  cvc_tour.tour_type == 'groups_knockout'%}
+{% elif  tour.tour_type == 'groups_knockout'%}
 {% include "tournaments/groups_knockout.html" %}
 {% endif %}
+
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         const navLinks = document.querySelectorAll('.mini-nav');

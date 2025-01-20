@@ -38,7 +38,8 @@ class TourManager:
                     "team_b": away,
                     "team_a_goals": None,
                     "team_b_goals": None,
-                    "winner": None
+                    "winner": None,
+                    "status":'pending'
                 })
             round_robin['fixtures'][f"round_{round_number + 1}"] = round_matches
             self.teams.insert(1, self.teams.pop())
@@ -63,42 +64,41 @@ class TourManager:
             return
         round_matches = self.match_data['matches']['fixtures'][round_key]
         for result in match_results:
-            match_number = result["match"]
-            match = next((m for m in round_matches if m["match"] == match_number), None)
-            if match:
-                match["team_a_goals"] = result["team_a_goals"]
-                match["team_b_goals"] = result["team_b_goals"]
+            team_a = result["team_a"]
+            team_b = result["team_b"]
+            match = next((m for m in round_matches if m["team_a"] == team_a and m["team_b"] == team_b), None)
+            if match['status'] !="complete":
+                if match:
+                    match["team_a_goals"] = result["team_a_goals"]
+                    match["team_b_goals"] = result["team_b_goals"]
 
-                team_a = match["team_a"]
-                team_b = match["team_b"]
-                goals_a = result["team_a_goals"]
-                goals_b = result["team_b_goals"]
+                    team_a = match["team_a"]
+                    team_b = match["team_b"]
+                    goals_a = result["team_a_goals"]
+                    goals_b = result["team_b_goals"]
 
-                # Determine winner or draw
-                if goals_a > goals_b:
-                    match["winner"] = team_a
-                    self.update_table(team_a, goals_a, goals_b, result_type="win")
-                    self.update_table(team_b, goals_b, goals_a, result_type="loss")
-                elif goals_a < goals_b:
-                    match["winner"] = team_b
-                    self.update_table(team_b, goals_b, goals_a, result_type="win")
-                    self.update_table(team_a, goals_a, goals_b, result_type="loss")
-                else:
-                    match["winner"] = "Draw"
-                    self.update_table(team_a, goals_a, goals_b, result_type="draw")
-                    self.update_table(team_b, goals_b, goals_a, result_type="draw")
+                    # Determine winner or draw
+                    if goals_a > goals_b:
+                        match["winner"] = team_a
+                        self.update_table(team_a, goals_a, goals_b, result_type="win")
+                        self.update_table(team_b, goals_b, goals_a, result_type="loss")
+                    elif goals_a < goals_b:
+                        match["winner"] = team_b
+                        self.update_table(team_b, goals_b, goals_a, result_type="win")
+                        self.update_table(team_a, goals_a, goals_b, result_type="loss")
+                    else:
+                        match["winner"] = "Draw"
+                        self.update_table(team_a, goals_a, goals_b, result_type="draw")
+                        self.update_table(team_b, goals_b, goals_a, result_type="draw")
+                    match['status'] ="complete"
         return self.match_data['matches']['fixtures'][round_key]
     
     def update_table(self, team, goals_scored, goals_conceded, result_type):
         """Update the league table for a team based on match result."""
-        table = self.match_data["table"]
-
-        # Update statistics for the team
+        table = self.match_data['matches']["table"]
         table[team]["goals_scored"] += goals_scored
         table[team]["goals_conceded"] += goals_conceded
-        table[team]["goal_difference"] = (
-            table[team]["goals_scored"] - table[team]["goals_conceded"]
-        )
+        table[team]["goal_difference"] = (table[team]["goals_scored"] - table[team]["goals_conceded"])
         table[team]["matches_played"] += 1
 
         if result_type == "win":
@@ -109,6 +109,20 @@ class TourManager:
             table[team]["points"] += 1
         elif result_type == "loss":
             table[team]["losses"] += 1
+        sorted_table = sorted(
+        table.items(),
+        key=lambda item: (
+            item[1]["points"], 
+            item[1]["goal_difference"], 
+            item[1]["wins"], 
+            item[1]["goals_scored"]
+        ), 
+        reverse=True  # Sort in descending order
+    )
+    
+    # Update the table with sorted teams
+        self.match_data['matches']["table"] = {team[0]: team[1] for team in sorted_table}
+        
 # ============================================================================ #
 #                                   knockouts                                  #
 # ============================================================================ #
@@ -135,7 +149,8 @@ class TourManager:
                     "team_b": team_b,
                     "team_a_goals": None,
                     "team_b_goals": None,
-                    "winner": None
+                    "winner": None,
+                    "status":"pending"
                 }
                 round_matches.append(match)
                 print('ther')
@@ -151,67 +166,86 @@ class TourManager:
 
     def update_knockout(self, round_number, match_results):
         """Updates knockout matches with results and progresses to the next round."""
-        rounds = self.match_data["knockout"].get("rounds", [])
+        rounds = self.match_data["matches"].get("rounds", [])
         current_round = next(
             (r for r in rounds if r["round_number"] == round_number), None
         )
         if not current_round:
             raise ValueError(f"Round {round_number} not found in knockout data.")
+        
         next_round_teams = []
         updated_matches = []
+        
         for result in match_results:
-            match_number = result["match"]
-            match = current_round["matches"][match_number - 1]
-            match["team_a_goals"] = result["team_a_goals"]
-            match["team_b_goals"] = result["team_b_goals"]
-            if match["team_a_goals"] > match["team_b_goals"]:
-                match["winner"] = match["team_a"]
-            elif match["team_a_goals"] < match["team_b_goals"]:
-                match["winner"] = match["team_b"]
-            else:
-                match["winner"] = None  # No winner (draw)
+            print("Match Results:", result)
+            team_a = result["team_a"]
+            team_b = result["team_b"]
             
-            if match["winner"]:
-                next_round_teams.append(match["winner"])
-            updated_matches.append(match)
-        current_round["matches"] = updated_matches
-        if next_round_teams:
-            self.make_knockout(next_round_teams)
-        return self.match_data["knockout"]
+            # Find the match using team names
+            match = next(
+                (m for m in current_round["matches"] if (m["team_a"] == team_a and m["team_b"] == team_b) or (m["team_a"] == team_b and m["team_b"] == team_a)),
+                None
+            )
+            if match['status'] !="complete":
+                match["team_a_goals"] = result["team_a_goals"]
+                match["team_b_goals"] = result["team_b_goals"]
+                if match["team_a_goals"] > match["team_b_goals"]:
+                    match["winner"] = match["team_a"]
+                elif match["team_a_goals"] < match["team_b_goals"]:
+                    match["winner"] = match["team_b"]
+                else:
+                    match["winner"] = None  
+                if match["winner"]:
+                    next_round_teams.append(match["winner"])
+                updated_matches.append(match)
+                match['status'] = 'complete'
+            current_round["matches"] = updated_matches
+            
+            if next_round_teams:
+                self.make_knockout(next_round_teams)
+        
+        return self.match_data
 
 #                                cup with groups                               #
 # ============================================================================ #
-    def make_groups_knockout(self, groups_count: int = 2) -> Dict:
+    def make_groups_knockout(self) -> Dict:
         """Creates a groups + knockout structure."""
-        groups = {}
-        group_matches = {}  # Initialize group matches
-        random.shuffle(self.teams)
-        group_size = len(self.teams) // groups_count
-        remainder = len(self.teams) % groups_count
+        if len(self.teams) !=0:
+            min_group_size = 4
 
-        # Distribute teams into groups
-        start_index = 0
-        for i in range(groups_count):
-            group_name = f"Group {chr(65 + i)}"  # Example: "Group A", "Group B"
-            end_index = start_index + group_size + (1 if remainder > 0 else 0)
-            groups[group_name] = self.teams[start_index:end_index]
-            start_index = end_index
-            if remainder > 0:
-                remainder -= 1
+        # Calculate the number of groups. Each group should have at least 3 teams.
+            groups_count = len(self.teams) // min_group_size
+            if len(self.teams) % min_group_size != 0:
+                groups_count += 1 
+            groups = {}
+            group_matches = {}  # Initialize group matches
+            random.shuffle(self.teams)
+            group_size = len(self.teams) // groups_count
+            remainder = len(self.teams) % groups_count
 
-        # Create group matches
-        for group_name, group_teams in groups.items():
-            group_manager = TourManager(self.match_data, group_teams, "league")
-            group_matches[group_name] = group_manager.make_league()
+            # Distribute teams into groups
+            start_index = 0
+            for i in range(groups_count):
+                group_name = f"Group {chr(65 + i)}"  # Example: "Group A", "Group B"
+                end_index = start_index + group_size + (1 if remainder > 0 else 0)
+                groups[group_name] = self.teams[start_index:end_index]
+                start_index = end_index
+                if remainder > 0:
+                    remainder -= 1
 
-        self.match_data = group_matches
-        return {
+            # Create group matches
+            for group_name, group_teams in groups.items():
+                group_manager = TourManager(self.match_data, group_teams, "league")
+                group_matches[group_name] = group_manager.make_league()
+
+            self.match_data = group_matches
+            return {
             "groups": groups,
             "matches": group_matches
         }
      
     
-    def update_groups_knockout(self, round_number: int, group: int, match_results) -> None:
+    def update_groups_knockout(self, round_number: int, group: str, match_results) -> None:
         """
         Updates match results for a specific round and group in the groups + knockout stage.
 
@@ -235,15 +269,16 @@ class TourManager:
             team_a_goals = result.get("team_a_goals")
             team_b_goals = result.get("team_b_goals")
             match = next((m for m in round_matches if m["match"] == match_number), None)
-            match["team_a_goals"] = team_a_goals
-            match["team_b_goals"] = team_b_goals
-            if team_a_goals > team_b_goals:
-                match["winner"] = match["team_a"]
-            elif team_a_goals < team_b_goals:
-                match["winner"] = match["team_b"]
-            else:
-                match["winner"] = "Draw"
-        self._update_standings(group)
+            if match['status'] !="complete":
+                match["team_a_goals"] = team_a_goals
+                match["team_b_goals"] = team_b_goals
+                if team_a_goals > team_b_goals:
+                    match["winner"] = match["team_a"]
+                elif team_a_goals < team_b_goals:
+                    match["winner"] = match["team_b"]
+                else:
+                    match["winner"] = "Draw"
+            self._update_standings(group)
 
     def _update_standings(self, group: str, teams_per_group: int) -> None:
         """
@@ -296,7 +331,7 @@ class TourManager:
             reverse=True,
         )
         top_teams = [team for team, _ in sorted_teams[:teams_per_group]]
-
+        
         # Proceed to knockout stage
         knockout_manager = TourManager(self.match_data, top_teams, "knockout")
         knockout_matches = knockout_manager.make_knockout()

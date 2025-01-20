@@ -1,15 +1,13 @@
-
-from django.shortcuts import render, redirect,get_object_or_404
-from .forms import ClanMatchScoreForm, IndiMatchScoreForm, ClanTournamentForm, IndiTournamentForm
+from django.shortcuts import render, redirect,get_object_or_404,reverse
+from django.contrib.auth.decorators import login_required
+from .forms import IndiTournamentForm, ClanTournamentForm,MatchResultForm
 from .models import ClanTournament, IndiTournament,Clans
 from users.models import Profile
 from django.contrib.auth.models import User
+
 def tours(request):
     cvc_tournaments = ClanTournament.objects.all()
     indi_tournaments = IndiTournament.objects.all()
-    
-    # Fetch matches for the CVC tournaments
-    #cvc_matches = ClanMatch.objects.filter(tournament__in=cvc_tournaments)
     context = {"cvc_tournaments": cvc_tournaments,
                "indi_tournaments":indi_tournaments,
                 }
@@ -18,6 +16,8 @@ def tours(request):
 def tours_cvc_view(request,tour_id):
     cvc_tournaments = get_object_or_404(ClanTournament, id=tour_id)
     match_data = cvc_tournaments.load_match_data_from_file()
+    tour_kind ='cvc'
+    rounds = []
     if cvc_tournaments.tour_type == "cup":
         for round in match_data["matches"]["rounds"]:
             for match in round["matches"]:
@@ -37,12 +37,10 @@ def tours_cvc_view(request,tour_id):
                 else:
                     match["team_b_logo"] = None
         for team_name, team_stats in match_data["matches"]["table"].items():
-            # Get the corresponding team profile from the Clans model
             team_profile = get_object_or_404(Clans, clan_name=team_name)
-            # Add the team logo to the stats
             team_stats["team_logo"] = team_profile.clan_logo
     elif cvc_tournaments.tour_type == "groups_knockout":
-        rounds = []
+        
         for group_key, data in match_data["matches"]['matches'].items():
             for round_number, matches in data["fixtures"].items():
                 # Find the current round
@@ -75,11 +73,13 @@ def tours_cvc_view(request,tour_id):
                 team_profile = get_object_or_404(Clans, clan_name=team_name)
                 team_stats["team_logo"] = team_profile.clan_logo
     
-    return render(request,'tournaments/cvc_tours_veiw.html',{'cvc_tour':cvc_tournaments, 'match_data': match_data,'rounds':rounds  })
+    return render(request,'tournaments/cvc_tours_veiw.html',{'tour':cvc_tournaments, 'match_data': match_data,'rounds':rounds,'kind':tour_kind  })
 
 def tours_indi_view(request,tour_id):
     indi_tournaments = get_object_or_404(IndiTournament, id=tour_id)
     match_data = indi_tournaments.load_match_data_from_file()
+    tour_kind ='indi'
+    rounds = []
     if indi_tournaments.tour_type == "cup":
         for round in match_data["matches"]["rounds"]:
             for match in round["matches"]:
@@ -102,7 +102,6 @@ def tours_indi_view(request,tour_id):
             team_user = User.objects.get(username=team_name)  # Fetch the User by username
             team_stats["team_logo"] = team_user.profile.profile_picture
     elif indi_tournaments.tour_type == "groups_knockout":
-        rounds = []
         for group_key, data in match_data["matches"]['matches'].items():
             for round_number, matches in data["fixtures"].items():
                 current_round = next((r for r in rounds if r["round_number"] == round_number), None)
@@ -133,4 +132,112 @@ def tours_indi_view(request,tour_id):
                 team_stats["team_logo"] = team_profile.profile.profile_picture
 
 
-    return render(request,'tournaments/indi_tours_veiw.html',{'indi_tour':indi_tournaments, 'match_data': match_data,'rounds':rounds   })
+    return render(request,'tournaments/indi_tours_veiw.html',{'tour':indi_tournaments, 'match_data': match_data,'rounds':rounds,'kind':tour_kind    })
+
+
+@login_required
+def create_clan_match(request):
+    if request.method == 'POST':
+        form = ClanTournamentForm(request.POST,request.FILES)
+        if form.is_valid():
+            match = form.save(commit=False)
+            match.created_by = request.user  
+            match.save()  
+            teams = form.cleaned_data.get('teams')
+            match.teams.set(teams)  
+            match.save()
+            match.logo = form.cleaned_data.get('logo', match.logo)
+            match.save()  # Save the match instance
+         
+    else:
+        form = ClanTournamentForm()
+
+    return render(request, 'tournaments/create_clan_tour.html', {'form': form})
+
+@login_required
+def create_indi_tournament(request):
+    if request.method == 'POST':
+        form = IndiTournamentForm(request.POST, request.FILES)  # Handle files for logo
+        if form.is_valid():
+            match = form.save(commit=False)
+            match.created_by = request.user  
+            match.save()  
+            players = form.cleaned_data.get('players')
+            match.players.set(players)  
+            match.save()
+            match.logo = form.cleaned_data.get('logo', match.logo)
+            match.save()
+    else:
+        form = IndiTournamentForm()
+
+    return render(request, 'tournaments/create_indi_tour.html', {'form': form})
+
+
+
+@login_required
+def update_indi_tour(request, tour_id):
+    indi_tournaments = get_object_or_404(IndiTournament, id=tour_id)
+    team_a_name = request.GET.get('team_a', '')
+    team_b_name = request.GET.get('team_b', '')
+    
+    round = request.GET.get('round', None)
+    round_num = int(round)
+    if request.method == "POST":
+        form = MatchResultForm(request.POST)
+        if form.is_valid():
+            match_results = [
+                {
+                    "round": round_num,
+                    "team_a": team_a_name,
+                    "team_b": team_b_name,
+                    "team_a_goals": form.cleaned_data["team_a_goals"],
+                    "team_b_goals": form.cleaned_data["team_b_goals"],
+                }
+            ]
+            indi_tournaments.update_tour(round_num, match_results)
+            return redirect('indi_details', tour_id=indi_tournaments.id)
+    else:
+        form = MatchResultForm()
+
+    return render(request, "tournaments/update_indi_tour.html", {
+        "form": form, 
+        #"team_names": team_names, 
+        "team_a_name": team_a_name,
+        "team_b_name": team_b_name,
+        'round':round
+    })
+
+
+@login_required
+def update_clan_tour(request, tour_id):
+    cvc_tournaments = get_object_or_404(ClanTournament, id=tour_id)
+    team_names = [team.clan_name for team in cvc_tournaments.teams.all()]
+    team_a_name = request.GET.get('team_a', '')
+    team_b_name = request.GET.get('team_b', '')
+    
+    round = request.GET.get('round', None)
+    round_num = int(round)
+    if request.method == "POST":
+        form = MatchResultForm(request.POST)
+        if form.is_valid():
+            match_results = [
+                {
+                    "round": round_num,
+                    "team_a": team_a_name,
+                    "team_b": team_b_name,
+                    "team_a_goals": form.cleaned_data["team_a_goals"],
+                    "team_b_goals": form.cleaned_data["team_b_goals"],
+                }
+            ]
+            cvc_tournaments.update_tour(round_num, match_results)
+            return redirect('cvc_details', tour_id=cvc_tournaments.id)
+    else:
+        form = MatchResultForm()
+
+    return render(request, "tournaments/update_clan_tour.html", {
+        "form": form, 
+        #"team_names": team_names, 
+        "team_a_name": team_a_name,
+        "team_b_name": team_b_name,
+        'round':round
+    })

@@ -6,26 +6,28 @@ Tournaments
 <style>
     /* Optional: Smooth transition for content change */
     .content-section {
-        display: none; /* Hide all sections by default */
+        display: none;
+        transition: opacity 0.5s ease-in-out;
     }
-    
-    .content-section.active-content {
-        display: block; /* Show only the active section */
+
+    .active-content {
+        display: block;
+        opacity: 1;
     }
-    
-    .navbar .dropdown-menu .active {
-        background-color: #007bff; /* Highlight the active dropdown item */
-        color: #fff;
-    }
+    a{
+        text-decoration:none;
+        color:black
+        
+     }
 </style>
-Lorem ipsum dolor sit amet consectetur adipisicing elit. Facere, quis deserunt! Quisquam voluptatibus obcaecati earum, harum quasi ea cum culpa sequi sunt totam eveniet illum aperiam dolores explicabo enim iure.
-{% if indi_tour.tour_type == 'cup' %}
+{% if tour.tour_type == 'cup' %}
 {% include "tournaments/cup.html" %}
-{% elif  indi_tour.tour_type == 'league'%}
+{% elif  tour.tour_type == 'league'%}
 {% include "tournaments/league.html" %}
-{% elif  indi_tour.tour_type == 'groups_knockout'%}
+{% elif  tour.tour_type == 'groups_knockout'%}
 {% include "tournaments/groups_knockout.html" %}
 {% endif %}
+
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         const navLinks = document.querySelectorAll('.mini-nav');

@@ -1,36 +1,56 @@
 # forms.py
 from django import forms
 from clubs.models import Clans
-from .models import  ClanTournament, IndiTournament
+from .models import  ClanTournament, IndiTournament,Clans,Profile
+from crispy_forms.helper import FormHelper
+from crispy_forms.layout import Submit
 
-class ClanMatchScoreForm(forms.ModelForm):
-    match_data = forms.JSONField(required=False)
+class MatchResultForm(forms.Form):
+    team_a_goals = forms.IntegerField(
+        label="Team A Goals", 
+        widget=forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'max': 100, 'step': 1})
+    )
+    team_b_goals = forms.IntegerField(
+        label="Team B Goals", 
+        widget=forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'max': 100, 'step': 1})
+    )
 
-    """ class Meta:
-        model = ClanMatch
-        fields = ['match_data']  # Include only the fields you want to update """
-
-class IndiMatchScoreForm(forms.ModelForm):
-    """ class Meta:
-        model = IndiMatch
-        fields = ['player_1_score', 'player_2_score'] """
-
-class ClanTournamentForm(forms.ModelForm):
-    match_data = forms.JSONField(required=False)
-
-    """ class Meta:
-        model = ClanMatch
-        fields = ['match_data'] """
 
 class IndiTournamentForm(forms.ModelForm):
     class Meta:
         model = IndiTournament
-        fields = ['name', 'start_date', 'end_date', 'description', 'players']
+        fields = ['name', 'description', 'players', 'tour_type','logo']
+        widgets = {
+            'name': forms.TextInput(attrs={'placeholder': 'Match Name'}),
+            'description': forms.Textarea(attrs={'placeholder': 'Match Description'}),
+            'tour_type': forms.Select(),
+            
+        }
+    players = forms.ModelMultipleChoiceField(queryset=Profile.objects.all(), widget=forms.SelectMultiple(attrs={'class': 'select2'}))
+
+class ClanTournamentForm(forms.ModelForm):
+    class Meta:
+        model = ClanTournament
+        fields = ['name', 'description', 'teams', 'tour_type','logo']
 
         widgets = {
-            'start_date': forms.DateInput(attrs={'type': 'date'}),
-            'end_date': forms.DateInput(attrs={'type': 'date'}),
+            'name': forms.TextInput(attrs={'placeholder': 'Match Name'}),
+            'description': forms.Textarea(attrs={'placeholder': 'Match Description'}),
+            'tour_type': forms.Select(),
+            
         }
+    teams = forms.ModelMultipleChoiceField(queryset=Clans.objects.all(), widget=forms.SelectMultiple(attrs={'class': 'select2'}))
+
+    """ 
+    def __init__(self, *args, **kwargs):
+        # Accept the organization being used for the tournament
+        organization = kwargs.get('organization')
+        super().__init__(*args, **kwargs)
+
+        # Filter the teams based on the organization creating the tournament
+        if organization:
+            self.fields['teams'].queryset = Clans.objects.filter(organization=organization) """
+
 
 
 
