@@ -1,8 +1,8 @@
 from django.db import models
 from django.conf import settings
 from django.contrib.auth.models import User
-from clubs.models import Clans
-from users.models import Profile
+from clubs.models import Clans,ClanStats
+from users.models import Profile,PlayerStats
 from .tourmanager import TourManager
 import os 
 import json
@@ -96,15 +96,35 @@ class ClanTournament(models.Model):
         else:
             raise ValueError(f"Invalid tournament type: {self.tour_type}")
         self.save_match_data_to_file()
+        self.update_clan_stats()
         return updated_data
 
-        
+    def update_clan_stats(self):
+        match_data = self.load_match_data_from_file()
+
+        if self.tour_type == "league":
+            table = match_data['matches']["table"]
+
+            for team_name, team_data in table.items():
+                clan_stat = ClanStats.objects.get(clan__clan_name=team_name)
+                clan_stat.gd = team_data["goal_difference"]
+                clan_stat.gf = team_data["goals_scored"]
+                clan_stat.ga = team_data["goals_conceded"]
+                clan_stat.total_matches = team_data["matches_played"]
+                clan_stat.wins = team_data["wins"]
+                clan_stat.draws = team_data["draws"]
+                clan_stat.losses = team_data["losses"]
+                clan_stat.win_rate = ( (clan_stat.wins / clan_stat.total_matches) * 100 if clan_stat.total_matches > 0 else 0)
+                clan_stat.save()
+
+
+        """ elif self.tour_type == "cup":
+            #updated_data = tour_manager.update_knockout(round_number, match_results)
+        elif self.tour_type == "groups_knockout":   """
+        self.save_match_data_to_file()
         
     def save(self, *args, **kwargs):
-        # Only save once and create matches after saving
         super().save(*args, **kwargs)
-        
-        # Ensure that matches are created after saving
         self.create_matches()
 
 

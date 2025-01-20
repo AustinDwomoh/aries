@@ -1,13 +1,20 @@
-from django.shortcuts import render, redirect,get_object_or_404,reverse
+from django.shortcuts import render, redirect,get_object_or_404
 from django.contrib.auth.decorators import login_required
 from .forms import IndiTournamentForm, ClanTournamentForm,MatchResultForm
 from .models import ClanTournament, IndiTournament,Clans
 from users.models import Profile
+from django.db.models import Count
 from django.contrib.auth.models import User
 
 def tours(request):
-    cvc_tournaments = ClanTournament.objects.all()
-    indi_tournaments = IndiTournament.objects.all()
+    cvc_tournaments = ClanTournament.objects.annotate(
+        team_count=Count('teams')
+    ).order_by('-team_count')
+
+    indi_tournaments = IndiTournament.objects.annotate(
+        player_count=Count('players')
+    ).order_by('-player_count')
+
     context = {"cvc_tournaments": cvc_tournaments,
                "indi_tournaments":indi_tournaments,
                 }
@@ -73,7 +80,7 @@ def tours_cvc_view(request,tour_id):
                 team_profile = get_object_or_404(Clans, clan_name=team_name)
                 team_stats["team_logo"] = team_profile.clan_logo
     
-    return render(request,'tournaments/cvc_tours_veiw.html',{'tour':cvc_tournaments, 'match_data': match_data,'rounds':rounds,'kind':tour_kind  })
+    return render(request,'tournaments/cvc_tours_veiw.html',{'tour':cvc_tournaments, 'match_data': match_data,'rounds':rounds,'tour_kind':tour_kind  })
 
 def tours_indi_view(request,tour_id):
     indi_tournaments = get_object_or_404(IndiTournament, id=tour_id)
@@ -132,7 +139,7 @@ def tours_indi_view(request,tour_id):
                 team_stats["team_logo"] = team_profile.profile.profile_picture
 
 
-    return render(request,'tournaments/indi_tours_veiw.html',{'tour':indi_tournaments, 'match_data': match_data,'rounds':rounds,'kind':tour_kind    })
+    return render(request,'tournaments/indi_tours_veiw.html',{'tour':indi_tournaments, 'match_data': match_data,'rounds':rounds,'tour_kind':tour_kind    })
 
 
 @login_required

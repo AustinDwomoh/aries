@@ -64,16 +64,14 @@
                     <h2 class="card-title text-center mb-4">Matches Stats</h2>
                     <ul class="list-inline text-center">
                       <li class="list-inline-item mx-3">
-                        <span>{{ stats.total_wins }}</span>
-                        <span class="badge bg-success px-3 py-2">Win</span>
+                        <span class="badge bg-success px-3 py-2">Win:<span>{{ stats.wins }}</span></span>
                       </li>
                       <li class="list-inline-item mx-3">
-                        <span>{{ stats.total_draws }}</span>
-                        <span class="badge bg-warning px-3 py-2">Draw</span>
+                        
+                        <span class="badge bg-warning px-3 py-2">Draw: <span>{{ stats.draws }}</span> </span>
                       </li>
-                      <li class="list-inline-item mx-3">
-                        <span>{{ stats.total_losses }}</span>
-                        <span class="badge bg-danger px-3 py-2">Loss</span>
+                      <li class="list-inline-item mx-3"></li>
+                        <span class="badge bg-danger px-3 py-2">Loss: <span>{{ stats.losses }}</span></span>
                       </li>
                     </ul>
                   </div>
@@ -85,16 +83,16 @@
                     <h2 class="card-title text-center mb-4">Goals Stats</h2>
                     <ul class="list-inline text-center">
                       <li class="list-inline-item mx-3">
-                        <span>{{ stats.gf }}</span>
-                        <span class="badge bg-success px-3 py-2">Scored</span>
+                        
+                        <span class="badge bg-success px-3 py-2">Scored: <span>{{ stats.gf }}</span></span>
                       </li>
                       <li class="list-inline-item mx-3">
-                        <span>{{ stats.gd }}</span>
-                        <span class="badge bg-warning px-3 py-2">Difference</span>
+                        
+                        <span class="badge bg-warning px-3 py-2">Difference: <span>{{ stats.gd }}</span></span>
                       </li>
                       <li class="list-inline-item mx-3">
-                        <span>{{ stats.ga }}</span>
-                        <span class="badge bg-danger px-3 py-2">Against</span>
+                        
+                        <span class="badge bg-danger px-3 py-2">Against: <span>{{ stats.ga }}</span></span>
                       </li>
                     </ul>
                   </div>
