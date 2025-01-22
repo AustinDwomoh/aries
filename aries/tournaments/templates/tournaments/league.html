@@ -85,7 +85,7 @@
                        Leaderboard
                     </a>
                 </li>
-                {% for rounds in match_data.matches.fixtures %}
+                {% for rounds in match_data.fixtures %}
                 <li>
                     <a class="dropdown-item {% if forloop.first %}active{% endif %}" 
                        href="#section{{ forloop.counter }}" 
@@ -121,7 +121,7 @@
                             </tr>
                         </thead>
                         <tbody class="text-center">
-                            {% for team_name, team_stats in match_data.matches.table.items %}
+                            {% for team_name, team_stats in match_data.table.items %}
                             <tr>
                                 <td class="text-start">{{ forloop.counter }} <i class="fa fa-caret-up" aria-hidden="true"></i></td>
                                 <td class="text-start">
@@ -150,7 +150,7 @@
     </section>
 </div>
 
-{% for round, matches in match_data.matches.fixtures.items %}
+{% for round, matches in match_data.fixtures.items %}
 <div id="section{{ forloop.counter }}" class="content-section ">
     {% for match in matches %}
     <div class="card-body mx-auto">

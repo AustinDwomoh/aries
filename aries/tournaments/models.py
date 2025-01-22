@@ -64,7 +64,7 @@ class ClanTournament(models.Model):
         self.match_data = self.load_match_data_from_file()
         tour_manager = TourManager(self.match_data, team_names, self.tour_type)
         matches = tour_manager.create_tournament()
-        self.match_data = {'matches': matches}  
+        self.match_data = matches
         self.save_match_data_to_file()
 
     def update_tour(self, round_number, match_results, group=None):
@@ -103,7 +103,7 @@ class ClanTournament(models.Model):
         match_data = self.load_match_data_from_file()
 
         if self.tour_type == "league":
-            table = match_data['matches']["table"]
+            table = match_data["table"]
 
             for team_name, team_data in table.items():
                 clan_stat = ClanStats.objects.get(clan__clan_name=team_name)
@@ -118,9 +118,10 @@ class ClanTournament(models.Model):
                 clan_stat.save()
 
 
-        """ elif self.tour_type == "cup":
-            #updated_data = tour_manager.update_knockout(round_number, match_results)
-        elif self.tour_type == "groups_knockout":   """
+        elif self.tour_type == "cup":
+            pass
+        elif self.tour_type == "groups_knockout": 
+            pass 
         self.save_match_data_to_file()
         
     def save(self, *args, **kwargs):

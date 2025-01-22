@@ -217,8 +217,6 @@ class TourManager:
 
         while len(teams) > 1:
             round_matches = []
-            next_round_teams = []
-            
             while len(teams) >= 2:
                 team_a = teams.pop(0)
                 team_b = teams.pop(0)
@@ -238,22 +236,18 @@ class TourManager:
                 "matches": round_matches
             })
             round_number += 1
-            teams = next_round_teams  # Prepare teams for the next round
-            
         return self.match_data["knockout"]
 
     def update_knockout(self, round_number, match_results):
         """Updates knockout matches with results and progresses to the next round."""
-        rounds = self.match_data["matches"].get("rounds", [])
+        rounds = self.match_data.get("rounds", [])
         current_round = next(
             (r for r in rounds if r["round_number"] == round_number), None
         )
         if not current_round:
             raise ValueError(f"Round {round_number} not found in knockout data.")
         
-        next_round_teams = []
-        updated_matches = []
-        
+        next_round_players = []
         for result in match_results:
             print("Match Results:", result)
             team_a = result["team_a"]
@@ -261,7 +255,7 @@ class TourManager:
             
             # Find the match using team names
             match = next(
-                (m for m in current_round["matches"] if (m["team_a"] == team_a and m["team_b"] == team_b) or (m["team_a"] == team_b and m["team_b"] == team_a)),
+                (m for m in current_round if (m["team_a"] == team_a and m["team_b"] == team_b) or (m["team_a"] == team_b and m["team_b"] == team_a)),
                 None
             )
             if match['status'] !="complete":
@@ -275,15 +269,23 @@ class TourManager:
                     self.update_elo_for_match(match["team_b"],match["team_a"])
                 else:
                     match["winner"] = None  
-                if match["winner"]:
-                    next_round_teams.append(match["winner"])
-                updated_matches.append(match)
+
                 match['status'] = 'complete'
-            current_round["matches"] = updated_matches
-            
-            if next_round_teams:
-                self.make_knockout(next_round_teams)
-        
+            # Check if all matches are complete
+            all_matches_complete = all(match.get('status') == 'complete' for match in current_round)
+
+            if all_matches_complete:
+                for match in current_round:
+                    next_team = match["winner"]
+                    next_round_players.append(next_team)
+                if next_round_players:
+                    print(next_round_players)
+                    self.make_knockout(next_round_players)
+                    print('here')
+            else:
+                print("Not all matches are complete yet.")
+
+                    
         return self.match_data
 
 #                                cup with groups                               #

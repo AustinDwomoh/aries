@@ -6,7 +6,7 @@
             <!-- Current Selection -->
             <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">-------</button>
             <ul class="dropdown-menu text-center" aria-labelledby="dropdownMenuButton">
-                {% for rounds in match_data.matches.rounds %}
+                {% for rounds in match_data.rounds %}
                 <li>
                     <a class="dropdown-item {% if forloop.first %}active{% endif %}" 
                        href="#section{{ forloop.counter }}" 
@@ -21,7 +21,7 @@
     </div>
 </nav>
 
-{% for round in match_data.matches.rounds %}
+{% for round in match_data.rounds %}
 <div id="section{{ forloop.counter }}" class="content-section active-content">
     {% for match in round.matches %}
     <div class="card-body  mx-auto">

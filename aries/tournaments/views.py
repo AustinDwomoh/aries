@@ -26,7 +26,7 @@ def tours_cvc_view(request,tour_id):
     tour_kind ='cvc'
     rounds = []
     if cvc_tournaments.tour_type == "cup":
-        for round in match_data["matches"]["rounds"]:
+        for round in match_data["rounds"]:
             for match in round["matches"]:
                 team_a_user = get_object_or_404(Clans, clan_name=match["team_a"])
                 team_b_user = get_object_or_404(Clans, clan_name=match["team_b"])
@@ -34,7 +34,7 @@ def tours_cvc_view(request,tour_id):
                 match["team_a_logo"] = team_a_user.clan_logo
                 match["team_b_logo"] = team_b_user.clan_logo
     elif cvc_tournaments.tour_type == "league":
-        for round_key, round in match_data["matches"]["fixtures"].items():
+        for round_key, round in match_data["fixtures"].items():
             for match in round:
                 team_a_profile = get_object_or_404(Clans, clan_name=match["team_a"])
                 match["team_a_logo"] = team_a_profile.clan_logo 
@@ -43,12 +43,12 @@ def tours_cvc_view(request,tour_id):
                     match["team_b_logo"] = team_b_profile.clan_logo 
                 else:
                     match["team_b_logo"] = None
-        for team_name, team_stats in match_data["matches"]["table"].items():
+        for team_name, team_stats in match_data["table"].items():
             team_profile = get_object_or_404(Clans, clan_name=team_name)
             team_stats["team_logo"] = team_profile.clan_logo
     elif cvc_tournaments.tour_type == "groups_knockout":
         
-        for group_key, data in match_data["matches"]['matches'].items():
+        for group_key, data in match_data['matches'].items():
             for round_number, matches in data["fixtures"].items():
                 # Find the current round
                 current_round = next(
@@ -75,7 +75,7 @@ def tours_cvc_view(request,tour_id):
                         match["team_b_logo"] = None
 
     
-        for group_name, group_data in match_data["matches"]['matches'].items():
+        for group_name, group_data in match_data['matches'].items():
             for team_name, team_stats in group_data['table'].items():
                 team_profile = get_object_or_404(Clans, clan_name=team_name)
                 team_stats["team_logo"] = team_profile.clan_logo
@@ -88,7 +88,7 @@ def tours_indi_view(request,tour_id):
     tour_kind ='indi'
     rounds = []
     if indi_tournaments.tour_type == "cup":
-        for round in match_data["matches"]["rounds"]:
+        for round in match_data["rounds"]:
             for match in round["matches"]:
                 team_a_user = User.objects.get(username=match['team_a'])
                 team_b_user = User.objects.get(username=match['team_b'])
@@ -96,7 +96,7 @@ def tours_indi_view(request,tour_id):
                 match["team_a_logo"] = team_a_user.profile.profile_picture
                 match["team_b_logo"] = team_b_user.profile.profile_picture
     elif indi_tournaments.tour_type == "league":
-        for round_key, round in match_data["matches"]["fixtures"].items():
+        for round_key, round in match_data["fixtures"].items():
             for match in round:
                 team_a_user = User.objects.get(username=match['team_a'])
                 match["team_a_logo"] = team_a_user.profile.profile_picture
@@ -105,7 +105,7 @@ def tours_indi_view(request,tour_id):
                     match["team_b_logo"] = team_b_user.profile.profile_picture
                 else:
                     match["team_b_logo"] = None
-        for team_name, team_stats in match_data["matches"]["table"].items():
+        for team_name, team_stats in match_data["table"].items():
             team_user = User.objects.get(username=team_name)  # Fetch the User by username
             team_stats["team_logo"] = team_user.profile.profile_picture
     elif indi_tournaments.tour_type == "groups_knockout":
