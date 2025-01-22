@@ -229,5 +229,3 @@ class IndiTournament(models.Model):
         self.save_match_data_to_file()
         return updated_data
 
-
-   

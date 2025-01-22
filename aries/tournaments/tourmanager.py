@@ -1,5 +1,9 @@
 import random
 from typing import List,Dict
+from django.shortcuts import get_object_or_404
+from django.contrib.auth.models import User
+from django.core.exceptions import ObjectDoesNotExist
+from .models import PlayerStats,ClanStats,Clans,Profile
 class TourManager:
     def __init__(self, json_data, teams_names, tournament_type):
         """
@@ -16,6 +20,78 @@ class TourManager:
 # ============================================================================ #
 #                                    leagues                                   #
 # ============================================================================ #
+
+    
+
+    def update_elo_for_match(self,winner_name, loser_name, k=32):
+        """
+        Update Elo ratings for a match.
+
+        Args:
+            winner_name (str): Name of the winner (player or clan).
+            loser_name (str): Name of the loser (player or clan).
+            PlayerStatsModel: Django model for player stats.
+            ClanStatsModel: Django model for clan stats.
+            k (int): The K-factor for Elo calculation (default: 32).
+
+        Returns:
+            None: Updates the database directly.
+        """
+        def get_player_elo_and_instance(name):
+            """Fetch Elo rating and instance from a given player model."""
+            #player = User.objects.get(username=name)
+            player = User.objects.filter(username__iexact=name).first()
+            if player:
+                instance = player.profile.stats
+                return instance.elo_rating, instance
+            else:
+                return None, None
+
+        def get_clan_elo_and_instance(name):
+            """Fetch Elo rating and instance from the Clans model."""
+            clan = get_object_or_404(Clans, clan_name=name)
+            try:
+                instance = clan.stat 
+                return instance.elo_rating, instance
+            except clan.DoesNotExist:
+                return None, None
+        winner_elo, winner_instance = get_player_elo_and_instance(winner_name)
+        loser_elo, loser_instance = get_player_elo_and_instance(loser_name)
+        stats_used = "player_stats"
+
+
+        if winner_elo is None or loser_elo is None:
+            winner_elo, winner_instance = get_clan_elo_and_instance(winner_name)
+            loser_elo, loser_instance = get_clan_elo_and_instance(loser_name)
+            stats_used = "clan_stats"
+
+        
+
+        winner_new_elo, loser_new_elo = self.update_elo(winner_elo, loser_elo, k)
+        if winner_instance:
+            winner_instance.elo_rating = winner_new_elo
+            winner_instance.save()
+            if stats_used == "player_stats":
+                winner_instance.set_rank_based_on_elo()
+            else:
+                winner_instance.set_rank_based_on_elo()
+
+        if loser_instance:
+            loser_instance.elo_rating = loser_new_elo
+            loser_instance.save()
+            if stats_used == "player_stats":
+                loser_instance.set_rank_based_on_elo()
+            else:
+                loser_instance.set_rank_based_on_elo()
+        
+
+    def update_elo(self,winner_elo, loser_elo, k):
+        """Calculate Elo rating adjustments."""
+        expected_winner = 1 / (1 + 10 ** ((loser_elo - winner_elo) / 400))
+        winner_new_elo = winner_elo + k * (1 - expected_winner)
+        loser_new_elo = loser_elo - k * (1 - expected_winner)
+        return winner_new_elo, loser_new_elo
+
     def make_league(self):
         """Creates a round-robin structure for leagues."""
         if len(self.teams) % 2 == 1:
@@ -80,10 +156,12 @@ class TourManager:
                     # Determine winner or draw
                     if goals_a > goals_b:
                         match["winner"] = team_a
+                        self.update_elo_for_match(team_a,team_b)
                         self.update_table(team_a, goals_a, goals_b, result_type="win")
                         self.update_table(team_b, goals_b, goals_a, result_type="loss")
                     elif goals_a < goals_b:
                         match["winner"] = team_b
+                        self.update_elo_for_match(team_b,team_a)
                         self.update_table(team_b, goals_b, goals_a, result_type="win")
                         self.update_table(team_a, goals_a, goals_b, result_type="loss")
                     else:
@@ -191,8 +269,10 @@ class TourManager:
                 match["team_b_goals"] = result["team_b_goals"]
                 if match["team_a_goals"] > match["team_b_goals"]:
                     match["winner"] = match["team_a"]
+                    self.update_elo_for_match(match["team_a"],match["team_b"])
                 elif match["team_a_goals"] < match["team_b_goals"]:
                     match["winner"] = match["team_b"]
+                    self.update_elo_for_match(match["team_b"],match["team_a"])
                 else:
                     match["winner"] = None  
                 if match["winner"]:
@@ -274,8 +354,10 @@ class TourManager:
                 match["team_b_goals"] = team_b_goals
                 if team_a_goals > team_b_goals:
                     match["winner"] = match["team_a"]
+                    self.update_elo_for_match(match["team_a"],match["team_b"])
                 elif team_a_goals < team_b_goals:
                     match["winner"] = match["team_b"]
+                    self.update_elo_for_match(match["team_b"],match["team_a"])
                 else:
                     match["winner"] = "Draw"
             self._update_standings(group)
@@ -343,8 +425,7 @@ class TourManager:
 
         return self.match_data["groups_knockout"]
 
-
-
+  
     def create_tournament(self):
         """Creates the specified tournament type."""
         if self.tournament_type == "league":

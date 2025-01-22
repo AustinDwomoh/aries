@@ -19,7 +19,8 @@ class Profile(models.Model):
 class PlayerStats(models.Model):
     user_profile = models.OneToOneField(Profile, on_delete=models.CASCADE, related_name='stats')
     achievements = models.JSONField(blank=True, null=True)
-    rank = models.IntegerField(blank=True, null=True, editable=False)
+    RANK_CHOICES = [('rookie', 'Rookie'),('prodigy', 'Prodigy'),('veteran', 'Veteran'),('legend', 'Legend'),('superstar', 'Superstar'),('elite', 'Elite'),('mvp', 'MVP'),('world_class', 'World-Class'),]
+    rank = models.CharField(max_length=20,choices=RANK_CHOICES,blank=True,null=True,editable=False)
     games_played = models.IntegerField(default=0)
     win_rate = models.FloatField(default=0.0)
     total_wins = models.IntegerField(default=0)
@@ -28,7 +29,30 @@ class PlayerStats(models.Model):
     gd = models.IntegerField(default=0)
     gf = models.IntegerField(default=0)
     ga = models.IntegerField(default=0)
+    elo_rating = models.FloatField(default=1200, editable=False)
+    season = models.CharField(max_length=20, default="2025")
     
+
+    def set_rank_based_on_elo(self):
+        """Set the rank of the player based on the Elo value."""
+        if self.elo_rating < 1200:
+            self.rank = 'rookie'
+        elif self.elo_rating < 1400:
+            self.rank = 'prodigy'
+        elif self.elo_rating < 1600:
+            self.rank = 'veteran'
+        elif self.elo_rating < 1800:
+            self.rank = 'legend'
+        elif self.elo_rating < 2000:
+            self.rank = 'superstar'
+        elif self.elo_rating < 2200:
+            self.rank = 'elite'
+        elif self.elo_rating < 2400:
+            self.rank = 'mvp'
+        else:
+            self.rank = 'world_class'
+
+        self.save()
 
 
 """ from django.contrib.auth.models import Permission

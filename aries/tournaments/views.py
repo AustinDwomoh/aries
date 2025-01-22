@@ -141,6 +141,25 @@ def tours_indi_view(request,tour_id):
 
     return render(request,'tournaments/indi_tours_veiw.html',{'tour':indi_tournaments, 'match_data': match_data,'rounds':rounds,'tour_kind':tour_kind    })
 
+""" from django.db.models import F, FloatField, Value
+from django.db.models.functions import Rank
+
+def get_player_leaderboard():
+    return PlayerStats.objects.annotate(
+        rank=Rank(
+            expression=F('elo_rating'),
+            output_field=FloatField()
+        )
+    ).order_by('-elo_rating')
+
+def get_clan_leaderboard():
+    return ClanStats.objects.annotate(
+        rank=Rank(
+            expression=F('elo_rating'),
+            output_field=FloatField()
+        )
+    ).order_by('-elo_rating') """
+
 
 @login_required
 def create_clan_match(request):

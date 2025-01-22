@@ -54,13 +54,39 @@ class ClanStats(models.Model):
     wins = models.IntegerField(default=0)
     losses = models.IntegerField(default=0)
     draws = models.IntegerField(default=0)
-    ranking = models.IntegerField(blank=True, null=True, editable=False)
+    RANK_CHOICES = [('bronze', 'Bronze'),('silver', 'Silver'),('gold', 'Gold'),('platinum', 'Platinum'),('diamond', 'Diamond'),('master', 'Master'),('grandmaster', 'Grandmaster'),('champion', 'Champion'),('invincible', 'Invincible'),]
+    ranking = models.CharField(max_length=20,choices=RANK_CHOICES,blank=True,null=True,editable=False)
     gd = models.IntegerField(default=0)
     gf = models.IntegerField(default=0)
     ga = models.IntegerField(default=0)
     average_team_score = models.FloatField(default=0.0, editable=False)
     achievements = models.JSONField(blank=True, null=True)
+    elo_rating = models.FloatField(default=1200, editable=False)
+    season = models.CharField(max_length=20, default="2025")
     leaderboard_position = models.IntegerField(blank=True, null=True)
+
+    def set_rank_based_on_elo(self):
+        """Set the rank of the clan based on the Elo value."""
+        if self.elo_rating < 1200:
+            self.ranking = 'bronze'
+        elif self.elo_rating < 1400:
+            self.ranking = 'silver'
+        elif self.elo_rating < 1600:
+            self.ranking = 'gold'
+        elif self.elo_rating < 1800:
+            self.ranking = 'platinum'
+        elif self.elo_rating < 2000:
+            self.ranking = 'diamond'
+        elif self.elo_rating < 2200:
+            self.ranking = 'master'
+        elif self.elo_rating < 2400:
+            self.ranking = 'grandmaster'
+        elif self.elo_rating < 2600:
+            self.ranking = 'champion'
+        else:
+            self.ranking = 'invincible'
+
+        self.save()
     """ from django.db import models
 from django_countries.fields import CountryField
 
