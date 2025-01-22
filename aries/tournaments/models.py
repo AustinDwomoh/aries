@@ -185,7 +185,7 @@ class IndiTournament(models.Model):
         self.match_data = self.load_match_data_from_file()
         tour_manager = TourManager(self.match_data, team_names, self.tour_type)
         matches = tour_manager.create_tournament()
-        self.match_data = {'matches': matches}  
+        self.match_data =  matches  
         self.save_match_data_to_file()
         
     def save(self, *args, **kwargs):
