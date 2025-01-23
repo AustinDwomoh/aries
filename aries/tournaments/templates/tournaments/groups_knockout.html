@@ -73,7 +73,7 @@
                         id="dropdownMenuButton" 
                         data-bs-toggle="dropdown" 
                         aria-expanded="false">
-                    -------
+                        Groups
                 </button>
                 <ul class="dropdown-menu text-center" aria-labelledby="dropdownMenuButton">
                     <li>
@@ -81,12 +81,12 @@
                            href="#section-1" 
                            data-target="#section-1" 
                            aria-controls="section-1">
-                           Leaderboard
+                           Groups
                         </a>
                     </li>
             {% for round in rounds %}
             <li>
-                <a class="dropdown-item {% if forloop.first %}active{% endif %}" 
+                <a class="dropdown-item" 
                    href="#section{{ forloop.counter }}" 
                    data-target="#section{{ forloop.counter }}" 
                    aria-controls="section{{ forloop.counter }}">
@@ -94,12 +94,24 @@
                 </a>
             </li>
             {% endfor %}
+            {% if match_data.knock_outs %}
+            {% for data in match_data.knock_outs.rounds %}
+            <li>
+                <a class="dropdown-item" 
+                   href="#section-ko{{ forloop.counter }}" 
+                   data-target="#section-ko{{ forloop.counter }}" 
+                   aria-controls="section-ko{{ forloop.counter }}">
+                   K.O Round {{ forloop.counter}}
+                </a>
+            </li>
+            {% endfor %}
+            {% endif %}
         </ul>
     </div>
 </nav>
 <div id="section-1" class="content-section active-content">
     <section class="content-info">
-        {%  for group_key, group_stats in match_data.items %}
+        {%  for group_key, group_stats in match_data.group_stages.items %}
         <div class="container py-3">
             <div class="row">
                 <div class="col-12">
@@ -159,6 +171,9 @@
                     <div class="col-md-6">
                         <div class="card shadow-sm">
                             <div class="card-body">
+                            {% comment %} {% if user.username == tour.created_by %} {% endcomment %}
+                            <a href="{% if tour_kind == 'cvc' %}{% url 'update_clan_tournament' tour.id %}{% else %}{% url 'update_indi_tournament' tour.id %}{% endif %}?team_a={{ match.team_a }}&team_b={{ match.team_b }}&round={{items.round_number|slice:'6:' }}">
+                            
                                 <div class="d-flex justify-content-center align-items-center">
                                     <!-- Team A -->
                                     <div class="text-center">
@@ -178,6 +193,9 @@
                                         <h3 class="mb-2">{{ match.team_b }}</h3>
                                     </div>
                                 </div>
+                                {% comment %} {% if user.username == tour.created_by %} {% endcomment %}
+                            </a>
+                            
                             </div>
                         </div>
                     </div>
@@ -188,3 +206,50 @@
     {% endfor %}
 </div>
 {% endfor %} 
+
+
+{% for data in match_data.knock_outs.rounds %}
+<div id="section-ko{{ forloop.counter}}" class="content-section ">
+    {% for match in data.matches %}
+    <div class="card-body  mx-auto">
+        <div class="text-body">
+            <div class="container mt-2">
+                <div class="row justify-content-center">
+                    <div class="col-md-6">
+                        <div class="card shadow-sm">
+                            <div class="card-body">
+                            {% comment %} {% if user.username == tour.created_by %} {% endcomment %}
+                            <a href="{% if tour_kind == 'cvc' %}{% url 'update_clan_tournament' tour.id %}{% else %}{% url 'update_indi_tournament' tour.id %}{% endif %}?team_a={{ match.team_a }}&team_b={{ match.team_b }}&round={{items.round_number|slice:'6:' }}">
+                            
+                                <div class="d-flex justify-content-center align-items-center">
+                                    <!-- Team A -->
+                                    <div class="text-center">
+                                        <img src="{{  match.team_a_logo.url }}" alt="{{ match.team_a }}"  class="img-fluid img-thumbnail mt-2 mb-1" style="width: 100px; z-index: 1">
+                                        <h3 class="mb-2">{{ match.team_a }}</h3>
+                                    </div>
+                                    <div class="text-center  mx-4 d-flex flex-column align-items-center">
+                                        {% if match.team_a_goals is not None and match.team_b_goals is not None %}
+                                        <span class="badge bg-success px-3 py-2"><span>{{ match.team_a_goals }}</span><span class="vs-text mb-0 "> - </span><span>{{ match.team_b_goals }}</span></span>
+                                        {% else %}
+                                        <span class="badge bg-danger px-3 py-2"><span></span><span class="vs-text mb-0 "> - </span><span></span></span>
+                                        {% endif %}
+                                    </div>
+                                    <!-- Team B -->
+                                    <div class="text-center">
+                                        <img src="{{ match.team_b_logo.url }}" alt="{{ match.team_b }}"  class="img-fluid img-thumbnail mt-2 mb-1" style="width: 100px; z-index: 1">
+                                        <h3 class="mb-2">{{ match.team_b }}</h3>
+                                    </div>
+                                </div>
+                                {% comment %} {% if user.username == tour.created_by %} {% endcomment %}
+                            </a>
+                            
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endfor %}

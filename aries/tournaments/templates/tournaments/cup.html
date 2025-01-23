@@ -4,11 +4,19 @@
         <!-- Dropdown for Navigation -->
         <div class="dropdown ">
             <!-- Current Selection -->
-            <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">-------</button>
+            <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">Stats</button>
             <ul class="dropdown-menu text-center" aria-labelledby="dropdownMenuButton">
+                <li>
+                    <a class="dropdown-item " 
+                       href="#section-1" 
+                       data-target="#section-1" 
+                       aria-controls="section-1">
+                       Stats 
+                    </a>
+                </li>
                 {% for rounds in match_data.rounds %}
                 <li>
-                    <a class="dropdown-item {% if forloop.first %}active{% endif %}" 
+                    <a class="dropdown-item " 
                        href="#section{{ forloop.counter }}" 
                        data-target="#section{{ forloop.counter }}" 
                        aria-controls="section{{ forloop.counter }}">
@@ -71,7 +79,9 @@
                     <div class="col-md-6">
                         <div class="card shadow-sm">
                             <div class="card-body">
-                            <a href="{% if tour_kind == 'cvc' %}{% url 'update_clan_tournament' tour.id %}{% else %}{% url 'update_indi_tournament' tour.id %}{% endif %}?team_a={{ match.team_a }}&team_b={{ match.team_b }}&round={{ round.round_number }}">
+                               {% comment %}  {% if user.username == tour.created_by %} {% endcomment %}
+                                <a href="{% if tour_kind == 'cvc' %}{% url 'update_clan_tournament' tour.id %}{% else %}{% url 'update_indi_tournament' tour.id %}{% endif %}?team_a={{ match.team_a }}&team_b={{ match.team_b }}&round={{ round.round_number }}">
+                                
                                 <div class="d-flex justify-content-center align-items-center">
                                     <div class="text-center">
                                         <img src="{{  match.team_a_logo.url }}" 
@@ -83,12 +93,10 @@
                                     <div class="text-center fs-1 fw-bold mx-4 d-flex flex-column align-items-center">
                                         {% if match.team_a_goals is not None and match.team_b_goals is not None %}
                                         <span class="badge bg-success px-3 py-2">
-                                            
                                             <span>{{ match.team_a_goals }}</span>
                                             <span class="vs-text mb-0 "> - </span> 
                                             <span>{{ match.team_b_goals }}</span>
                                         </span>
-                                        
                                         {% else %}
                                         <span class="badge bg-danger px-3 py-2">
                                             <span></span>
@@ -106,7 +114,9 @@
                                         <p class="mb-2">{{ match.team_b }}</p>
                                     </div>
                                 </div>
-                            </a> 
+                                {% comment %} {% if user.username == tour.created_by %} {% endcomment %}
+                                </a>
+                                
                             </div>
                         </div>
                     </div>

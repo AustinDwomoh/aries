@@ -47,24 +47,18 @@ def tours_cvc_view(request,tour_id):
             team_profile = get_object_or_404(Clans, clan_name=team_name)
             team_stats["team_logo"] = team_profile.clan_logo
     elif cvc_tournaments.tour_type == "groups_knockout":
-        
-        for group_key, data in match_data['matches'].items():
+        for group_key, data in match_data["group_stages"].items():
             for round_number, matches in data["fixtures"].items():
                 # Find the current round
                 current_round = next(
-                    (r for r in rounds if r["round_number"] == round_number), None
-                )
+                    (r for r in rounds if r["round_number"] == round_number), None)
                 if current_round:
-                    # Append matches to the existing round
                     current_round["matches"].extend(matches)
                 else:
-                    # Create a new round if it doesn't exist
                     rounds.append({
                         "round_number": round_number,
-                        "matches": matches[:],  # Copy the matches list
+                        "matches": matches[:],  
                     })
-
-                # Update match details with team logos
                 for match in matches:
                     team_a_profile = get_object_or_404(Clans, clan_name=match["team_a"])
                     match["team_a_logo"] = team_a_profile.clan_logo
@@ -73,13 +67,23 @@ def tours_cvc_view(request,tour_id):
                         match["team_b_logo"] = team_b_profile.clan_logo
                     else:
                         match["team_b_logo"] = None
-
-    
-        for group_name, group_data in match_data['matches'].items():
-            for team_name, team_stats in group_data['table'].items():
+            for team_name, team_stats in data['table'].items():
                 team_profile = get_object_or_404(Clans, clan_name=team_name)
                 team_stats["team_logo"] = team_profile.clan_logo
     
+            
+        if "knock_outs" in match_data and "rounds" in match_data["knock_outs"]:
+            for kround in match_data["knock_outs"]["rounds"]:
+                print(kround)  # This will print the details of each round
+                for match in kround["matches"]:
+                    team_a_user = get_object_or_404(Clans, clan_name=match["team_a"])
+                    team_b_user = get_object_or_404(Clans, clan_name=match["team_b"])
+                    # Assign profiles to match data
+                    match["team_a_logo"] = team_a_user.clan_logo
+                    match["team_b_logo"] = team_b_user.clan_logo
+            
+
+
     return render(request,'tournaments/cvc_tours_veiw.html',{'tour':cvc_tournaments, 'match_data': match_data,'rounds':rounds,'tour_kind':tour_kind  })
 
 def tours_indi_view(request,tour_id):
@@ -109,7 +113,7 @@ def tours_indi_view(request,tour_id):
             team_user = User.objects.get(username=team_name)  # Fetch the User by username
             team_stats["team_logo"] = team_user.profile.profile_picture
     elif indi_tournaments.tour_type == "groups_knockout":
-        for group_key, data in match_data["matches"]['matches'].items():
+        for group_key, data in match_data["geoup_stages"].items():
             for round_number, matches in data["fixtures"].items():
                 current_round = next((r for r in rounds if r["round_number"] == round_number), None)
                 if current_round:
@@ -131,12 +135,14 @@ def tours_indi_view(request,tour_id):
                         match["team_b_logo"] = team_b_user.profile.profile_picture
                     else:
                         match["team_b_logo"] = None
-        
-
-        for group_name, group_data in match_data["matches"]['matches'].items():
+        for group_name, group_data in match_data.items():
             for team_name, team_stats in group_data['table'].items():
                 team_profile =  User.objects.get(username=team_name)
                 team_stats["team_logo"] = team_profile.profile.profile_picture
+
+        if match_data["knock_outs"]:
+            pass
+
 
 
     return render(request,'tournaments/indi_tours_veiw.html',{'tour':indi_tournaments, 'match_data': match_data,'rounds':rounds,'tour_kind':tour_kind    })

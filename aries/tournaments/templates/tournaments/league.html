@@ -74,7 +74,7 @@
                     id="dropdownMenuButton" 
                     data-bs-toggle="dropdown" 
                     aria-expanded="false">
-                --------
+                    Leaderboard
             </button>
             <ul class="dropdown-menu text-center" aria-labelledby="dropdownMenuButton">
                 <li>
@@ -87,7 +87,7 @@
                 </li>
                 {% for rounds in match_data.fixtures %}
                 <li>
-                    <a class="dropdown-item {% if forloop.first %}active{% endif %}" 
+                    <a class="dropdown-item " 
                        href="#section{{ forloop.counter }}" 
                        data-target="#section{{ forloop.counter }}" 
                        aria-controls="section{{ forloop.counter }}">
@@ -160,7 +160,9 @@
                     <div class="col-md-6">
                         <div class="card shadow-sm">
                             <div class="card-body">
+                                {% comment %} {% if user.username == tour.created_by %} {% endcomment %}
                                 <a href="{% if tour_kind == 'cvc' %}{% url 'update_clan_tournament' tour.id %}{% else %}{% url 'update_indi_tournament' tour.id %}{% endif %}?team_a={{ match.team_a }}&team_b={{ match.team_b }}&round={{ round|slice:'6:' }}">
+                                 
                                 <div class="d-flex justify-content-center align-items-center ">
                                     <!-- Team A -->
                                     <div class="text-center">
@@ -180,7 +182,9 @@
                                         <p class="mb-2">{{ match.team_b }}</p>
                                     </div>
                                 </div>
+                                {% comment %} {% if user.username == tour.created_by %}  {% endcomment %}
                             </a>
+
                             </div>
                         </div>
                     </div>
