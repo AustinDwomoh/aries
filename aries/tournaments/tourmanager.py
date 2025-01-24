@@ -386,17 +386,10 @@ class TourManager:
             None
         """
 
-        next_round_players = []
-        
-    
-  
-        
+        next_round_players = []        
         for group_name,group_data in self.match_data["group_stages"].items():
             round_key = f"round_{round_number}"
-            group_matches = group_data['fixtures']
-            
-            
-      
+            group_matches = group_data['fixtures']      
             for result in match_results:
                 team_a = result["team_a"]
                 team_b = result["team_b"]
@@ -465,13 +458,8 @@ class TourManager:
 
     def make_group_knockout(self, data, teams):
         """Creates a knockout structure for cups with bracket-style details."""       
-
-        
-        if 'rounds' not in data:
-            data["knock_outs"] = {
-                "rounds":[],
-                "table": {}
-            }
+        if 'knock_outs' not in data:
+            data["knock_outs"] = {"rounds":[],"table": {}}
             data["knock_outs"]["table"] = {team: {
                 "goals_scored": 0,
                 "goals_conceded": 0,
@@ -481,13 +469,11 @@ class TourManager:
                 "wins": 0,
                 "draws": 0,
                 "losses": 0
-            } for team in self.teams}
+            } for team in teams}
             round_number = 1
         else:
             round_number = len(data["rounds"]) + 1
         random.shuffle(teams)
-
-
 
         while len(teams) > 1:
             round_matches = []
@@ -514,6 +500,87 @@ class TourManager:
    
         return data
                 
+    def update_ko(self, round_number, match_results):
+        """Updates knockout matches with results and progresses to the next round."""
+        rounds = self.match_data["knock_outs"].get("rounds", [])
+        current_round = next(
+            (r for r in rounds if r["round_number"] == round_number), None
+        )
+        print(current_round)
+        if not current_round:
+            raise ValueError(f"Round {round_number} not found in knockout data.")
+        
+        next_round_players = []
+        for result in match_results:
+            print("Match Results:", result)
+            team_a = result["team_a"]
+            team_b = result["team_b"]
+            
+            # Find the match using team names
+            match = next(
+                (m for m in current_round['matches'] if (m["team_a"] == team_a and m["team_b"] == team_b) or (m["team_a"] == team_b and m["team_b"] == team_a)),
+                None
+            )
+            if match['status'] !="complete":
+                match["team_a_goals"] = result["team_a_goals"]
+                match["team_b_goals"] = result["team_b_goals"]
+                if match["team_a_goals"] > match["team_b_goals"]:
+                    match["winner"] = match["team_a"]
+                    self.update_elo_for_match(match["team_a"],match["team_b"])
+                elif match["team_a_goals"] < match["team_b_goals"]:
+                    match["winner"] = match["team_b"]
+                    self.update_elo_for_match(match["team_b"],match["team_a"])
+                else:
+                    match["winner"] = None
+                for team, scored, conceded in [
+                    (team_a, match["team_a_goals"], match["team_b_goals"]),
+                    (team_b, match["team_b_goals"], match["team_a_goals"]),
+                ]:
+                    if team not in self.match_data["knock_outs"]["table"]:
+                        self.match_data["knock_outs"]["table"][team] = {
+                            "goals_scored": 0,
+                            "goals_conceded": 0,
+                            "goal_difference": 0,
+                            "points": 0,
+                            "matches_played": 0,
+                            "wins": 0,
+                            "draws": 0,
+                            "losses": 0,
+                        }
+                    self.match_data["knock_outs"]["table"][team]["goals_scored"] += scored
+                    self.match_data["knock_outs"]["table"][team]["goals_conceded"] += conceded
+                    self.match_data["knock_outs"]["table"][team]["goal_difference"] = (
+                        self.match_data["knock_outs"]["table"][team]["goals_scored"] -
+                        self.match_data["knock_outs"]["table"][team]["goals_conceded"]
+                    )
+                    self.match_data["knock_outs"]["table"][team]["matches_played"] += 1
+
+                    if match["winner"] == team:
+                        self.match_data["knock_outs"]["table"][team]["wins"] += 1
+                        self.match_data["knock_outs"]["table"][team]["points"] += 3
+                    elif match["winner"] is None:
+                        self.match_data["knock_outs"]["table"][team]["draws"] += 1
+                        self.match_data["knock_outs"]["table"][team]["points"] += 1
+                    else:
+                        self.match_data["knock_outs"]["table"][team]["losses"] += 1
+
+                match['status'] = 'complete'
+            # Check if all matches are complete
+            all_matches_complete = all(match.get('status') == 'complete' for match in current_round['matches'])
+
+            if all_matches_complete:
+                for match in current_round['matches']:
+                    next_team = match["winner"]
+                    next_round_players.append(next_team)
+                if len(next_round_players) > 1:
+                    print(next_round_players)
+                    self.make_group_knockout(self.match_data,next_round_players)
+                    print('here')
+            else:
+                print("Not all matches are complete yet.")
+
+                    
+        return self.match_data
 
 
     def create_tournament(self):

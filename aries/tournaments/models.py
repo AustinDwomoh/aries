@@ -4,7 +4,6 @@ from django.contrib.auth.models import User
 from clubs.models import Clans,ClanStats
 from users.models import Profile,PlayerStats
 from .tourmanager import TourManager
-from django.shortcuts import get_object_or_404
 import os 
 import json
 
@@ -68,7 +67,7 @@ class ClanTournament(models.Model):
         self.match_data = matches
         self.save_match_data_to_file()
 
-    def update_tour(self, round_number, match_results):
+    def update_tour(self, round_number, match_results, KO=None):
         """
         Updates the tournament data based on the type of tournament.
 
@@ -91,8 +90,11 @@ class ClanTournament(models.Model):
         elif self.tour_type == "cup":
             updated_data = tour_manager.update_knockout(round_number, match_results)
         elif self.tour_type == "groups_knockout":
-            group ="A"
-            updated_data = tour_manager.update_groups_knockout(round_number, match_results)
+            if KO:
+                print(KO)
+                updated_data = tour_manager.update_ko(round_number,match_results)
+            else:
+                 updated_data = tour_manager.update_groups_knockout(round_number,match_results)
         else:
             raise ValueError(f"Invalid tournament type: {self.tour_type}")
         self.save_match_data_to_file()
@@ -101,7 +103,8 @@ class ClanTournament(models.Model):
 
     def update_clan_stats(self):
         match_data = self.load_match_data_from_file()
-        if self.tour_type == "league" or self.tour_type == "cup":
+
+        if self.tour_type == "league":
             table = match_data["table"]
             for team_name, team_data in table.items():
                 clan_stat = ClanStats.objects.get(clan__clan_name=team_name)
@@ -114,6 +117,10 @@ class ClanTournament(models.Model):
                 clan_stat.losses = team_data["losses"]
                 clan_stat.win_rate = ( (clan_stat.wins / clan_stat.total_matches) * 100 if clan_stat.total_matches > 0 else 0)
                 clan_stat.save()
+
+
+        elif self.tour_type == "cup":
+            pass
         elif self.tour_type == "groups_knockout": 
             pass 
         self.save_match_data_to_file()
@@ -193,7 +200,7 @@ class IndiTournament(models.Model):
         else:
             super().save(*args, **kwargs)
 
-    def update_tour(self, round_number, match_results):
+    def update_tour(self, round_number, match_results, group=None):
         """
         Updates the tournament data based on the type of tournament.
 
@@ -216,26 +223,11 @@ class IndiTournament(models.Model):
         elif self.tour_type == "cup":
             updated_data = tour_manager.update_knockout(round_number, match_results)
         elif self.tour_type == "groups_knockout":
-            updated_data = tour_manager.update_groups_knockout(round_number, match_results)
+            if group is None:
+                raise ValueError("'group' is required for 'groups_knockout' tournaments.")
+            updated_data = tour_manager.update_groups_knockout(round_number, group, match_results)
         else:
             raise ValueError(f"Invalid tournament type: {self.tour_type}")
         self.save_match_data_to_file()
-        self.update_indi_stats()
         return updated_data
 
-    def update_indi_stats(self):
-        match_data = self.load_match_data_from_file()
-        if self.tour_type == "league" or self.tour_type == "cup":
-            table = match_data["table"]
-            for team_name, team_data in table.items():
-                player_profile = User.objects.get(username=team_name).profile.stats
-                player = player_profile
-                player.gd = team_data["goal_difference"]
-                player.gf = team_data["goals_scored"]
-                player.ga = team_data["goals_conceded"]
-                player.games_played = team_data["matches_played"]
-                player.total_wins = team_data["wins"]
-                player.total_draws = team_data["draws"]
-                player.total_losses = team_data["losses"]
-                player.win_rate = ((player.total_wins / player.games_played) * 100 if player.games_played > 0 else 0)
-                player.save()

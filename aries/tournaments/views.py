@@ -248,7 +248,11 @@ def update_clan_tour(request, tour_id):
     team_b_name = request.GET.get('team_b', '')
     
     round = request.GET.get('round', None)
-    round_num = int(round)
+    kround = request.GET.get('kround', None)
+    if round is None and kround is not None:
+        round_num = int(kround)
+    elif kround is None and round is not None:
+        round_num = int(round)
     if request.method == "POST":
         form = MatchResultForm(request.POST)
         if form.is_valid():
@@ -261,7 +265,11 @@ def update_clan_tour(request, tour_id):
                     "team_b_goals": form.cleaned_data["team_b_goals"],
                 }
             ]
-            cvc_tournaments.update_tour(round_num, match_results)
+            if kround:
+                cvc_tournaments.update_tour(round_num, match_results,KO=True)
+                print(kround)
+            else:
+                cvc_tournaments.update_tour(round_num, match_results)
             return redirect('cvc_details', tour_id=cvc_tournaments.id)
     else:
         form = MatchResultForm()

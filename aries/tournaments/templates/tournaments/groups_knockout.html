@@ -219,10 +219,11 @@
                         <div class="card shadow-sm">
                             <div class="card-body">
                             {% comment %} {% if user.username == tour.created_by %} {% endcomment %}
-                            <a href="{% if tour_kind == 'cvc' %}{% url 'update_clan_tournament' tour.id %}{% else %}{% url 'update_indi_tournament' tour.id %}{% endif %}?team_a={{ match.team_a }}&team_b={{ match.team_b }}&round={{items.round_number|slice:'6:' }}">
+                            <a href="{% if tour_kind == 'cvc' %}{% url 'update_clan_tournament' tour.id %}{% else %}{% url 'update_indi_tournament' tour.id %}{% endif %}?team_a={{ match.team_a }}&team_b={{ match.team_b }}&kround={{data.round_number }}">
                             
                                 <div class="d-flex justify-content-center align-items-center">
                                     <!-- Team A -->
+                                    {{data.round_number }}
                                     <div class="text-center">
                                         <img src="{{  match.team_a_logo.url }}" alt="{{ match.team_a }}"  class="img-fluid img-thumbnail mt-2 mb-1" style="width: 100px; z-index: 1">
                                         <h3 class="mb-2">{{ match.team_a }}</h3>
