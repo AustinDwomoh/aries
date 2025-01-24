@@ -1,5 +1,6 @@
-from clubs.models import Clans
-from users.models import Profile
+from clubs.models import Clans,ClanStats
+from users.models import Profile,PlayerStats
+from orgs.models import Organization
 from django.contrib import admin
 from tournaments.models import ClanTournament, IndiTournament
 
@@ -47,4 +48,6 @@ class ClansAdmin(admin.ModelAdmin):
     search_fields = ['clan_name']  # Allow search by clan name in the admin interface
 
 
-
+admin.site.register(Organization)
+admin.site.register(ClanStats)
+admin.site.register(PlayerStats)
