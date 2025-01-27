@@ -1,14 +1,15 @@
 from django.shortcuts import render,redirect,get_object_or_404
 from django.contrib import messages
+from django.db.models import Q
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
-from .forms import UserRegisterForm
-from .models import Clans
+from .forms import UserRegisterForm,UserUpdateForm,ProfileUpadeForm
 from django.contrib.auth.models import User
 
 
 # Create your views here.
 def register(request):
+    """Registration view to create a new user account"""
     if request.method == 'POST':
         form = UserRegisterForm(request.POST)
         if form.is_valid():
@@ -22,70 +23,105 @@ def register(request):
 
 @login_required
 def profile(request):
-    return render(request, 'users/profile.html',)
+    """Profile view for the logged-in user"""
+    try:
+        player = User.objects.filter(username__iexact=request.user).first()
+        match_data = player.profile.stats.load_match_data_from_file()
+        match_results = []
+        if match_data:
+            for match in match_data["matches"][-5:]:
+                print(match)
+                result = match["result"]
+                if result == "win":
+                    match_results.append("W")
+                elif result == "loss":
+                    match_results.append("L")
+                else:
+                    match_results.append("D")
+        print(match)
+    except User.DoesNotExist:
+        match = None
+    context ={
+        "match_data":match_data,
+        "match_results":match_results
+    }
+    return render(request, 'users/profile.html',context)
 
 def logout_view(request):
+    """ Logout the user and redirect to home page"""
     logout(request)
     return redirect('Home')
 
 @login_required
 def all_gamers(request):
-    players = User.objects.all()
-    return render(request,'users/gamers.html',{'players':players})
+    """View to display all gamers with sorting and search functionality"""
+    query = request.GET.get('q', '')
+    players = User.objects.select_related('profile__stats').order_by('-profile__stats__elo_rating')
+    player_match_results = []
+    for player in players:
+        player_stats = player.profile.stats  
+        match_data = player_stats.load_match_data_from_file()
+        
+        # Extract match results (W, L, D)
+        match_results = []
+        if match_data:
+            for match in match_data["matches"]:
+                print(match)
+                result = match["result"]
+                if result == "win":
+                    match_results.append("W")
+                elif result == "loss":
+                    match_results.append("L")
+                else:
+                    match_results.append("D")
+        player_match_results.append({
+            "player": player,
+            "match_results": match_results
+        })
+
+    if query:
+        players = players.filter(
+            Q(username__icontains=query) | 
+            Q(profile__clan__clan_name__icontains=query) |
+            Q(profile__stats__rank__icontains=query)
+        )
+    no_results = not players.exists()
+    return render(request,'users/gamers.html',{'players': player_match_results,'query': query,'no_results': no_results})
 
 @login_required
 def gamer_view(request,player_id):
+    """View to display details of a specific gamer based on player id"""
     player = get_object_or_404(User, id=player_id)
-    return render(request,'users/profile_veiw.html',{'player':player})
-
-""" 
-def clan_profile(request, clan_id):
-    clan = Clans.objects.get(id=clan_id)
-    last_5_wins = clan.last_5_wins()
-    last_5_matches = clan.last_5_matches()
-    return render(request, 'clan_profile.html', {
-        'clan': clan,
-        'last_5_wins': last_5_wins,
-        'last_5_matches': last_5_matches,
-    })
-
-def last_5_wins(self):
-
-    return Match.objects.filter(winner=self).order_by('-match_date')[:5]
-
-def last_5_matches(self):
-    matches = Match.objects.filter(team_1=self) | Match.objects.filter(team_2=self)
-    return matches.order_by('-match_date')[:5] """
-
-""" def player_matches(request):
-    player = request.user  # Assuming you're using the logged-in user
-    # Get the player's associated clan(s) (this might differ based on your actual model relationships)
-    clans = player.clans.all()
+    player_stats = player.profile.stats  
+    match_data = player_stats.load_match_data_from_file()
     
-    # Fetch the last 5 matches for the player's teams
-    player_matches = Match.objects.filter(
-        team_1__in=clans).or(Match.objects.filter(team_2__in=clans)).order_by('-match_date')[:5]
-
-    return render(request, 'player_matches.html', {'player_matches': player_matches}) """
-
-""" def player_profile(request):
-    player = request.user  # Assuming logged-in user
-    # Get the player's associated clan(s)
-    clans = player.clans.all()
-    
-    # Fetch the last 5 matches
-    last_matches = Match.objects.filter(
-        team_1__in=clans
-    ).or(Match.objects.filter(team_2__in=clans)).order_by('-match_date')[:5]
-
-    # Create a list of results (W for Win, L for Loss, D for Draw)
+    # Extract match results (W, L, D)
     match_results = []
-    for match in last_matches:
-        if match.winner == match.team_1:
-            match_results.append('W')  # Win
-        elif match.winner == match.team_2:
-            match_results.append('L')  # Loss
-        else:
-            match_results.append('D')  # Draw
+    if match_data:
+        for match in match_data["matches"][-5:]:
+            result = match["result"]
+            if result == "win":
+                match_results.append("W")
+            elif result == "loss":
+                match_results.append("L")
+            else:
+                match_results.append("D")
+  
+ 
+    return render(request,'users/profile_veiw.html',{'player':player,"match_results":match_results,"match_data":match_data})
 
-    return render(request, 'player_profile.html', {'match_results': match_results}) """
+def edit_profile(request):
+    """ Edit profile view"""
+    if request.method == 'POST':
+        u_form = UserUpdateForm(request.POST,instance=request.user)
+        p_form = ProfileUpadeForm(request.POST,request.FILES,instance=request.user.profile)
+        if u_form.is_valid() and p_form.is_valid():
+            u_form.save() 
+            p_form.save()
+            messages.success(request,f"Your account has been updated!")
+            return redirect('user-home')
+    else:
+        u_form = UserUpdateForm(instance=request.user)
+        p_form = ProfileUpadeForm()
+    return render(request, "users/edit_profile.html",{"u_form":u_form,
+        "p_form":p_form,})

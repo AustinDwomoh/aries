@@ -6,4 +6,5 @@ class ClubsConfig(AppConfig):
     name = 'clubs'
 
     def ready(self):
+        """imports club signals"""
         import clubs.signals  

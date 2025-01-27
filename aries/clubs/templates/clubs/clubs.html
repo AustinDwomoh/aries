@@ -17,25 +17,25 @@ Clubs
       opacity: 1;
   }
 </style>
-Lorem ipsum dolor sit amet consectetur adipisicing elit. Facere, quis deserunt! Quisquam voluptatibus obcaecati earum, harum quasi ea cum culpa sequi sunt totam eveniet illum aperiam dolores explicabo enim iure.
-<nav class="navbar navbar-expand-lg">
-  <div class="container-fluid">
-      <ul class="list-inline d-flex justify-content-center w-100">
-          <li class="list-inline-item mx-2">
-              <a class="nav-link mini-nav active" href="#" data-target="#section1">Clan</a>
-          </li>
-          <li class="list-inline-item mx-2">
-              <a class="nav-link mini-nav" href="#" data-target="#section2">Individuals</a>
-          </li>
-      </ul>
+<div class="container">
+  <div class="row align-items-center"> 
+    <h2 class="text-center">Clans</h2>
+      <form method="GET" action="{% url 'clubs-home' %}" class="mb-4">
+        <div class="d-flex justify-content-between">
+          <input type="text" name="q" class="form-control" placeholder="Search for a clan..." value="{{ query }}">
+          <button type="submit" class="btn btn-primary mx-2">Search</button>
+        </div>
+      </form>
   </div>
-</nav>
-
+</div>
+{% if no_results %}
+        <div class="alert alert-warning text-center" role="alert">
+          No Clan found for "{{ query }}". Please try a different search term.
+        </div>
+      {% endif %}
 <div class="container-fluid my-4">
-  <h2 class="text-center">All Players</h2>
   <div class="row">
       {% for clan in clans %}
-      
       <div class="col-md-4">
         <a href="{% url 'clan_details' clan.id %}">
           <!-- Player Card -->

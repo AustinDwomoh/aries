@@ -3,10 +3,11 @@ from django.contrib.auth.decorators import login_required
 from .forms import IndiTournamentForm, ClanTournamentForm,MatchResultForm
 from .models import ClanTournament, IndiTournament,Clans
 from users.models import Profile
-from django.db.models import Count
+from django.db.models import Count,Q
 from django.contrib.auth.models import User
 
 def tours(request):
+    """View function to display all tournaments with optional search functionality."""
     cvc_tournaments = ClanTournament.objects.annotate(
         team_count=Count('teams')
     ).order_by('-team_count')
@@ -14,17 +15,37 @@ def tours(request):
     indi_tournaments = IndiTournament.objects.annotate(
         player_count=Count('players')
     ).order_by('-player_count')
+    
+    query = request.GET.get('q', '')
+    if query:
+        cvc_tournaments = cvc_tournaments.filter(
+            Q(name__icontains=query) | 
+            Q(tour_type__icontains=query) 
+        )
 
-    context = {"cvc_tournaments": cvc_tournaments,
-               "indi_tournaments":indi_tournaments,
-                }
-    return render(request,'tournaments/tours.html',context)
+        indi_tournaments = indi_tournaments.filter(
+            Q(name__icontains=query) |
+            Q(tour_type__icontains=query)
+        )
+
+    no_results_cvc = not cvc_tournaments.exists()
+    no_results_indi = not indi_tournaments.exists()
+ 
+    context = {
+        "cvc_tournaments": cvc_tournaments,
+        "indi_tournaments": indi_tournaments,
+        "no_results_cvc": no_results_cvc,  
+        "no_results_indi": no_results_indi,
+    }
+    return render(request, 'tournaments/tours.html', context)
 
 def tours_cvc_view(request,tour_id):
+    """View function to display details of a specific Clan vs Clan tournament."""
     cvc_tournaments = get_object_or_404(ClanTournament, id=tour_id)
     match_data = cvc_tournaments.load_match_data_from_file()
     tour_kind ='cvc'
     rounds = []
+    
     if cvc_tournaments.tour_type == "cup":
         for round in match_data["rounds"]:
             for match in round["matches"]:
@@ -82,21 +103,22 @@ def tours_cvc_view(request,tour_id):
                 for team_name, team_stats in match_data["knock_outs"]['table'].items():
                     team_profile = get_object_or_404(Clans, clan_name=team_name)
                     team_stats["team_logo"] = team_profile.clan_logo
-            
 
-
+    
     return render(request,'tournaments/cvc_tours_veiw.html',{'tour':cvc_tournaments, 'match_data': match_data,'rounds':rounds,'tour_kind':tour_kind  })
 
 def tours_indi_view(request,tour_id):
+    """View function to display details of a indi tournament."""
     indi_tournaments = get_object_or_404(IndiTournament, id=tour_id)
     match_data = indi_tournaments.load_match_data_from_file()
     tour_kind ='indi'
     rounds = []
     if indi_tournaments.tour_type == "cup":
-        for round in match_data["rounds"]:
-            for match in round["matches"]:
+        for round in match_data["rounds"]:    
+            for match in round["matches"]: 
                 team_a_user = User.objects.get(username=match['team_a'])
                 team_b_user = User.objects.get(username=match['team_b'])
+                print(team_a_user,team_b_user)
                 # Assign profiles to match data
                 match["team_a_logo"] = team_a_user.profile.profile_picture
                 match["team_b_logo"] = team_b_user.profile.profile_picture
@@ -153,28 +175,9 @@ def tours_indi_view(request,tour_id):
 
     return render(request,'tournaments/indi_tours_veiw.html',{'tour':indi_tournaments, 'match_data': match_data,'rounds':rounds,'tour_kind':tour_kind    })
 
-""" from django.db.models import F, FloatField, Value
-from django.db.models.functions import Rank
-
-def get_player_leaderboard():
-    return PlayerStats.objects.annotate(
-        rank=Rank(
-            expression=F('elo_rating'),
-            output_field=FloatField()
-        )
-    ).order_by('-elo_rating')
-
-def get_clan_leaderboard():
-    return ClanStats.objects.annotate(
-        rank=Rank(
-            expression=F('elo_rating'),
-            output_field=FloatField()
-        )
-    ).order_by('-elo_rating') """
-
-
 @login_required
-def create_clan_match(request):
+def create_clan_tournament(request):
+    """View function to create a new Clan Tournament."""
     if request.method == 'POST':
         form = ClanTournamentForm(request.POST,request.FILES)
         if form.is_valid():
@@ -194,6 +197,7 @@ def create_clan_match(request):
 
 @login_required
 def create_indi_tournament(request):
+    """View function to create a new indi Tournament."""
     if request.method == 'POST':
         form = IndiTournamentForm(request.POST, request.FILES)  # Handle files for logo
         if form.is_valid():
@@ -214,6 +218,7 @@ def create_indi_tournament(request):
 
 @login_required
 def update_indi_tour(request, tour_id):
+    """View function to update an individual tournament match result."""
     indi_tournaments = get_object_or_404(IndiTournament, id=tour_id)
     team_a_name = request.GET.get('team_a', '')
     team_b_name = request.GET.get('team_b', '')
@@ -248,6 +253,7 @@ def update_indi_tour(request, tour_id):
 
 @login_required
 def update_clan_tour(request, tour_id):
+    """View function to update an clan tournament match result."""
     cvc_tournaments = get_object_or_404(ClanTournament, id=tour_id)
     team_names = [team.clan_name for team in cvc_tournaments.teams.all()]
     team_a_name = request.GET.get('team_a', '')

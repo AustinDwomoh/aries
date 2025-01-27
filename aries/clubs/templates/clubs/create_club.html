@@ -4,8 +4,6 @@ Create Clan
 {% endblock %}
 {% block content %}
 
-<!-- <h1>Welcome, {{ clan.name }}</h1>
-<p>Email: {{ clan.email }}</p> -->
 <form method="post">
     {% csrf_token %}
     {{ form.as_p }}

@@ -23,15 +23,15 @@ from django.conf.urls.static import static
 
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('', include('Home.urls') ),
-    path('clubs/',include('clubs.urls')),
-    path('register/',user_veiws.register,name='register'),
-    path('login/',auth_views.LoginView.as_view(template_name='users/login.html'),name='login'),
+    path('admin/', admin.site.urls),#admin url
+    path('', include('Home.urls') ),#index url
+    path('clubs/',include('clubs.urls')),#url that links to club link
+    path('register/',user_veiws.register,name='register'),#url to create account
+    path('login/',auth_views.LoginView.as_view(template_name='users/login.html'),name='login'),#url to login to user account
     path('logout/',user_veiws.logout_view,name='logout'),
-    path('users/', include('users.urls')),
-    path('organistions/',include('orgs.urls')),
-    path('tournaments/',include('tournaments.urls'))
+    path('users/', include('users.urls')),#url that links to user, gamers
+    path('organistions/',include('orgs.urls')),#url that links to orgs,
+    path('tournaments/',include('tournaments.urls')),#url that links to tours,
 ] 
 if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL,document_root=settings.MEDIA_ROOT)
+    urlpatterns += static(settings.MEDIA_URL,document_root=settings.MEDIA_ROOT)#to allow the media files to be saved and accesed

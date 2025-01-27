@@ -2,6 +2,7 @@ from django import forms
 from .models import Clans
 
 class ClanRegistrationForm(forms.ModelForm):
+    """Form for clan registration"""
     password = forms.CharField(widget=forms.PasswordInput)
     confirm_password = forms.CharField(widget=forms.PasswordInput)
 
@@ -20,11 +21,8 @@ class ClanRegistrationForm(forms.ModelForm):
                   'country'
                   ]
 
-
-
-
-
     def clean(self):
+        """Cleans and hashes the password and checks for confirmatio"""
         cleaned_data = super().clean()
         password = cleaned_data.get('password')
         confirm_password = cleaned_data.get('confirm_password')
@@ -33,5 +31,6 @@ class ClanRegistrationForm(forms.ModelForm):
         return cleaned_data
 
 class ClanLoginForm(forms.Form):
+    """Form for clan login"""
     email = forms.EmailField()
     password = forms.CharField(widget=forms.PasswordInput)

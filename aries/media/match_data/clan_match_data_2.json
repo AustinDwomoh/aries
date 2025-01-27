@@ -1,0 +1,28 @@
+{
+    "matches": [
+        {
+            "date": "2025-01-26 18:18:25",
+            "opponent": "test_clan_5",
+            "result": "loss",
+            "score": "2:3"
+        },
+        {
+            "date": "2025-01-27 03:16:04",
+            "opponent": "test_clan_3",
+            "result": "win",
+            "score": "2:1"
+        },
+        {
+            "date": "2025-01-27 03:16:15",
+            "opponent": "test_clan_4",
+            "result": "win",
+            "score": "2:1"
+        },
+        {
+            "date": "2025-01-27 03:16:40",
+            "opponent": "test_clan_1",
+            "result": "draw",
+            "score": "0:0"
+        }
+    ]
+}

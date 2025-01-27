@@ -6,6 +6,9 @@ from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Submit
 
 class MatchResultForm(forms.Form):
+    """
+    Form for submitting match results.
+    """
     team_a_goals = forms.IntegerField(
         label="Team A Goals", 
         widget=forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'max': 100, 'step': 1})
@@ -17,6 +20,9 @@ class MatchResultForm(forms.Form):
 
 
 class IndiTournamentForm(forms.ModelForm):
+    """
+    Form for creating or updating an individual tournament.
+    """
     class Meta:
         model = IndiTournament
         fields = ['name', 'description', 'players', 'tour_type','logo']
@@ -29,7 +35,11 @@ class IndiTournamentForm(forms.ModelForm):
     players = forms.ModelMultipleChoiceField(queryset=Profile.objects.all(), widget=forms.SelectMultiple(attrs={'class': 'select2'}))
 
 class ClanTournamentForm(forms.ModelForm):
+    """
+    Form for creating or updating a clan tournament.
+    """
     class Meta:
+        
         model = ClanTournament
         fields = ['name', 'description', 'teams', 'tour_type','logo']
 
