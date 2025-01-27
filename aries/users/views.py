@@ -3,7 +3,7 @@ from django.contrib import messages
 from django.db.models import Q
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
-from .forms import UserRegisterForm,UserUpdateForm,ProfileUpadeForm
+from .forms import UserRegisterForm,UserUpdateForm,ProfileUpdateForm
 from django.contrib.auth.models import User
 
 
@@ -14,7 +14,7 @@ def register(request):
         form = UserRegisterForm(request.POST)
         if form.is_valid():
             form.save()
-            username = form.cleaned_data.get('username')
+
             messages.success(request,f"Your account has been created! You can login")
             return redirect('login')
     else:
@@ -113,7 +113,7 @@ def edit_profile(request):
     """ Edit profile view"""
     if request.method == 'POST':
         u_form = UserUpdateForm(request.POST,instance=request.user)
-        p_form = ProfileUpadeForm(request.POST,request.FILES,instance=request.user.profile)
+        p_form = ProfileUpdateForm(request.POST,request.FILES,instance=request.user.profile)
         if u_form.is_valid() and p_form.is_valid():
             u_form.save() 
             p_form.save()
@@ -121,6 +121,6 @@ def edit_profile(request):
             return redirect('user-home')
     else:
         u_form = UserUpdateForm(instance=request.user)
-        p_form = ProfileUpadeForm()
+        p_form = ProfileUpdateForm()
     return render(request, "users/edit_profile.html",{"u_form":u_form,
         "p_form":p_form,})

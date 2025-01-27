@@ -3,7 +3,7 @@
 {% load crispy_forms_tags %}
 {% block content %}
 <div class="container-fluid">
-    <form method="POST"  class="form">
+    <form method="POST" enctype="multipart/form-data"  class="form">
         {% csrf_token %}
         <fieldset class="form-group">
             {{ form|crispy }}

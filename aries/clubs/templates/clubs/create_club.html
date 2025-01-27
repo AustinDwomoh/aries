@@ -2,12 +2,16 @@
 {% block title %}
 Create Clan
 {% endblock %}
+{% load crispy_forms_tags %}
 {% block content %}
-
-<form method="post">
+<div class="container-fluid">
+<form method="POST" enctype="multipart/form-data" class="form">
     {% csrf_token %}
-    {{ form.as_p }}
+    <fieldset class="form-group">
+    {{ form|crispy }}
+</fieldset>
     <button type="submit">Register</button>
 </form>
+</div>
 
 {% endblock %}
