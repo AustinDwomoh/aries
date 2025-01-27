@@ -91,17 +91,23 @@ class TourManager:
                         self.update_table(team_a, goals_a, goals_b, result_type="win")
                         self.update_table(team_b, goals_b, goals_a, result_type="loss")
                         self.store_records(team_a, team_b, goals_a, goals_b)
+                        self.update_team_db_stats(team_a, goals_a, goals_b, result_type="win")
+                        self.update_team_db_stats(team_b, goals_b, goals_a, result_type="loss")
                     elif goals_a < goals_b:
                         match["winner"] = team_b
                         self.update_elo_for_match(team_b,team_a)
                         self.update_table(team_b, goals_b, goals_a, result_type="win")
                         self.update_table(team_a, goals_a, goals_b, result_type="loss")
                         self.store_records(team_b, team_a, goals_b, goals_a)
+                        self.update_team_db_stats(team_a, goals_a, goals_b, result_type="loss")
+                        self.update_team_db_stats(team_b, goals_b, goals_a, result_type="win")
                     else:
                         match["winner"] = "Draw"
                         self.update_table(team_a, goals_a, goals_b, result_type="draw")
                         self.update_table(team_b, goals_b, goals_a, result_type="draw")
                         self.store_records(team_a, team_b, goals_a, goals_b, result_type="draw")
+                        self.update_team_db_stats(team_a, goals_a, goals_b)
+                        self.update_team_db_stats(team_b, goals_b, goals_a)
                     match['status'] ="complete"
         return self.match_data['fixtures'][round_key]
     
@@ -159,8 +165,6 @@ class TourManager:
             round_number = 1
         else:
             round_number = len(self.match_data["rounds"]) + 1
-
-        print(self.match_data)
         random.shuffle(teams)
         while len(teams) > 1:
             round_matches = []
@@ -213,13 +217,14 @@ class TourManager:
                     match["winner"] = match["team_a"]
                     self.update_elo_for_match(match["team_a"],match["team_b"])
                     self.store_records(team_a, team_b, match["team_a_goals"], match["team_b_goals"])
+                    self.update_team_db_stats(team_a,  match["team_a_goals"], match["team_b_goals"], result_type="win")
+                    self.update_team_db_stats(team_b,  match["team_b_goals"], match["team_a_goals"], result_type="loss")
                 elif match["team_a_goals"] < match["team_b_goals"]:
                     match["winner"] = match["team_b"]
                     self.update_elo_for_match(match["team_b"],match["team_a"])
                     self.store_records(team_b, team_a, match["team_b_goals"], match["team_a_goals"])
-                else:
-                    match["winner"] = None
-                    self.store_records(team_a, team_b, match["team_a_goals"], match["team_b_goals"], result_type="draw")
+                    self.update_team_db_stats(team_a,  match["team_a_goals"], match["team_b_goals"], result_type="loss")
+                    self.update_team_db_stats(team_b,  match["team_b_goals"], match["team_a_goals"], result_type="win")
                 for team, scored, conceded in [
                     (team_a, match["team_a_goals"], match["team_b_goals"]),
                     (team_b, match["team_b_goals"], match["team_a_goals"]),
@@ -261,12 +266,7 @@ class TourManager:
                     next_team = match["winner"]
                     next_round_players.append(next_team)
                 if next_round_players:
-                    print(next_round_players)
                     self.make_knockout(next_round_players)
-                    print('here')
-            else:
-                print("Not all matches are complete yet.")
-
                     
         return self.match_data
 
@@ -301,7 +301,6 @@ class TourManager:
             for group_name, group_teams in groups.items():
                 group_manager = TourManager(self.match_data, group_teams, "league")
                 group_matches[group_name] = group_manager.make_league()
-
             self.match_data = {"group_stages":group_matches}
             return  self.match_data
      
@@ -342,17 +341,23 @@ class TourManager:
                             self.update_group_table(team_a, team_a_goals, team_b_goals, "win", group_data)
                             self.update_group_table(team_b, team_b_goals, team_a_goals, "loss", group_data)
                             self.store_records(team_a, team_b, team_a_goals, team_b_goals)
+                            self.update_team_db_stats(team_a, team_a_goals, team_b_goals, result_type="win")
+                            self.update_team_db_stats(team_b, team_b_goals, team_a_goals, result_type="loss")
                         elif team_a_goals < team_b_goals:
                             match["winner"] = match["team_b"]
                             self.update_elo_for_match(match["team_b"], match["team_a"])
                             self.update_group_table(team_a, team_a_goals, team_b_goals, "loss", group_data)
                             self.update_group_table(team_b, team_b_goals, team_a_goals, "win", group_data)
+                            self.update_team_db_stats(team_a, team_a_goals, team_b_goals, result_type="loss")
+                            self.update_team_db_stats(team_b, team_b_goals, team_a_goals, result_type="win")
                             
                         else:
                             match["winner"] = "Draw"
                             self.update_group_table(team_a, team_a_goals, team_b_goals, "draw", group_data)
                             self.update_group_table(team_b, team_b_goals, team_a_goals, "draw", group_data)
                             self.store_records(team_b, team_a, team_b_goals, team_a_goals,result_type="draw")
+                            self.update_team_db_stats(team_a, team_a_goals, team_b_goals)
+                            self.update_team_db_stats(team_b, team_b_goals, team_a_goals)
     
             all_matches_complete = all(match.get('status') == 'complete' for round_matches in group_matches.values() for match in round_matches)
             if all_matches_complete:
@@ -460,13 +465,14 @@ class TourManager:
                     match["winner"] = match["team_a"]
                     self.update_elo_for_match(match["team_a"],match["team_b"])
                     self.store_records(team_a, team_b, match["team_a_goals"], match["team_b_goals"])
+                    self.update_team_db_stats(team_a,  match["team_a_goals"], match["team_b_goals"], result_type="win")
+                    self.update_team_db_stats(team_b,  match["team_b_goals"], match["team_a_goals"], result_type="loss")
                 elif match["team_a_goals"] < match["team_b_goals"]:
                     match["winner"] = match["team_b"]
                     self.update_elo_for_match(match["team_b"],match["team_a"])
                     self.store_records(team_b, team_a, match["team_b_goals"], match["team_a_goals"])
-                else:
-                    match["winner"] = None
-                    self.store_records(team_b, team_a, match["team_b_goals"], match["team_a_goals"],result_type="draw")
+                    self.update_team_db_stats(team_a,  match["team_a_goals"], match["team_b_goals"], result_type="loss")
+                    self.update_team_db_stats(team_b,  match["team_b_goals"], match["team_a_goals"], result_type="win")
                 for team, scored, conceded in [
                     (team_a, match["team_a_goals"], match["team_b_goals"]),
                     (team_b, match["team_b_goals"], match["team_a_goals"]),
@@ -508,13 +514,7 @@ class TourManager:
                     next_team = match["winner"]
                     next_round_players.append(next_team)
                 if len(next_round_players) > 1:
-                    print(next_round_players)
                     self.make_group_knockout(self.match_data,next_round_players)
-                    print('here')
-            else:
-                print("Not all matches are complete yet.")
-
-                    
         return self.match_data
 
 # ============================================================================ #
@@ -642,6 +642,13 @@ class TourManager:
                 return instance.elo_rating, instance
             except clan.DoesNotExist:
                 return None, None
+            
+        def update_elo(winner_elo, loser_elo, k):
+            """Calculate Elo rating adjustments."""
+            expected_winner = 1 / (1 + 10 ** ((loser_elo - winner_elo) / 400))
+            winner_new_elo = winner_elo + k * (1 - expected_winner)
+            loser_new_elo = loser_elo - k * (1 - expected_winner)
+            return winner_new_elo, loser_new_elo
         winner_elo, winner_instance = get_player_elo_and_instance(winner_name)
         loser_elo, loser_instance = get_player_elo_and_instance(loser_name)
         stats_used = "player_stats"
@@ -671,12 +678,40 @@ class TourManager:
             else:
                 loser_instance.set_rank_based_on_elo()
 
-        def update_elo(winner_elo, loser_elo, k):
-            """Calculate Elo rating adjustments."""
-            expected_winner = 1 / (1 + 10 ** ((loser_elo - winner_elo) / 400))
-            winner_new_elo = winner_elo + k * (1 - expected_winner)
-            loser_new_elo = loser_elo - k * (1 - expected_winner)
-            return winner_new_elo, loser_new_elo
+        
 
-    def update_team_db_stats():
-        pass
+    def update_team_db_stats(self,team,gf,ga,result_type="draw"):
+        """
+        Update clan statistics based on the tournament results.
+        """
+        if ClanStats.objects.get(clan__clan_name=team):
+            clan_stat = ClanStats.objects.get(clan__clan_name=team)
+            clan_stat.gd += gf-ga
+            clan_stat.gf += gf
+            clan_stat.ga += ga
+            clan_stat.total_matches += 1
+            if result_type =="win":
+                clan_stat.wins += 1
+            elif result_type == "loss":
+                clan_stat.losses += 1
+            else:
+                clan_stat.draws += 1
+            win_rate = ((clan_stat.wins + clan_stat.draws/2) / clan_stat.total_matches) * 100 if clan_stat.total_matches > 0 else 0
+            clan_stat.win_rate = round(win_rate,3)
+            clan_stat.save()
+        elif User.objects.get(username=team):
+            user = User.objects.get(username=team)
+            user_stat = user.profile.stats
+            user_stat.gd += gf-ga
+            user_stat.gf += gf
+            user_stat.ga += ga
+            user_stat.games_played += 1
+            if result_type =="win":
+                user_stat.total_wins  += 1
+            elif result_type == "loss":
+                user_stat.total_losses += 1
+            else:
+                user_stat.total_draws  += 1
+            win_rate = ((user_stat.total_wins + user_stat.total_draws/2) / user_stat.games_played) * 100 if user_stat.games_played > 0 else 0
+            user_stat.win_rate = round(win_rate,3)
+            user_stat.save()

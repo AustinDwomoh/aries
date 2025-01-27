@@ -64,7 +64,7 @@ def clan_register(request):
     Handles clan registration. Validates the form and creates a new clan if the form is valid.
     """
     if request.method == 'POST':
-        form = ClanRegistrationForm(request.POST)  
+        form = ClanRegistrationForm(request.POST,request.FILES)  
         if form.is_valid():
             clan = form.save(commit=False)  # Create a clan instance but don't save it yet
             clan.set_password(form.cleaned_data['password'])  # Hash the password

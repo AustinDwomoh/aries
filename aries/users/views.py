@@ -38,7 +38,6 @@ def profile(request):
                     match_results.append("L")
                 else:
                     match_results.append("D")
-        print(match)
     except User.DoesNotExist:
         match = None
     context ={
