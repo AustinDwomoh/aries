@@ -63,7 +63,7 @@ class ClanTournament(models.Model):
     def create_matches(self):
         team_names = self.get_team_names()
         self.match_data = self.load_match_data_from_file()
-        tour_manager = TourManager(self.match_data, team_names, self.tour_type)
+        tour_manager = TourManager(self.match_data, team_names, self.tour_type,tour_name= self.name)
         matches = tour_manager.create_tournament()
         self.match_data = matches
         self.save_match_data_to_file()
@@ -85,7 +85,7 @@ class ClanTournament(models.Model):
         """
         team_names = self.get_team_names()
         self.match_data = self.load_match_data_from_file()
-        tour_manager = TourManager(self.match_data, team_names, self.tour_type)
+        tour_manager = TourManager(self.match_data, team_names, self.tour_type,tour_name=self.name)
         if self.tour_type == "league":
             updated_data = tour_manager.update_league(round_number, match_results)
         elif self.tour_type == "cup":
@@ -165,7 +165,7 @@ class IndiTournament(models.Model):
         """
         team_names = [team.user.username for team in self.players.all()]
         self.match_data = self.load_match_data_from_file()
-        tour_manager = TourManager(self.match_data, team_names, self.tour_type)
+        tour_manager = TourManager(self.match_data, team_names, self.tour_type,tour_name=self.name)
         matches = tour_manager.create_tournament()
         self.match_data =  matches  
         self.save_match_data_to_file()
@@ -201,7 +201,7 @@ class IndiTournament(models.Model):
         """
         team_names = self.get_team_names()
         self.match_data = self.load_match_data_from_file()
-        tour_manager = TourManager(self.match_data, team_names, self.tour_type)
+        tour_manager = TourManager(self.match_data, team_names, self.tour_type,tour_name=self.name)
         if self.tour_type == "league":
             updated_data = tour_manager.update_league(round_number, match_results)
         elif self.tour_type == "cup":

@@ -94,41 +94,7 @@
         {% endif %}
         {% endfor %}
     </div>
-     {% if match_data %}
-    <div class="card-body p-4 text-black">
-      <div class="mb-5  text-body">
-        <div class="row">
-          <div class="container mt-4">
-            <h4 class="text-center">Match History</h4>
-            <table class="table table-striped table-hover">
-                <thead class="table-dark">
-                    <tr>
-                        <th>Date</th>
-                        <th>Opponent</th>
-                        <th>Result</th>
-                        <th>Score</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for match in match_data.matches %}
-                    <tr>
-                        <td>{{ match.date }}</td>
-                        <td>{{ match.opponent }}</td>
-                        <td class="{% if match.result == 'Win' %}text-success{% elif match.result == 'Loss' %}text-danger{% else %}text-warning{% endif %}">
-                            {{ match.result }}
-                        </td>
-                        <td>{{ match.score }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        
-        </div>
-      </div>
   
-    </div>
-    {% endif %}
     <div class="card-body p-4 text-black">
       <div class="mb-5  text-body">
         <div class="row">
@@ -190,6 +156,7 @@
                 <thead class="table-dark">
                     <tr>
                         <th>Date</th>
+                        <th>Tournament</th>
                         <th>Opponent</th>
                         <th>Result</th>
                         <th>Score</th>
@@ -199,6 +166,7 @@
                     {% for match in match_data.matches %}
                     <tr>
                         <td>{{ match.date }}</td>
+                        <td>{{match.tour_name}}</td>
                         <td>{{ match.opponent }}</td>
                         <td class="{% if match.result == 'win' %}text-success{% elif match.result == 'loss' %}text-danger{% else %}text-warning{% endif %}">
                             {{ match.result }}

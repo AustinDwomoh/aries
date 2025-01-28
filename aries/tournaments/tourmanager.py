@@ -6,7 +6,7 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
 from .models import PlayerStats,ClanStats,Clans,Profile
 class TourManager:
-    def __init__(self, json_data, teams_names, tournament_type,teams_advance=None):
+    def __init__(self, json_data, teams_names, tournament_type,teams_advance=None,tour_name="Not specifed"):
         """
         Initialize the TourManager.
 
@@ -19,6 +19,7 @@ class TourManager:
         self.teams = teams_names
         self.tournament_type = tournament_type
         self.teams_to_advance = teams_advance
+        self.tour_name = tour_name
 # ============================================================================ #
 #                                    leagues                                   #
 # ============================================================================ #
@@ -586,13 +587,15 @@ class TourManager:
             winner_result = "draw"
             loser_result = "draw"
         winner_entry = {
-            "date": timezone.now().strftime("%Y-%m-%d %H:%M:%S"),  
+            "date": timezone.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "tour_name":self.tour_name, 
             "opponent": loser,  
             "result": winner_result, 
             "score": f"{winner_goals}:{loser_goals}"
         }
         loser_entry = {
-            "date": timezone.now().strftime("%Y-%m-%d %H:%M:%S"),  
+            "date": timezone.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "tour_name":self.tour_name,   
             "opponent": winner,  
             "result": loser_result, 
             "score":f"{loser_goals}:{winner_goals}"

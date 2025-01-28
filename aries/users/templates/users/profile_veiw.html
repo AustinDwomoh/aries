@@ -67,6 +67,7 @@
               <thead class="table-dark">
                   <tr>
                       <th>Date</th>
+                      <th>Tournament</th>
                       <th>Opponent</th>
                       <th>Result</th>
                       <th>Score</th>
@@ -76,6 +77,7 @@
                   {% for match in match_data.matches %}
                   <tr>
                       <td>{{ match.date }}</td>
+                      <td>{{match.tour_name}}</td>
                       <td>{{ match.opponent }}</td>
                       <td class="{% if match.result == 'win' %}text-success{% elif match.result == 'loss' %}text-danger{% else %}text-warning{% endif %}">
                           {{ match.result }}
