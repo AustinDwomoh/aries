@@ -1,7 +1,7 @@
 # forms.py
 from django import forms
 from clubs.models import Clans
-from .models import  ClanTournament, IndiTournament,Clans,Profile
+from .models import  ClanTournament, IndiTournament,Profile
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Submit
 
@@ -53,17 +53,7 @@ class ClanTournamentForm(forms.ModelForm):
         }
     teams = forms.ModelMultipleChoiceField(queryset=Clans.objects.all(), widget=forms.SelectMultiple(attrs={'class': 'select2'}))
 
-    """ 
-    def __init__(self, *args, **kwargs):
-        # Accept the organization being used for the tournament
-        organization = kwargs.get('organization')
-        super().__init__(*args, **kwargs)
-
-        # Filter the teams based on the organization creating the tournament
-        if organization:
-            self.fields['teams'].queryset = Clans.objects.filter(organization=organization) """
-
-
+   
 
 
     

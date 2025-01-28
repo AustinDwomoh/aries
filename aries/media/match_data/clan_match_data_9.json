@@ -1,0 +1,25 @@
+{
+    "matches": [
+        {
+            "date": "2025-01-28 21:50:31",
+            "tour_name": "Austin Dwomoh",
+            "opponent": "test_clan_1",
+            "result": "win",
+            "score": "2:0"
+        },
+        {
+            "date": "2025-01-28 22:10:54",
+            "tour_name": "Austin Dwomoh",
+            "opponent": "test_clan_1",
+            "result": "win",
+            "score": "2:0"
+        },
+        {
+            "date": "2025-01-28 22:12:34",
+            "tour_name": "megagh.conf",
+            "opponent": "test_clan_1",
+            "result": "draw",
+            "score": "1:1"
+        }
+    ]
+}

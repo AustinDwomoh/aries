@@ -107,26 +107,6 @@ class ClanTournament(models.Model):
         self.create_matches()
 
 
-class ClanMatch(models.Model):
-    tournament = models.ForeignKey(ClanTournament, on_delete=models.CASCADE, related_name="matches")
-    clan_a = models.ForeignKey(Clans, on_delete=models.CASCADE, related_name="matches_as_clan_a")
-    clan_b = models.ForeignKey(Clans, on_delete=models.CASCADE, related_name="matches_as_clan_b")
-    match_date = models.DateTimeField()
-    winner = models.ForeignKey(Clans, on_delete=models.SET_NULL, null=True, blank=True, related_name="wins")
-
-    def __str__(self):
-        return f"{self.clan_a} vs {self.clan_b} ({self.tournament})"
-
-class ClanMatchPlayer(models.Model):
-    match = models.ForeignKey(ClanMatch, on_delete=models.CASCADE, related_name="player_matches")
-    player_a = models.ForeignKey('Player', on_delete=models.CASCADE, related_name="matches_as_player_a")
-    player_b = models.ForeignKey('Player', on_delete=models.CASCADE, related_name="matches_as_player_b")
-    winner = models.ForeignKey('Player', on_delete=models.SET_NULL, null=True, blank=True, related_name="wins_as_player")
-
-    def __str__(self):
-        return f"{self.player_a} vs {self.player_b} ({self.match})"     
-
-
 class IndiTournament(models.Model):
     """
     Model representing an individual tournament.
