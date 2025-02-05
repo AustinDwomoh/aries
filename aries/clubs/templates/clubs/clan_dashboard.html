@@ -2,20 +2,19 @@
 {% block title %}
 {{ clan.clan_name }}
 {% endblock %}
+{% load static %} 
 {% block content %}
 <section>
     <div class="rounded-top text-white d-flex flex-row" style="background-image: url('{{ clan.clan_profile_pic.url }}'); background-size: cover; background-position: center; height: 220px;">
       <div class="ms-2 mt-5 d-flex flex-column" style="width: 150px;">
         <img src="{{ clan.clan_logo.url }}" 
-             alt="Inphinithy"  class="img-fluid img-thumbnail mt-2 mb-2" style="width: 150px;height: 160px; z-index: 1">
+             alt="Inphinithy"  class="img-fluid img-thumbnail mt-2 mb-2" style="width: 150px;height: 160px; z-index: 1" loading="lazy">
       </div>
     </div>
     
     <div class="d-flex justify-content-between align-items-center py-2 px-3 text-body bg-light rounded shadow-sm" style="width: 100%;">
       <div class="text-left">
-        <h5>{{ clan.clan_name }} [{{ clan.clan_tag }}]</h5>
-          <p>Recruitment Status:{{clan.is_recruiting}}</p>
-    
+        <h5>{{ clan.clan_name }} [{{ clan.clan_tag }}]</h5>    
         {% if match_results %}
         <p>
           {% for result in match_results %}
@@ -50,10 +49,16 @@
       </div>
     </div>
     <h2 class="mt-3">About</h2>
-    <section class=" d-flex justify-content-between align-items-center py-2 px-3 text-body bg-light rounded shadow-sm" style="width: 100%;">
-        <p>{{ clan.clan_description }}</p>
+    <section class="  py-2 px-3 text-body bg-light rounded shadow-sm" style="width: 100%;">
+      <p>Recruitment Status:{{clan.is_recruiting}} | <a href="#" onclick="event.preventDefault(); document.getElementById('change_recruitment_state').submit();" class="btn btn-success">Change</a></p>  
+      <form id="change_recruitment_state" action="{% url 'change_recruitment_state' clan.id %}" method="post" style="display: none;">
+        {% csrf_token %}
+      </form>
+      <p>{{ clan.clan_description }}</p>
     </section>
     
+ 
+ 
     
     <div class="row">
       <h2 class="mt-3">Members</h2>
@@ -65,7 +70,7 @@
                 <div class="card-body text-center" style="background-image: url('{{ player.profile.clan.clan_profile_pic.url }}');background-size: cover; background-position: center;text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);color:white">
                     <!-- Avatar -->
                     {% if player.profile.profile_picture %}
-                    <img src="{{ player.profile.profile_picture.url }}" alt="{{ player.username }}'s avatar" class="img-fluid rounded-circle mb-3" style="width: 100px; height: 100px;">
+                    <img src="{{ player.profile.profile_picture.url }}" alt="{{ player.username }}'s avatar" class="img-fluid rounded-circle mb-3" style="width: 100px; height: 100px;"loading="lazy">
                     {% endif %}
 
                     <!-- Player Name -->
@@ -128,6 +133,14 @@
                         <td>Conceeded</td>
                         <td>{{ stats.ga }}</td>
                     </tr>
+                    <tr>
+                      <td>Players Conceeded</td>
+                      <td>{{ stats.player_conceeded }}</td>
+                  </tr>
+                  <tr>
+                    <td>Players Scored</td>
+                    <td>{{ stats.player_scored }}</td>
+                </tr>
                 </tbody>
             </table>
           </div>
@@ -138,10 +151,49 @@
       </div>
     
   </div>
-    
   </section>
+
+  <div class="container-fluid text-center">
+    <h3>Add a Player to the Clan</h3>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}  <!-- Django renders the form -->
+        <button type="submit" class="btn btn-success" name="add_player">Add Player</button>
+    </form>
+    {% if message %}
+        <p style="color: green;">{{ message }}</p>
+    {% endif %}
+    {% if error %}
+        <p style="color: red;">{{ error }}</p>
+    {% endif %}
+  </div>>
+  
+  <script type="text/javascript">
+    $(document).ready(function() {
+        $('.select2').select2({
+            placeholder: 'Select a player',
+            allowClear: true,
+            width: '100%'
+        });
+    });
+  </script>
+  
+  {% if join_requests %}
+  <h3>Pending Join Requests</h3>
+  {% for request in join_requests %}
+      <form method="post">
+          {% csrf_token %}
+          <p>{{ request.player.username }} wants to join.</p>
+          <input type="hidden" name="request_id" value="{{ request.id }}">
+          <button type="submit" name="manage_request" class="btn btn-success" value="approve">Approve</button>
+          <button type="submit" name="manage_request" class="btn btn-danger" value="reject">Reject</button>
+      </form>
+  {% endfor %}
+  {% endif %}
+  
+    </div>
+
 <section id="events">
-    
     {% if match_data %}
     <div class="card-body p-4 text-black">
       <div class="mb-5  text-body">
@@ -158,11 +210,11 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for match in match_data.matches %}
+                    {% for match in match_data.matches reversed %}
                     <tr>
                         <td>{{ match.date }}</td>
                         <td>{{ match.opponent }}</td>
-                        <td class="{% if match.result == 'Win' %}text-success{% elif match.result == 'Loss' %}text-danger{% else %}text-warning{% endif %}">
+                        <td class="{% if match.result == 'win' %}text-success{% elif match.result == 'loss' %}text-danger{% else %}text-warning{% endif %}">
                             {{ match.result }}
                         </td>
                         <td>{{ match.score }}</td>

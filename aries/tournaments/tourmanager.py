@@ -1,4 +1,5 @@
 import random
+import time
 from django.utils import timezone
 from typing import List,Dict
 from django.shortcuts import get_object_or_404
@@ -305,7 +306,6 @@ class TourManager:
             self.match_data = {"group_stages":group_matches}
             return  self.match_data
      
-    
     def update_groups_knockout(self, round_number, match_results) -> None:
         """
         Updates match results for a specific round and group in the groups + knockout stage.
@@ -359,13 +359,21 @@ class TourManager:
                             self.store_records(team_b, team_a, team_b_goals, team_a_goals,result_type="draw")
                             self.update_team_db_stats(team_a, team_a_goals, team_b_goals)
                             self.update_team_db_stats(team_b, team_b_goals, team_a_goals)
-    
-            all_matches_complete = all(match.get('status') == 'complete' for round_matches in group_matches.values() for match in round_matches)
-            if all_matches_complete:
-                teams_to_advance = self.teams_to_advance if self.teams_to_advance else 2
-                rankings = list(group_data["table"].keys())
-                next_round_players = rankings[:teams_to_advance]
-                self.make_group_knockout(self.match_data,next_round_players) 
+        all_matches_complete = True
+        for groups in self.match_data["group_stages"].values():
+            for round in groups["fixtures"].values():
+                for match in round:
+                    if match['status']!= 'complete':
+                        all_matches_complete = False
+                        break
+                
+
+        if all_matches_complete:
+            teams_to_advance = self.teams_to_advance if self.teams_to_advance else 2
+            for groups in self.match_data["group_stages"].values():
+                rankings = list(groups["table"].keys())
+                next_round_players.extend(rankings[:teams_to_advance])
+            self.make_group_knockout(self.match_data,next_round_players) 
         return self.match_data
     
     def update_group_table(self, team, goals_scored, goals_conceded, result_type,group_data):
@@ -410,7 +418,7 @@ class TourManager:
             } for team in teams}
             round_number = 1
         else:
-            round_number = len(data["rounds"]) + 1
+            round_number = len(data["knock_outs"]["rounds"]) + 1
         random.shuffle(teams)
 
         while len(teams) > 1:
@@ -434,8 +442,6 @@ class TourManager:
                 "matches": round_matches
             })
             round_number += 1
-
-   
         return data
                 
     def update_ko(self, round_number, match_results):
@@ -444,9 +450,6 @@ class TourManager:
         current_round = next(
             (r for r in rounds if r["round_number"] == round_number), None
         )
-        print(current_round)
-        if not current_round:
-            raise ValueError(f"Round {round_number} not found in knockout data.")
         
         next_round_players = []
         for result in match_results:
@@ -508,14 +511,13 @@ class TourManager:
 
                 match['status'] = 'complete'
             # Check if all matches are complete
-            all_matches_complete = all(match.get('status') == 'complete' for match in current_round['matches'])
-
-            if all_matches_complete:
-                for match in current_round['matches']:
-                    next_team = match["winner"]
-                    next_round_players.append(next_team)
-                if len(next_round_players) > 1:
-                    self.make_group_knockout(self.match_data,next_round_players)
+        all_matches_complete = all(match.get('status') == 'complete'  for groups in self.match_data["group_stages"].values() for round in groups["fixtures"].values() for match in round if print(match))
+        if all_matches_complete:
+            teams_to_advance = self.teams_to_advance if self.teams_to_advance else 2
+            for groups in self.match_data["group_stages"].values():
+                rankings = list(groups["table"].keys())
+                next_round_players.extend(rankings[:teams_to_advance])
+            self.make_group_knockout(self.match_data,next_round_players) 
         return self.match_data
 
 # ============================================================================ #
@@ -681,13 +683,12 @@ class TourManager:
             else:
                 loser_instance.set_rank_based_on_elo()
 
-        
-
     def update_team_db_stats(self,team,gf,ga,result_type="draw"):
         """
         Update clan statistics based on the tournament results.
         """
-        if ClanStats.objects.get(clan__clan_name=team):
+       
+        try:
             clan_stat = ClanStats.objects.get(clan__clan_name=team)
             clan_stat.gd += gf-ga
             clan_stat.gf += gf
@@ -702,7 +703,7 @@ class TourManager:
             win_rate = ((clan_stat.wins + clan_stat.draws/2) / clan_stat.total_matches) * 100 if clan_stat.total_matches > 0 else 0
             clan_stat.win_rate = round(win_rate,3)
             clan_stat.save()
-        elif User.objects.get(username=team):
+        except ObjectDoesNotExist:
             user = User.objects.get(username=team)
             user_stat = user.profile.stats
             user_stat.gd += gf-ga
@@ -718,3 +719,5 @@ class TourManager:
             win_rate = ((user_stat.total_wins + user_stat.total_draws/2) / user_stat.games_played) * 100 if user_stat.games_played > 0 else 0
             user_stat.win_rate = round(win_rate,3)
             user_stat.save()
+
+

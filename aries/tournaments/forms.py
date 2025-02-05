@@ -18,7 +18,6 @@ class MatchResultForm(forms.Form):
         widget=forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'max': 100, 'step': 1})
     )
 
-#class ClanMacthfOrm(forms.Form):
 
 
 class IndiTournamentForm(forms.ModelForm):

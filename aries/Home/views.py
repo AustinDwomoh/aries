@@ -1,4 +1,7 @@
 from django.shortcuts import render
+from django.contrib.auth.models import User
+from clubs.models import Clans
+
 
 def home(request):
     """
@@ -10,7 +13,14 @@ def home(request):
     Returns:
         HttpResponse: Renders the 'Home/index.html' template as the response.
     """
-    return render(request, 'Home/index.html')
+    clans = Clans.objects.all().order_by('-stat__elo_rating')[:10] 
+    players = User.objects.all().order_by('-profile__stats__elo_rating')[:10]
+    context ={
+        "players":players,
+        "clans":clans
+    }
+    
+    return render(request, 'Home/index.html',context)
 
 
 def about(request):

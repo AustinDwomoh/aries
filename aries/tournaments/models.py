@@ -4,8 +4,8 @@ from django.contrib.auth.models import User
 from clubs.models import Clans,ClanStats
 from users.models import Profile,PlayerStats
 from .tourmanager import TourManager
-import os 
-import json
+import os,json
+from PIL import Image
 
 # Create your models here.
 class ClanTournament(models.Model):
@@ -48,7 +48,9 @@ class ClanTournament(models.Model):
     
     def delete(self, *args, **kwargs):
         """Delete the JSON file when the tournament is deleted."""
-        file_path = self.get_json_file_path()  # Get the path to the JSON file
+        file_path = self.get_json_file_path() 
+        
+         # Get the path to the JSON file
         if os.path.exists(file_path):  # Check if the file exists
             os.remove(file_path)  # Delete the file
         super().delete(*args, **kwargs)
@@ -105,6 +107,13 @@ class ClanTournament(models.Model):
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
         self.create_matches()
+
+        img = Image.open(self.logo.path)
+
+        if img.height > 300 or img.width > 300:
+            output_size = (300,300)
+            img.thumbnail(output_size)
+            img.save(self.logo.path)
 
 
 class IndiTournament(models.Model):
@@ -183,6 +192,13 @@ class IndiTournament(models.Model):
             del self._saving  
         else:
             super().save(*args, **kwargs)
+
+        img = Image.open(self.logo.path)
+
+        if img.height > 300 or img.width > 300:
+            output_size = (300,300)
+            img.thumbnail(output_size)
+            img.save(self.logo.path)
 
     def update_tour(self, round_number, match_results, KO=None):
         """

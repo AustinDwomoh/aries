@@ -28,14 +28,14 @@ Tournaments
     </div>
 </nav>
 
-<!-- Content Sections -->
+<!-- cvc Sections -->
 <div id="section1" class="content-section active-content text-center">
     <div class="container-fluid my-4">
         <div class="container">
             <div class="row align-items-center"> 
             <h2 class="text-center">CVC Tournaments</h2>
             <form method="GET" action="{% url 'tournament-home' %}" class="mb-4 d-flex justify-content-center">
-                <input type="text" name="q" class="form-control w-50" placeholder="Search for a player..." value="{{ query }}">
+                <input type="text" name="q" class="form-control w-50" placeholder="Search for a Tournament..." value="{{ query }}">
                 <button type="submit" class="btn btn-primary mx-2">Search</button>
                 <a href="{%url 'create_clan_tournament' %}" class="btn btn-primary">Create</a>
             </form>
@@ -55,7 +55,7 @@ Tournaments
                 <div class="card my-3">
                     <div class="card-body text-center" >
                         <div class="card-body text-center"  style="background-image: url('{{ tours.created_by.profile.profile_picture.url  }}');background-size: cover; background-position: center;text-shadow: 2px 2px 4px rgba(0, 0, 0,1);color:white">
-                            <img src="{{  tours.logo.url }}" alt="{{  tours.name }}'s avatar" class="img-fluid rounded-circle mb-3" style="width: 100px; height: 100px;">
+                            <img src="{{  tours.logo.url }}" alt="{{  tours.name }}'s avatar" class="img-fluid rounded-circle mb-3" style="width: 100px; height: 100px;" loading="lazy">
                         <!-- Player Name -->
                         <h5 class="card-title">{{ tours.name }}</h5>
                         <p class="card-text">
@@ -76,15 +76,14 @@ Tournaments
             </a></div>
             {% endfor %}
         </div>
-    </div>
 </div>
-<div id="section2" class="content-section" >
-    <div class="container-fluid my-4 text-center">
+<div id="section2" class="content-section  text-center" >
+    <div class="container-fluid my-4">
         <div class="container">
             <div class="row align-items-center"> 
             <h2 class="text-center">Indi Tournaments</h2>
             <form method="GET" action="{% url 'tournament-home' %}" class="mb-4 d-flex justify-content-center">
-                <input type="text" name="q" class="form-control w-50" placeholder="Search for a player..." value="{{ query }}">
+                <input type="text" name="q" class="form-control w-50" placeholder="Search for a Tournament..." value="{{ query }}">
                 <button type="submit" class="btn btn-primary mx-2">Search</button>
                 <a href="{%url 'create_indi_tournament' %}" class="btn btn-primary">Create</a>
             </form>
@@ -101,8 +100,9 @@ Tournaments
             <div class="col-md-4">
                 <a href="{% url 'indi_details' tours.id %}">
                 <div class="card my-3">
+                    <div class="card-body text-center" >
                     <div class="card-body text-center"  style="background-image: url('{{ tours.created_by.profile.profile_picture.url }}');background-size: cover; background-position: center;text-shadow: 2px 2px 4px rgba(0, 0, 0, 1);color:white"  >
-                        <img src="{{  tours.logo.url }}" alt="{{  tours.name }}'s avatar" class="img-fluid rounded-circle mb-3" style="width: 100px; height: 100px;">
+                        <img src="{{  tours.logo.url }}" alt="{{  tours.name }}'s avatar" class="img-fluid rounded-circle mb-3" style="width: 100px; height: 100px;" loading="lazy">
                         <h5 class="card-title">{{ tours.name }}</h5>
                         <p class="card-text">
                             <div class="d-flex justify-content-between text-center ">
@@ -117,13 +117,14 @@ Tournaments
                         </div>
                         </p>
                     </div>
+                    </div>
                 </div>
             </a>
             </div>
             {% endfor %}
         </div>
-    </div>
-</div>
+ </div>
+
 
 <script>
     // JavaScript to handle active link switching and content change

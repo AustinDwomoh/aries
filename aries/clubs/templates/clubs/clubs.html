@@ -41,7 +41,7 @@ Clubs
           <!-- Player Card -->
           <div class="card my-3">
               <div class="card-body text-center" style="background-image: url('{{ clan.clan_profile_pic.url }}');background-size: cover; background-position: center;text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);color:white">
-                  <img src="{{ clan.clan_logo.url }}" alt="{{ player.username }}'s avatar" class="img-fluid rounded-circle mb-3" style="width: 100px; height: 100px;">
+                  <img src="{{ clan.clan_logo.url }}" alt="{{ player.username }}'s avatar" class="img-fluid rounded-circle mb-3" style="width: 100px; height: 100px;" loading="lazy">
                   <h5 class="card-title">{{ clan.clan_name }}</h5>
                   <p>{{ clan.primary_game }}|{{ clan.country }} </p>
                   {% if match_results %}
@@ -89,43 +89,4 @@ Clubs
       
     </div>
 </div>
-{% comment %} <div class="container my-4">
-    <div class="d-flex justify-content-center align-items-center position-relative rounded overflow-hidden" 
-         style="height: 300px; border: 1px solid #ddd;">
-      <div class="team position-relative text-center d-flex flex-column justify-content-center align-items-center text-light" 
-           style="width: 50%; background-image: url('{{ user.profile.clan.clan_profile_pic.url }}'); background-size: cover; background-position: center; height: 100%;">
-        <div class="overlay" style="background: rgba(0, 0, 0, 0.6); width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 1;"></div>
-        <div class="content position-relative" style="z-index: 2;">
-          <img src="{{ user.profile.clan.clan_logo.url }}" alt="{{ user.profile.clan.clan_name }}" 
-               class="img-fluid rounded-circle mb-2" 
-               style="width: 70px; height: 70px; object-fit: cover;">
-          <h5 class="mb-1 text-truncate">{{ user.profile.clan.clan_name }}</h5>
-          <p class="small mb-1">Goals: <strong>{{ user.profile.clan.goals }}</strong></p>
-          <p class="small">Last 5 Wins: {{ user.profile.clan.last_five_wins }}</p>
-        </div>
-      </div>
-  
-      <!-- VS Section -->
-      <div class="vs d-flex justify-content-center align-items-center bg-dark text-light" 
-           style="width: 10%; height: 100%;">
-        <h2 class="fw-bold text-danger mb-0">VS</h2>
-      </div>
-  
-      <!-- Right Team -->
-      <div class="team position-relative text-center d-flex flex-column justify-content-center align-items-center text-light" 
-           style="width: 50%; background-image: url('{{ opponent_clan.profile_pic_url }}'); background-size: cover; background-position: center; height: 100%;">
-        <div class="overlay" style="background: rgba(0, 0, 0, 0.6); width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 1;"></div>
-        <div class="content position-relative" style="z-index: 2;">
-          <img src="{{ opponent_clan.logo_url }}" alt="{{ opponent_clan.name }}" 
-               class="img-fluid rounded-circle mb-2" 
-               style="width: 70px; height: 70px; object-fit: cover;">
-          <h5 class="mb-1 text-truncate">{{ opponent_clan.name }}</h5>
-          <p class="small mb-1">Goals: <strong>{{ opponent_clan.goals }}</strong></p>
-          <p class="small">Last 5 Wins: {{ opponent_clan.last_five_wins }}</p>
-        </div>
-      </div>
-    </div>
-  </div>
-   {% endcomment %}
-
   {% endblock %}

@@ -20,6 +20,15 @@ urlpatterns = [
 
     # Clan details page (view specific clan by ID)
     path('clan_view/<int:clan_id>/', views.club_view, name='clan_details'),
+
+    #request to join a clan
+    path("join/<int:clan_id>/", views.request_to_join_clan, name="request_to_join_clan"),
+
+    #leave clan
+    path("leave/<int:clan_id>/", views.leave_clan, name="leave_clan"),
+
+    #change req state
+    path("change/<int:clan_id>/", views.change_recruitment_state,name="change_recruitment_state")
 ]
 
 # Serve media files during development

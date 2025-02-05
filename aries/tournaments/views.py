@@ -1,12 +1,13 @@
 from django.shortcuts import render, redirect,get_object_or_404
 from django.contrib.auth.decorators import login_required
 from .forms import IndiTournamentForm, ClanTournamentForm,MatchResultForm
-from .models import ClanTournament, IndiTournament,Clans
+from .models import ClanTournament, IndiTournament,Clans,ClanStats
 from users.models import Profile
 from django.db.models import Count,Q
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone
+from django.urls import reverse
 
 def tours(request):
     """View function to display all tournaments with optional search functionality."""
@@ -120,7 +121,6 @@ def tours_indi_view(request,tour_id):
             for match in round["matches"]: 
                 team_a_user = User.objects.get(username=match['team_a'])
                 team_b_user = User.objects.get(username=match['team_b'])
-                print(team_a_user,team_b_user)
                 # Assign profiles to match data
                 match["team_a_logo"] = team_a_user.profile.profile_picture
                 match["team_b_logo"] = team_b_user.profile.profile_picture
@@ -183,19 +183,20 @@ def create_clan_tournament(request):
     if request.method == 'POST':
         form = ClanTournamentForm(request.POST,request.FILES)
         if form.is_valid():
-            match = form.save(commit=False)
-            match.created_by = request.user  
-            match.save()  
+            tour = form.save(commit=False)
+            tour.created_by = request.user  
+            tour.save()  
             teams = form.cleaned_data.get('teams')
-            match.teams.set(teams)  
-            match.save()
-            match.logo = form.cleaned_data.get('logo', match.logo)
-            match.save()  # Save the match instance
-         
+            tour.teams.set(teams)  
+            tour.save()
+            tour.logo = form.cleaned_data.get('logo', tour.logo)
+            tour.save()  # Save the match instance
+            return redirect(reverse("cvc_details", kwargs={"tour_id": tour.id}))  
     else:
         form = ClanTournamentForm()
 
     return render(request, 'tournaments/create_clan_tour.html', {'form': form})
+
 
 @login_required
 def create_indi_tournament(request):
@@ -203,20 +204,19 @@ def create_indi_tournament(request):
     if request.method == 'POST':
         form = IndiTournamentForm(request.POST, request.FILES)  # Handle files for logo
         if form.is_valid():
-            match = form.save(commit=False)
-            match.created_by = request.user  
-            match.save()  
+            tour = form.save(commit=False)
+            tour.created_by = request.user  
+            tour.save()  
             players = form.cleaned_data.get('players')
-            match.players.set(players)  
-            match.save()
-            match.logo = form.cleaned_data.get('logo', match.logo)
-            match.save()
+            tour.players.set(players)  
+            tour.save()
+            tour.logo = form.cleaned_data.get('logo', tour.logo)
+            tour.save()
+            return redirect(reverse("indi_details", kwargs={"tour_id": tour.id}))
     else:
         form = IndiTournamentForm()
 
     return render(request, 'tournaments/create_indi_tour.html', {'form': form})
-
-
 
 @login_required
 def update_indi_tour(request, tour_id):
@@ -225,8 +225,7 @@ def update_indi_tour(request, tour_id):
     team_a_name = request.GET.get('team_a', '')
     team_b_name = request.GET.get('team_b', '')
     
-    round = request.GET.get('round', None)
-    round_num = int(round)
+    round_num = int(request.GET.get('round', 0) or request.GET.get('kround', 0))
     if request.method == "POST":
         form = MatchResultForm(request.POST)
         if form.is_valid():
@@ -239,8 +238,12 @@ def update_indi_tour(request, tour_id):
                     "team_b_goals": form.cleaned_data["team_b_goals"],
                 }
             ]
-            indi_tournaments.update_tour(round_num, match_results)
-            return redirect('indi_details', tour_id=indi_tournaments.id)
+            
+            if request.GET.get('kround', None):
+                indi_tournaments.update_tour(round_num, match_results, KO=True)
+            else:
+                indi_tournaments.update_tour(round_num, match_results)
+            return redirect(reverse("indi_details", kwargs={"tour_id": indi_tournaments.id}))
     else:
         form = MatchResultForm()
 
@@ -260,14 +263,17 @@ def update_clan_tour(request, tour_id):
     """View function to update a clan tournament match result."""
     cvc_tournaments = get_object_or_404(ClanTournament, id=tour_id)
     team_names = [team.clan_name for team in cvc_tournaments.teams.all()]
+
     team_a_name = request.GET.get('team_a', '')
     team_b_name = request.GET.get('team_b', '')
+
     team_a_clan = get_object_or_404(Clans, clan_name=team_a_name)
     team_b_clan = get_object_or_404(Clans, clan_name=team_b_name)
-    team_a_players = team_a_clan.members.all()
-    team_b_players = team_b_clan.members.all()
-    round_num = int(request.GET.get('round', 0) or request.GET.get('kround', 0))
 
+    team_a_players = list(team_a_clan.members.all())
+    team_b_players = list(team_b_clan.members.all())
+
+    round_num = int(request.GET.get('round', 0) or request.GET.get('kround', 0))
         
     def store_records(winner, loser, winner_goals, loser_goals, result_type="win"):
         """
@@ -395,81 +401,83 @@ def update_clan_tour(request, tour_id):
             loser_instance.elo_rating = loser_new_elo
             loser_instance.save()
             loser_instance.set_rank_based_on_elo()
-    # fix the logic for determinin who to play
-    if len(team_a_players) != len(team_b_players):
-        return render(request, "tournaments/update_clan_tour.html", {
-            "error_message": "The teams have a different number of players. Please check.",
-        })
     
-    paired_players = list(zip(team_a_players, team_b_players))
-    
+
     if request.method == "POST":
+        player_a_ids =  [request.POST[key] for key in request.POST if key.startswith('player_a_')]
+        player_b_ids = [request.POST[key] for key in request.POST if key.startswith('player_b_')]
+        scores_a = [request.POST[key] for key in request.POST if key.startswith('score_a_')]
+        scores_b = [request.POST[key] for key in request.POST if key.startswith('score_b_')]
         match_results = []
-        for i in range(1, len(paired_players) + 1):
-            score_a = int(request.POST.get(f'score_a_{i}', 0))
-            score_b = int(request.POST.get(f'score_b_{i}', 0))
+        team_a_total_goals, team_b_total_goals = 0, 0
+        team_a_wins, team_b_wins = 0, 0
+
+        if len(player_a_ids) != len(player_b_ids):
+            return redirect(request.path)
+
+        for i in range(len(player_a_ids)):
+            player_a = get_object_or_404(Profile, id=player_a_ids[i])
+            player_b = get_object_or_404(Profile, id=player_b_ids[i])
+            score_a, score_b = int(scores_a[i]), int(scores_b[i])
+
             match_results.append({
+                "player_a": player_a.user.username,
+                "player_b": player_b.user.username,
                 "player_a_score": score_a,
                 "player_b_score": score_b,
             })
-        print(match_results)
+            team_a_total_goals += score_a
+            team_b_total_goals += score_b
 
-        team_a_total_goals = 0
-        team_b_total_goals = 0
-        team_a_wins =0
-        team_b_wins = 0
-        
-        # Process player match results and update total team goals
-        for i, result in enumerate(match_results):
-            player_a = paired_players[i][0].user.username  # Team A player
-            player_b = paired_players[i][1].user.username  # Team B player
-            player_a_goals = result["player_a_score"]
-            player_b_goals = result["player_b_score"]
-            # Update total goals for each team
-            team_a_total_goals += player_a_goals
-            team_b_total_goals += player_b_goals
-            if player_a_goals> player_b_goals:
-                store_records(player_a, player_b, player_a_goals, player_b_goals)
-                update_team_db_stats(player_a,player_a_goals,player_b_goals,result_type="win")
-                update_team_db_stats(player_b,player_b_goals,player_a_goals,result_type="loss")
-                update_elo_for_match(player_a, player_b)
-                team_a_wins +=1
-            elif player_a_goals < player_b_goals:
-                team_b_wins +=1
-                store_records(player_b, player_a, player_b_goals, player_a_goals)
-                update_team_db_stats(player_a,player_a_goals,player_b_goals,result_type="loss")
-                update_team_db_stats(player_b,player_b_goals,player_a_goals,result_type="win")
-                update_elo_for_match(player_b, player_a)
+            if score_a > score_b:
+                team_a_wins += 1
+                store_records(player_a.user.username, player_b.user.username, score_a, score_b)
+                update_team_db_stats(player_a.user.username, score_a, score_b, "win")
+                update_team_db_stats(player_b.user.username, score_b, score_a, "loss")
+                update_elo_for_match(player_a.user.username, player_b.user.username)
+            elif score_a < score_b:
+                team_b_wins += 1
+                store_records(player_b.user.username, player_a.user.username, score_b, score_a)
+                update_team_db_stats(player_a.user.username, score_a, score_b, "loss")
+                update_team_db_stats(player_b.user.username, score_b, score_a, "win")
+                update_elo_for_match(player_b.user.username, player_a.user.username)
             else:
-                store_records(player_b, player_a, player_b_goals, player_a_goals,result_type="draw")
-                update_team_db_stats(player_a,player_a_goals,player_b_goals)
-                update_team_db_stats(player_b,player_b_goals,player_a_goals)
+                store_records(player_a.user.username, player_b.user.username, score_a, score_b, "draw")
+                update_team_db_stats(player_a.user.username, score_a, score_b, "draw")
+                update_team_db_stats(player_b.user.username, score_b, score_a, "draw")
 
-        # Create the final match result
-        final_match_results = [  
-            {
-                "round": round_num,
-                "team_a": team_a_name,
-                "team_b": team_b_name,
-                "team_a_goals": team_a_wins,
-                "team_a_player_goals":team_a_total_goals,
-                "team_b_goals":team_b_wins,
-                "team_b_player_goals":team_b_total_goals,
-            }
-        ]
-        print(final_match_results)
-        if request.GET.get('kround', None):
+        final_match_results = [{
+        "round": round_num,
+        "team_a": team_a_name,
+        "team_b": team_b_name,
+        "team_a_goals": team_a_wins,
+        "team_a_player_goals": team_a_total_goals,
+        "team_b_goals": team_b_wins,
+        "team_b_player_goals": team_b_total_goals,
+        }]
+        team_a_clan_stat = ClanStats.objects.get(clan__clan_name=team_a_name)
+        team_b_clan_stat = ClanStats.objects.get(clan__clan_name=team_b_name)
+
+        team_a_clan_stat.player_scored += team_a_total_goals
+        team_b_clan_stat.player_scored += team_b_total_goals
+        team_a_clan_stat.player_conceeded += team_b_total_goals
+        team_b_clan_stat.player_conceeded += team_a_total_goals
+        team_a_clan_stat.save()
+        team_b_clan_stat.save()
+
+        if request.GET.get('kround'):
             cvc_tournaments.update_tour(round_num, final_match_results, KO=True)
         else:
             cvc_tournaments.update_tour(round_num, final_match_results)
-        return redirect('cvc_details', tour_id=cvc_tournaments.id)
+
+        return redirect(reverse("cvc_details", kwargs={"tour_id": cvc_tournaments.id}))
 
     return render(request, "tournaments/update_clan_tour.html", {
         "team_a_name": team_a_name,
         "team_b_name": team_b_name,
-        "paired_players": paired_players,
+        "team_a_players": team_a_players,
+        "team_b_players": team_b_players,
         "round": round_num,
-        "form": MatchResultForm(),
     })
 
 

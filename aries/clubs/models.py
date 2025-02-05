@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.hashers import make_password, check_password
 from django.contrib.auth.models import User
 import os, json
+from PIL import Image
 from django.conf import settings
 
 class Clans(models.Model):
@@ -22,11 +23,10 @@ class Clans(models.Model):
     primary_game = models.CharField(max_length=255, blank=True, null=True) #which games they mainly play
     other_games = models.CharField(max_length=255, blank=True, null=True)
     country = models.CharField(max_length=50)  
-   #S created_by = models.ForeignKey(User, on_delete=models.CASCADE, default=None)
     social_links = models.JSONField(blank=True, null=True)
     is_recruiting = models.BooleanField(default=False)
     recruitment_requirements = models.TextField(blank=True, null=True)
-
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
 
     class Meta:
         verbose_name = "Clan"
@@ -44,8 +44,15 @@ class Clans(models.Model):
     def __str__(self):
         return f"{self.clan_name}"
     
+    def save(self): 
+        super().save()
+        img = Image.open(self.clan_profile_pic.path)
 
-
+        if img.height > 300 or img.width > 300:
+            output_size = (300,300)
+            img.thumbnail(output_size)
+            img.save(self.clan_profile_pic.path)
+    
     
 class ClanStats(models.Model):
     """
@@ -60,6 +67,8 @@ class ClanStats(models.Model):
     draws = models.IntegerField(default=0)
     RANK_CHOICES = [('bronze', 'Bronze'),('silver', 'Silver'),('gold', 'Gold'),('platinum', 'Platinum'),('diamond', 'Diamond'),('master', 'Master'),('grandmaster', 'Grandmaster'),('champion', 'Champion'),('invincible', 'Invincible'),]
     ranking = models.CharField(max_length=20,choices=RANK_CHOICES,blank=True,null=True,editable=False)
+    player_scored = models.IntegerField(default=0)
+    player_conceeded = models.IntegerField(default=0)
     gd = models.IntegerField(default=0)
     gf = models.IntegerField(default=0)
     ga = models.IntegerField(default=0)
@@ -137,3 +146,31 @@ class ClanStats(models.Model):
         if os.path.exists(file_path):
             os.remove(file_path)
         super().delete(*args, **kwargs)
+
+
+
+
+class ClanJoinRequest(models.Model):
+    player = models.ForeignKey(User, on_delete=models.CASCADE)
+    clan = models.ForeignKey(Clans, on_delete=models.CASCADE)
+    status = models.CharField(
+        max_length=20,
+        choices=[("pending", "Pending"), ("approved", "Approved"), ("rejected", "Rejected")],
+        default="pending"
+    )
+    requested_at = models.DateTimeField(auto_now_add=True)
+
+    def approve(self):
+        """Approve the join request."""
+        self.status = "approved"
+        self.save()
+        
+        # Update the player's profile to reflect the new clan
+        profile = self.player.profile  # Access the related profile using the player's profile
+        profile.clan = self.clan  # Assign the clan from the join request
+        profile.save()
+
+    def reject(self):
+        """Reject the join request."""
+        self.status = "rejected"
+        self.save()

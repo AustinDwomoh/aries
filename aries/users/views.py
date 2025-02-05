@@ -21,6 +21,8 @@ def register(request):
         form = UserRegisterForm()
     return render(request, 'users/register.html', {'form':form})
 
+
+
 @login_required
 def profile(request):
     """Profile view for the logged-in user"""
@@ -64,7 +66,7 @@ def all_gamers(request):
         # Extract match results (W, L, D)
         match_results = []
         if match_data:
-            for match in match_data["matches"]:
+            for match in match_data["matches"][-5:]:
                 print(match)
                 result = match["result"]
                 if result == "win":

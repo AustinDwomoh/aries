@@ -30,7 +30,6 @@ urlpatterns = [
     path('login/',auth_views.LoginView.as_view(template_name='users/login.html'),name='login'),#url to login to user account
     path('logout/',user_veiws.logout_view,name='logout'),
     path('users/', include('users.urls')),#url that links to user, gamers
-    path('organistions/',include('orgs.urls')),#url that links to orgs,
     path('tournaments/',include('tournaments.urls')),#url that links to tours,
 ] 
 if settings.DEBUG:

@@ -79,43 +79,44 @@
                     <div class="col-md-6">
                         <div class="card shadow-sm">
                             <div class="card-body">
-                               {% comment %}  {% if user.username == tour.created_by %} {% endcomment %}
+                               {% if user.username == tour.created_by.username %}
                                 <a href="{% if tour_kind == 'cvc' %}{% url 'update_clan_tournament' tour.id %}{% else %}{% url 'update_indi_tournament' tour.id %}{% endif %}?team_a={{ match.team_a }}&team_b={{ match.team_b }}&round={{ round.round_number }}">
-                                
+                               {%endif %} 
                                 <div class="d-flex justify-content-center align-items-center">
                                     <div class="text-center">
                                         <img src="{{  match.team_a_logo.url }}" 
                                                 alt="{{ match.team_a }}"  
                                                 class="img-fluid img-thumbnail mt-2 mb-1" 
-                                                style="width: 100px; z-index: 1">
+                                                style="width: 100px;height: 100px; z-index: 1" loading="lazy">
                                         <p class="mb-2">{{ match.team_a }}</p>
                                     </div>
-                                    <div class="text-center fs-1 fw-bold mx-4 d-flex flex-column align-items-center">
+                                    <div class="text-center fw-bold mx-4 d-flex flex-column align-items-center">
                                         {% if match.team_a_goals is not None and match.team_b_goals is not None %}
                                         <span class="badge bg-success px-3 py-2">
                                             <span>{{ match.team_a_goals }}</span>
-                                            <span class="vs-text mb-0 "> - </span> 
+                                            <span class=" mb-0 "> - </span> 
                                             <span>{{ match.team_b_goals }}</span>
                                         </span>
                                         {% else %}
                                         <span class="badge bg-danger px-3 py-2">
                                             <span></span>
-                                            <span class="vs-text mb-0 "> - </span> 
+                                            <span class="mb-0 "> - </span> 
                                             <span></span>
                                         </span>
                                         {% endif %}
                                     </div>
                                     <!-- Team B -->
-                                    <div class="text-center mx-4">
+                                    <div class="text-center">
                                         <img src="{{ match.team_b_logo.url }}" 
                                         alt="{{ match.team_b }}"  
                                         class="img-fluid img-thumbnail mt-2 mb-1" 
-                                        style="width: 100px; z-index: 1">
+                                        style="width: 100px;height: 100px; z-index: 1" loading="lazy">
                                         <p class="mb-2">{{ match.team_b }}</p>
                                     </div>
                                 </div>
-                                {% comment %} {% if user.username == tour.created_by %} {% endcomment %}
+                                {% if user.username == tour.created_by.username %}
                                 </a>
+                                {% endif %}
                                 
                             </div>
                         </div>

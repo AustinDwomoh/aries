@@ -3,6 +3,7 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from clubs.models import Clans  
 import os,json
+from PIL import Image
 
 class Profile(models.Model):
     """
@@ -12,10 +13,11 @@ class Profile(models.Model):
     """
     ROLE_CHOICES = [('admin', 'Admin'),('captain', 'Captain'),('member', 'Member'),]
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    clan = models.ForeignKey(Clans,on_delete=models.CASCADE, null=True, blank=True, related_name="members")
+    clan = models.ForeignKey(Clans, null=True, blank=True, on_delete=models.SET_NULL, related_name="members")
     social_links = models.JSONField(blank=True, null=True) 
     profile_picture = models.ImageField(default="default.jpg",upload_to='profile_pics')
     role = models.CharField(max_length=100,choices=ROLE_CHOICES, blank=True, null=True)
+    is_organizer =  models.BooleanField(default=False)
     
     def get_social_link(self, platform):
         """
@@ -26,7 +28,16 @@ class Profile(models.Model):
         return self.social_links.get(platform, "") if self.social_links else None
 
     def __str__(self):
-        return f'{self.user.username}' 
+        return f'{self.user.username}'
+    
+    def save(self): 
+        super().save()
+        img = Image.open(self.profile_picture.path)
+
+        if img.height > 300 or img.width > 300:
+            output_size = (300,300)
+            img.thumbnail(output_size)
+            img.save(self.profile_picture.path)
    
 
 class PlayerStats(models.Model):
@@ -34,7 +45,7 @@ class PlayerStats(models.Model):
     user_profile = models.OneToOneField(Profile, on_delete=models.CASCADE, related_name='stats')
     achievements = models.JSONField(blank=True, null=True)
     RANK_CHOICES = [('rookie', 'Rookie'),('prodigy', 'Prodigy'),('veteran', 'Veteran'),('legend', 'Legend'),('superstar', 'Superstar'),('elite', 'Elite'),('mvp', 'MVP'),('world_class', 'World-Class'),]
-    rank = models.CharField(max_length=20,choices=RANK_CHOICES,blank=True,null=True,editable=False)
+    rank = models.CharField(max_length=20,choices=RANK_CHOICES,default="Unranked",null=True,editable=False)
     games_played = models.IntegerField(default=0)
     win_rate = models.FloatField(default=0.0)
     total_wins = models.IntegerField(default=0)

@@ -7,15 +7,27 @@
     <div class="rounded-top text-white d-flex flex-row" style="background-image: url('{{ clan.clan_profile_pic.url }}'); background-size: cover; background-position: center; height: 220px;">
       <div class="ms-2 mt-5 d-flex flex-column" style="width: 150px;">
         <img src="{{ clan.clan_logo.url }}" 
-             alt="Inphinithy"  class="img-fluid img-thumbnail mt-2 mb-2" style="width: 150px;height: 160px; z-index: 1">
+             alt="Inphinithy"  class="img-fluid img-thumbnail mt-2 mb-2" style="width: 150px;height: 160px; z-index: 1" loading="lazy">
       </div>
     </div>
     
     <div class="d-flex justify-content-between align-items-center py-2 px-3 text-body bg-light rounded shadow-sm" style="width: 100%;">
       <div class="text-left">
         <h5>{{ clan.clan_name }} [{{ clan.clan_tag }}]</h5>
-          <p>Recruitment Status:{{clan.is_recruiting}}</p>
-    
+          {% if not request.user.profile.clan and clan.is_recruiting %}
+          <a href="#" 
+          onclick="event.preventDefault(); document.getElementById('join-clan-form').submit();" 
+          class="btn btn-success">
+          Request to Join
+       </a>
+       
+       <form id="join-clan-form" action="{% url 'request_to_join_clan' clan.id %}" method="post" style="display: none;">
+           {% csrf_token %}
+       </form>
+          {% endif %}
+          {% if request.user.profile.clan == clan%}
+          <a href="{% url 'leave_clan' clan.id %}" class="btn btn-danger">Leave</a>
+          {%endif%}
         {% if match_results %}
         <p>
           {% for result in match_results %}
@@ -50,8 +62,9 @@
       </div>
     </div>
     <h2 class="mt-3">About</h2>
-    <section class=" d-flex justify-content-between align-items-center py-2 px-3 text-body bg-light rounded shadow-sm" style="width: 100%;">
-        <p>{{ clan.clan_description }}</p>
+    <section class=" py-2 px-3 text-body bg-light rounded shadow-sm" style="width: 100%;">
+          <p>Admin:<a href="{% url 'player_details' clan.created_by.id %}">{{clan.created_by}}</a> </p>  
+      <p>{{ clan.clan_description }}</p>
     </section>
     
     
@@ -65,13 +78,13 @@
                 <div class="card-body text-center" style="background-image: url('{{ player.profile.clan.clan_profile_pic.url }}');background-size: cover; background-position: center;text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);color:white">
                     <!-- Avatar -->
                     {% if player.profile.profile_picture %}
-                    <img src="{{ player.profile.profile_picture.url }}" alt="{{ player.username }}'s avatar" class="img-fluid rounded-circle mb-3" style="width: 100px; height: 100px;">
+                    <img src="{{ player.profile.profile_picture.url }}" alt="{{ player.username }}'s avatar" class="img-fluid rounded-circle mb-3" style="width: 100px; height: 100px;" loading="lazy">
                     {% endif %}
 
                     <!-- Player Name -->
                     <h5 class="card-title">{{ player.username }}</h5>
                     <p>{{ player.profile.clan.clan_name }} </p>
-
+                      
                     <p class="card-text">
                         <div class="d-flex justify-content-between text-center ">
                             <div class="mx-2">
@@ -129,6 +142,14 @@
                       <td>Conceeded</td>
                       <td>{{ stats.ga }}</td>
                   </tr>
+                  <tr>
+                    <td>Players Conceeded</td>
+                    <td>{{ stats.player_conceeded }}</td>
+                </tr>
+                <tr>
+                  <td>Players Scored</td>
+                  <td>{{ stats.player_scored }}</td>
+              </tr>
               </tbody>
           </table>
         </div>
@@ -137,11 +158,6 @@
       </div>
   
     </div>
-  
-</div>
-  
-    
-  </div>
     
   </section>
 <section id="events">
@@ -163,7 +179,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for match in match_data.matches %}
+                    {% for match in match_data.matches reversed %}
                     <tr>
                         <td>{{ match.date }}</td>
                         <td>{{match.tour_name}}</td>

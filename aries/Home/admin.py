@@ -1,6 +1,5 @@
 from clubs.models import Clans, ClanStats
 from users.models import Profile, PlayerStats
-from orgs.models import Organization
 from django.contrib import admin
 from tournaments.models import ClanTournament, IndiTournament
 
@@ -68,6 +67,5 @@ class ClansAdmin(admin.ModelAdmin):
 
 
 # Register additional models with the default admin configuration
-admin.site.register(Organization)
 admin.site.register(ClanStats)
 admin.site.register(PlayerStats)

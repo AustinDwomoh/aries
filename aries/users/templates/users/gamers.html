@@ -25,7 +25,7 @@
             <div class="card-body text-center" style="background-image: url('{{ player_data.player.profile.clan.clan_profile_pic.url }}');background-size: cover; background-position: center;text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);color:white">
                 <!-- Avatar -->
                 {% if player_data.player.profile.profile_picture %}
-                <img src="{{ player_data.player.profile.profile_picture.url }}" alt="{{ player_data.player.username }}'s avatar" class="img-fluid rounded-circle mb-3" style="width: 100px; height: 100px;">
+                <img src="{{ player_data.player.profile.profile_picture.url }}" alt="{{ player_data.player.username }}'s avatar" class="img-fluid rounded-circle mb-3" style="width: 100px; height: 100px;" loading="lazy">
                 {% endif %}
 
                 <!-- Player Name -->

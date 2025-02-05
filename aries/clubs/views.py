@@ -1,10 +1,11 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import Clans, ClanStats
+from .models import Clans, ClanStats,ClanJoinRequest
 from django.db.models import Q
 from django.contrib.auth.models import User
+from users.models import Profile
 from django.contrib.sessions.models import Session
 from django.contrib.auth.decorators import login_required
-from .forms import ClanRegistrationForm, ClanLoginForm
+from .forms import ClanRegistrationForm, ClanLoginForm,AddPlayerToClanForm
 # ============================================================================ #
 #                                   important                                  #
 # ============================================================================ #
@@ -27,6 +28,37 @@ def clubs(request):
     no_results = not clans.exists()  # Check if no clans match the search query
     return render(request, 'clubs/clubs.html', {'query': query, 'clans': clans, 'no_results': no_results})
 
+@login_required
+def request_to_join_clan(request, clan_id):
+    """Allows a player to request to join a clan."""
+    clan = get_object_or_404(Clans, id=clan_id)
+
+    existing_request = ClanJoinRequest.objects.filter(player=request.user, clan=clan, status="pending").exists()
+    if existing_request:
+        return render(request, "message.html", {"message": "You have already requested to join this clan."})
+    ClanJoinRequest.objects.create(player=request.user, clan=clan)
+    return redirect("clubs-home")
+
+def leave_clan(request,clan_id):
+    """Allow players to leave clans"""
+    clan = get_object_or_404(Clans, id=clan_id)
+    
+    profile = User.objects.get(username=request.user.username).profile
+    profile.clan = None
+    profile.save()
+    return redirect("clubs-home")
+
+    
+
+def change_recruitment_state(request,clan_id):
+    clan = get_object_or_404(Clans, id=clan_id)
+    clan.is_recruiting = not clan.is_recruiting
+    clan.save()
+    return redirect('clan_dashboard')
+    
+    
+
+
 
 def club_view(request, clan_id):
     """
@@ -36,6 +68,7 @@ def club_view(request, clan_id):
     clan_stats = get_object_or_404(ClanStats, id=clan_id)  # Fetch the clan's stats
     match_data = clan_stats.load_match_data_from_file()  # Load match data from the JSON file
     # Process match results for display
+    
     match_results = []
     if match_data:
         for match in match_data["matches"][-5:]:  # Get the last 5 matches
@@ -46,8 +79,8 @@ def club_view(request, clan_id):
                 match_results.append("L") 
             else:
                 match_results.append("D") 
-
-    members = User.objects.all()  
+    
+    members =User.objects.filter(profile__clan=clan)
     context = {
         'clan': clan,
         'stats': clan_stats,
@@ -65,8 +98,10 @@ def clan_register(request):
     """
     if request.method == 'POST':
         form = ClanRegistrationForm(request.POST,request.FILES)  
+        created_by = request.user
         if form.is_valid():
             clan = form.save(commit=False)  # Create a clan instance but don't save it yet
+            clan.created_by = request.user
             clan.set_password(form.cleaned_data['password'])  # Hash the password
             clan.save()  # Save the clan to the database
             return redirect('clan_login')  # Redirect to the login page after registration
@@ -87,11 +122,11 @@ def clan_login(request):
             password = form.cleaned_data['password']
             try:
                 clan = Clans.objects.get(email=email)  # Fetch the clan by email
-                if clan.check_password(password):  # Verify the password
-                    request.session['clan_id'] = clan.id  # Store the clan ID in the session
-                    return redirect('clan_dashboard')  # Redirect to the dashboard
-                else:
-                    form.add_error('password', 'Incorrect password.')  # Add an error for incorrect password
+                #if clan.check_password(password):  # Verify the password
+                request.session['clan_id'] = clan.id  # Store the clan ID in the session
+                return redirect('clan_dashboard')  # Redirect to the dashboard
+                #else:
+                    #form.add_error('password', 'Incorrect password.')  # Add an error for incorrect password
             except Clans.DoesNotExist:
                 form.add_error('email', 'Clan not found.')  # Add an error if the clan doesn't exist
     else:
@@ -121,19 +156,47 @@ def clan_login_required(view_func):
 
 @clan_login_required
 def clan_dashboard(request):
-    """
-    Displays the clan dashboard, including clan details, stats, and match data.
-    """
-    clan = Clans.objects.get(id=request.session['clan_id'])  # Fetch the logged-in clan
-    clan_stats = get_object_or_404(ClanStats, id=request.session['clan_id'])  # Fetch the clan's stats
-    match_data = clan_stats.load_match_data_from_file()  # Load match data from the JSON file
+    clan = get_object_or_404(Clans, id=request.session['clan_id'])
+    clan_stats = get_object_or_404(ClanStats, id=request.session['clan_id'])
+    match_data = clan_stats.load_match_data_from_file()
+    form = AddPlayerToClanForm(request.POST or None)
+    members =User.objects.filter(profile__clan=clan)
+    join_requests = ClanJoinRequest.objects.filter(clan=clan, status="pending")
 
-    members = User.objects.all() 
+    if request.method == "POST":
+        if "add_player" in request.POST and form.is_valid():
+            player = form.cleaned_data["username"]  # Get the selected user
+            profile, created = Profile.objects.get_or_create(user=player)
+          
+            if profile.clan:
+                return render(request, "clubs/clan_dashboard.html", {
+                    "clan": clan, "stats": clan_stats, "players": members, "match_data": match_data,
+                    "join_requests": join_requests, 
+                    "error": f"{player.username} is already in a clan!"
+                })
+            
+            profile.clan = clan  # Assign the player to the clan
+            profile.save()
+            return redirect("clan_dashboard", clan_id=clan.id) 
 
+        elif "manage_request" in request.POST:
+            request_id = request.POST.get("request_id")
+            action =  request.POST.get("manage_request")
+            join_request = get_object_or_404(ClanJoinRequest, id=request_id)
+            
+            if action == "approve":
+                join_request.approve()
+            elif action == "reject":
+                join_request.reject()
+
+            return redirect("clan_dashboard")
+        
     context = {
-        'clan': clan,
-        'stats': clan_stats,
-        'players': members,
-        "match_data": match_data
+        "clan": clan,
+        "stats": clan_stats,
+        "players": members,
+        "match_data": match_data,
+        "join_requests": join_requests,
+        "form":form
     }
-    return render(request, 'clubs/clan_dashboard.html', context)
+    return render(request, "clubs/clan_dashboard.html", context)

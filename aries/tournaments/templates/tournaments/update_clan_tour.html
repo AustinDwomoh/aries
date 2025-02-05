@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'base2.html' %}
 {% block title %}Register{% endblock title %}
 {% load crispy_forms_tags %}
 {% block content %}
@@ -10,36 +10,117 @@
         font-size: 1.2rem;
         width: 80px;
     }
-    
+
     .form-group label {
         font-weight: bold;
         color: #007bff;
     }
-    
+
     .btn-primary {
         background-color: #007bff;
         border-color: #007bff;
     }
-    
+    table {
+        width: 100%;
+        table-layout: fixed;
+    }
+    table tr td {
+        padding: 10px 20px;
+    }
 </style>
 
- <form method="POST">
-    {% csrf_token %}
-    <div class="d-flex justify-content-center align-items-center">
-        <div class="text-center mx-4">
-            {% for player_a, player_b in paired_players %}
-                <div class="form-group">
-                    <label>Match: {{ player_a.user.username }} vs {{ player_b.user.username }}</label>
-                    <div class="d-flex justify-content-between">
-                        <input type="number" name="score_a_{{ forloop.counter }}" class="form-control w-45" placeholder="Goals ({{ player_a.user.username }})" required>
-                        <input type="number" name="score_b_{{ forloop.counter }}" class="form-control w-45" placeholder="Goals ({{ player_b.user.username }})" required>
-                    </div>
-                </div>
-            {% endfor %}
-        </div>
+    <form method="POST" style="width: 100%;">
+        {% csrf_token %}
+        <table class="table text-center" id="matchTable">
+            <thead>
+                <tr>
+                    <th>Home</th>
+                    <th></th>
+                    <th>Away</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr class="match-row">
+                    <td>
+                        <div class="d-flex flex-column align-items-center">
+                            <select name="player_a_0" class="select2 player-a form-control mb-2" style="width: 80%;">
+                                {% for player in team_a_players %}
+                                    <option value="{{ player.id }}">{{ player.user.username }}</option>
+                                {% endfor %}
+                            </select>
+                            <input type="number" name="score_a_0" class="form-control mb-2" required placeholder="Score" style="width: 80%;">
+                                                    </div>
+                    </td>
+                    <td><button type="button" class="btn btn-danger remove-row" style="width: 30px; height: 30px; border-radius: 50%; padding: 0; font-size: 18px; line-height: 24px;">&times;</button></td>
+                    <td>
+                        <div class="d-flex flex-column align-items-center">
+                            <select name="player_b_0" class="select2 player-b form-control mb-2" style="width: 80%;">
+                                {% for player in team_b_players %}
+                                    <option value="{{ player.id }}">{{ player.user.username }}</option>
+                                {% endfor %}
+                            </select>
+                            <input type="number" name="score_b_0" class="form-control mb-2" required placeholder="Score" style="width: 80%;">
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>        
+        <button type="button" class="btn btn-success" id="addRow">+ Add Match</button>
+        <button  type="submit" class="btn btn-primary">Submit Scores</button>
+    </form>
+    
+    <script>
+        $(document).ready(function() {
+            $('.select2').select2();
+        });
         
-    </div>
-    <button type="submit" class="btn btn-success mt-4 w-100">Submit</button>
-</form>
+    
+        document.addEventListener("DOMContentLoaded", function() {
+            let rowIndex = 1; // Track row index
+            document.getElementById("addRow").addEventListener("click", function() {
+                let tableBody = document.querySelector("#matchTable tbody");
+                let newRow = document.createElement("tr");
+                newRow.classList.add("match-row");
+                newRow.innerHTML = `
+                    <td>
+                        <div class="d-flex flex-column align-items-center">
+                            <select name="player_a_${rowIndex}" class="select2 player-a form-control mb-2" style="width: 80%;">
+                                {% for player in team_a_players %}
+                                    <option value="{{ player.id }}">{{ player.user.username }}</option>
+                                {% endfor %}
+                            </select>
+                            <input type="number" name="score_a_${rowIndex}" class="form-control mb-2" required placeholder="Score" style="width: 80%;">
+                        </div>
+                    </td>
+                    <td><button type="button" class="btn btn-danger remove-row" style="width: 30px; height: 30px; border-radius: 50%; padding: 0; font-size: 18px; line-height: 24px;">&times;</button></td>
+                    <td>
+                        <div class="d-flex flex-column align-items-center">
+                            <select name="player_b_${rowIndex}" class="select2 player-b form-control mb-2" style="width: 80%;">
+                                {% for player in team_b_players %}
+                                    <option value="{{ player.id }}">{{ player.user.username }}</option>
+                                {% endfor %}
+                            </select>
+                            <input type="number" name="score_b_${rowIndex}" class="form-control mb-2" required placeholder="Score" style="width: 80%;">
+                        </div>
+                    </td>
+  
+                `;
+                tableBody.appendChild(newRow);
+                rowIndex++;
+    
+                $(".select2").select2(); // Reinitialize Select2 for new elements
+            });
+    
+            document.querySelector("#matchTable").addEventListener("click", function(e) {
+                if (e.target.classList.contains("remove-row")) {
+                    e.target.closest("tr").remove();
+                }
+            });
+        });
+    </script>
+
 
 {% endblock %}
+
+
+
