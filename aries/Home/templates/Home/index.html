@@ -2,33 +2,112 @@
 {% load static %}
 {% block title %}Welcome{% endblock title %}
 {% block content %}
-  <div class=" px-4 py-5 my-5 text-center">
+
+  <div class=" px-4 py-4 my-4  text-center">
     <img class="d-block mx-auto mb-4" src="/static/images/areis-1.png" alt="" width="76" height="60" loading="lazy">
     <h1 class="display-5 fw-bold text-body-emphasis">Welcome To Aries</h1>
     <div class="col-lg-6 mx-auto">
       <p class="lead mb-4">Clan gamaing just got better. Join and play both individual tournaments and clan tournaments. Your acheivements will all be recorded</p>
-      <ul class="list-unstyled mb-0 d-flex justify-content-between">
-        <li><a class="btn btn-primary "href="{% url 'register' %}">Sign Up</a></li>
-        <li><a class="btn btn-success" href="{% url 'tournament-home'%}">Create Tournament</a></li>
-        <li><a class="btn btn-primary" href="{% url 'clubs-home' %}">Join A Club</a></li>
-      </ul>
+      <div class="d-grid gap-2 d-md-flex justify-content-sm-between" >
+      
+        <a class="btn btn-primary "href="{% url 'register' %}">Sign Up</a>
+        <a class="btn btn-success" href="{% url 'tournament-home'%}">Create Tournament</a>
+        <a class="btn btn-primary" href="{% url 'clubs-home' %}">Join A Club</a>
+      
+    </div>
     </div>
   </div>
 <style>
   .podium { display: flex; gap: 10px; }
-.position { text-align: center; padding: 10px; font-weight: bold; }
-.first { height: 120px; background: gold; }
-.second { height: 100px; background: silver; }
-.third { height: 80px; background: #cd7f32; }
-tbody tr:nth-child(1) { color: gold; font-weight: bold; }
-tbody tr:nth-child(2) { background-color: silver; font-weight: bold; }
-tbody tr:nth-child(3) { background-color: #cd7f32; font-weight: bold; }
-
+  .position { text-align: center; padding: 10px; font-weight: bold; }
+  .first { height: 120px; background: gold; }
+  .second { height: 100px; background: silver; }
+  .third { height: 80px; background: #cd7f32; }
+  tbody tr:nth-child(1) { color: gold; font-weight: bold; }
+  tbody tr:nth-child(2) { background-color: silver; font-weight: bold; }
+  tbody tr:nth-child(3) { background-color: #cd7f32; font-weight: bold; }
+  @media screen and (max-width: 768px) {
+    .hide {
+        display: none;
+    }
+    .team-info span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex-grow: 1;
+    min-width: 0;
+  }
+  .team-info {
+    display: flex;
+    align-items: center;
+    max-width: 100px; /* Adjust as needed */
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  }
+    table {
+        width: 100%;
+        background: #fff;
+        border: 1px solid #dedede;
+    }
+    
+    table thead tr th {
+        padding: 20px;
+        border: 1px solid #dedede;
+        color: #000;
+    }
+    
+    table.table-striped tbody tr:nth-of-type(odd) {
+        background: #f9f9f9;
+    }
+    
+    table.result-point tr td.number {
+        width: 100px;
+        position: relative;
+    } 
+    
+    .text-left {
+        text-align: left!important;
+    }
+    
+    table tr td {
+        padding: 10px 20px;
+        border: 1px solid #dedede;
+    }
+    table.result-point tr td .fa.fa-caret-up {
+        color: green;
+    }
+    
+    table.result-point tr td .fa {
+        font-size: 20px;
+        position: absolute;
+        right: 20px;
+    }
+    
+    table tr td {
+        padding: 10px 40px;
+        border: 1px solid #dedede;
+    }
+    
+    
+    .team-info {
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .team-info img {
+    width: 25px; /* Keep the image small */
+    height: 25px;
+    margin-right: 8px; /* Space between logo and text */
+    object-fit: contain; /* Ensures it fits well */
+  }
 
 </style>
-  <div class="bg-dark container-fluid text-secondary px-4 py-5 text-center">
-    <div class="py-5">
-      <h1 class="display-5 fw-bold text-white">Rankings</h1>
+  <div class=" container-fluid text-secondary pt-1 text-center">
+      <h1 class="display-5 fw-bold text-dark">Rankings</h1>
       <div class="row">
         <!-- <div class="podium d-flex justify-content-center align-items-end">
           <div class="position second">🥈 {{ players.1.username }}</div>
@@ -41,10 +120,10 @@ tbody tr:nth-child(3) { background-color: #cd7f32; font-weight: bold; }
             <thead class="table-dark">
                 <tr>
                     <th class="text-start">Player</th>
-                    <th class="text-center">MP</th>
+                    <th class="text-center hide">MP</th>
                     <th class="text-center">W</th>
-                    <th class="text-center">D</th>
-                    <th class="text-center">L</th>
+                    <th class="text-center hide">D</th>
+                    <th class="text-center hide">L</th>
                     <th class="text-center">GS</th>
                     <th class="text-center">Win Rate</th>
                     <th class="text-center">Rank</th>
@@ -64,10 +143,10 @@ tbody tr:nth-child(3) { background-color: #cd7f32; font-weight: bold; }
                         <span>{{ player.username }}</span>
                         </div>
                     </td>
-                    <td>{{ player.profile.stats.games_played }}</td>
+                    <td class="hide">{{ player.profile.stats.games_played }}</td>
                     <td>{{ player.profile.stats.total_wins }}</td>
-                    <td>{{ player.profile.stats.total_draws }}</td>
-                    <td>{{ player.profile.stats.total_losses }}</td>
+                    <td class="hide">{{ player.profile.stats.total_draws }}</td>
+                    <td class="hide">{{ player.profile.stats.total_losses }}</td>
                     <td>{{ player.profile.stats.gf }}</td>
                     <td>{{ player.profile.stats.win_rate }}%</td>
                     <td>{{ player.profile.stats.rank }}</td>
@@ -81,10 +160,10 @@ tbody tr:nth-child(3) { background-color: #cd7f32; font-weight: bold; }
             <thead class="table-dark">
                 <tr>
                     <th class="text-start">Clan</th>
-                    <th class="text-center">MP</th>
+                    <th class="text-center hide">MP</th>
                     <th class="text-center">W</th>
-                    <th class="text-center">D</th>
-                    <th class="text-center">L</th>
+                    <th class="text-center hide">D</th>
+                    <th class="text-center hide">L</th>
                     <th class="text-center">GS</th>
                     <th class="text-center">Win Rate</th>
                     <th class="text-center">Rank</th>
@@ -104,10 +183,10 @@ tbody tr:nth-child(3) { background-color: #cd7f32; font-weight: bold; }
                         <span>{{ clan.clan_name }}</span>
                         </div>
                     </td>
-                    <td>{{ clan.stat.total_matches }}</td>
+                    <td class="hide">{{ clan.stat.total_matches }}</td>
                     <td>{{ clan.stat.wins }}</td>
-                    <td>{{ clan.stat.draws }}</td>
-                    <td>{{ clan.stat.losses }}</td>
+                    <td class="hide">{{ clan.stat.draws }}</td>
+                    <td class="hide">{{ clan.stat.losses }}</td>
                     <td>{{ clan.stat.gf }}</td>
                     <td>{{ clan.stat.win_rate}} %</td>
                     <td>{{ clan.stat.ranking }}</td>
@@ -117,7 +196,7 @@ tbody tr:nth-child(3) { background-color: #cd7f32; font-weight: bold; }
         </table>
         </div>
       </div>
-    </div>
+  
   </div>
 
 
