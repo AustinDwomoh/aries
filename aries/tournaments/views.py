@@ -8,6 +8,7 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone
 from django.urls import reverse
+from . import images
 
 def tours(request):
     """View function to display all tournaments with optional search functionality."""
@@ -41,6 +42,7 @@ def tours(request):
         "no_results_indi": no_results_indi,
     }
     return render(request, 'tournaments/tours.html', context)
+
 
 def tours_cvc_view(request,tour_id):
     """View function to display details of a specific Clan vs Clan tournament."""
@@ -107,8 +109,8 @@ def tours_cvc_view(request,tour_id):
                     team_profile = get_object_or_404(Clans, clan_name=team_name)
                     team_stats["team_logo"] = team_profile.clan_logo
 
-    
     return render(request,'tournaments/cvc_tours_veiw.html',{'tour':cvc_tournaments, 'match_data': match_data,'rounds':rounds,'tour_kind':tour_kind  })
+
 
 def tours_indi_view(request,tour_id):
     """View function to display details of a indi tournament."""
@@ -177,6 +179,7 @@ def tours_indi_view(request,tour_id):
 
     return render(request,'tournaments/indi_tours_veiw.html',{'tour':indi_tournaments, 'match_data': match_data,'rounds':rounds,'tour_kind':tour_kind    })
 
+
 @login_required
 def create_clan_tournament(request):
     """View function to create a new Clan Tournament."""
@@ -218,6 +221,7 @@ def create_indi_tournament(request):
 
     return render(request, 'tournaments/create_indi_tour.html', {'form': form})
 
+
 @login_required
 def update_indi_tour(request, tour_id):
     """View function to update an individual tournament match result."""
@@ -254,8 +258,6 @@ def update_indi_tour(request, tour_id):
         "team_b_name": team_b_name,
         'round':round
     })
-
-
 
 
 @login_required
@@ -480,6 +482,13 @@ def update_clan_tour(request, tour_id):
         "round": round_num,
     })
 
+def get_image(request,tour_id):
+    cvc_tournaments = get_object_or_404(ClanTournament, id=tour_id)
+    match_data = cvc_tournaments.load_match_data_from_file()
+    tour_kind ='cvc'
+    images.generate_table_image(match_data)
+    return redirect('cvc_details')
+    
 
 
     
