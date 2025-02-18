@@ -18,74 +18,74 @@
     white-space: nowrap;
     flex-grow: 1;
     min-width: 0;
-}
-.team-info {
-    display: flex;
-    align-items: center;
-    max-width: 100px; /* Adjust as needed */
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-}
-}
-    table {
-        width: 100%;
-        background: #fff;
-        border: 1px solid #dedede;
     }
-    
-    table thead tr th {
-        padding: 20px;
-        border: 1px solid #dedede;
-        color: #000;
-    }
-    
-    table.table-striped tbody tr:nth-of-type(odd) {
-        background: #f9f9f9;
-    }
-    
-    table.result-point tr td.number {
-        width: 100px;
-        position: relative;
-    } 
-    
-    .text-left {
-        text-align: left!important;
-    }
-    
-    table tr td {
-        padding: 10px 20px;
-        border: 1px solid #dedede;
-    }
-    table.result-point tr td .fa.fa-caret-up {
-        color: green;
-    }
-    
-    table.result-point tr td .fa {
-        font-size: 20px;
-        position: absolute;
-        right: 20px;
-    }
-    
-    table tr td {
-        padding: 10px 40px;
-        border: 1px solid #dedede;
-    }
-    
-    
     .team-info {
-    display: flex;
-    align-items: center;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-}
-.team-info img {
-    width: 25px; /* Keep the image small */
-    height: 25px;
-    margin-right: 8px; /* Space between logo and text */
-    object-fit: contain; /* Ensures it fits well */
-}
+        display: flex;
+        align-items: center;
+        max-width: 100px; /* Adjust as needed */
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+    }
+        table {
+            width: 100%;
+            background: #fff;
+            border: 1px solid #dedede;
+        }
+        
+        table thead tr th {
+            padding: 20px;
+            border: 1px solid #dedede;
+            color: #000;
+        }
+        
+        table.table-striped tbody tr:nth-of-type(odd) {
+            background: #f9f9f9;
+        }
+        
+        table.result-point tr td.number {
+            width: 100px;
+            position: relative;
+        } 
+        
+        .text-left {
+            text-align: left!important;
+        }
+        
+        table tr td {
+            padding: 10px 20px;
+            border: 1px solid #dedede;
+        }
+        table.result-point tr td .fa.fa-caret-up {
+            color: green;
+        }
+        
+        table.result-point tr td .fa {
+            font-size: 20px;
+            position: absolute;
+            right: 20px;
+        }
+        
+        table tr td {
+            padding: 10px 40px;
+            border: 1px solid #dedede;
+        }
+        
+        
+        .team-info {
+        display: flex;
+        align-items: center;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+    .team-info img {
+        width: 25px; /* Keep the image small */
+        height: 25px;
+        margin-right: 8px; /* Space between logo and text */
+        object-fit: contain; /* Ensures it fits well */
+    }
 
 
     
@@ -144,7 +144,15 @@
                                 <th class="text-center">P</th>
                             </tr>
                         </thead>
-                        <a href="{% url 'make_image' tour.id%}">he</a>
+                        <a href="#" 
+                            onclick="event.preventDefault(); document.getElementById('join-clan-form').submit();" 
+                            class="btn btn-success">
+                            Request to Join
+                        </a>
+                        <form id="join-clan-form" action="{% url 'make_image' tour.id%}" method="post" style="display: none;">
+                            {% csrf_token %}
+                        </form>
+                            {{tour.id}}
                         <tbody class="text-center">
                             {% for team_name, team_stats in match_data.table.items %}
                             <tr> 

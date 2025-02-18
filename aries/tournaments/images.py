@@ -1,42 +1,37 @@
 from PIL import Image, ImageDraw, ImageFont
+from tabulate import tabulate
 
 def generate_table_image(match_data, output_path="table.png"):
-    teams = list(match_data["table"].keys())
-    columns = ["TEAM", "P", "W", "D", "L", "GS", "GA"]
-    row_height = 50
-    col_widths = [200, 50, 50, 50, 50, 50, 50]
-    font_size = 30
+    headers = ["Team", "Wins", "Losses", "Points"]
+    table_data = [[team, stats["wins"], stats["losses"], stats["points"]] for team, stats in match_data["table"].items()]
     
-    try:
-        font = ImageFont.truetype("arial.ttf", font_size)
-    except:
-        font = ImageFont.load_default()
+    # Generate table string using tabulate
+    table_str = tabulate(table_data, headers=headers, tablefmt="grid")
+
+    # Create an image
+    img_width = 800
+    img_height = 600
+    bg_color = (255, 255, 255)  # White background
+    text_color = (0, 0, 0)  # Black text
     
-    img_width = sum(col_widths)
-    img_height = (len(teams) + 1) * row_height + 20
-    image = Image.new("RGB", (img_width, img_height), "white")
+    image = Image.new("RGB", (img_width, img_height), bg_color)
     draw = ImageDraw.Draw(image)
-    
-    x = 10
-    y = 10
-    for i, col in enumerate(columns):
-        draw.text((x, y), col, fill="black", font=font)
-        x += col_widths[i]
-    
-    y += row_height
-    for team, stats in match_data["table"].items():
-        x = 10
-        draw.text((x, y), team, fill="black", font=font)
-        x += col_widths[0]
-        
-        for key in ["matches_played", "wins", "draws", "losses", "goals_scored", "goals_conceded"]:
-            draw.text((x, y), str(stats[key]), fill="black", font=font)
-            x += col_widths[1]
-        
-        y += row_height
-    
+
+    # Load font
+    try:
+        font = ImageFont.truetype("arial.ttf", 20)  # Use Arial font if available
+    except IOError:
+        font = ImageFont.load_default()  # Fallback to default font
+
+    # Draw the tabulated text on the image
+    y_offset = 50  # Start position
+    for line in table_str.split("\n"):
+        draw.text((50, y_offset), line, fill=text_color, font=font)
+        y_offset += 30  # Move down for next line
+
+    # Save the image
     image.save(output_path)
-    print(f"Table image saved as {output_path}")
+    print(f"Tournament table saved as {output_path}")
 
 def generate_round_images(match_data, output_dir="rounds/"):
     import os

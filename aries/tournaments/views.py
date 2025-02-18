@@ -483,11 +483,15 @@ def update_clan_tour(request, tour_id):
     })
 
 def get_image(request,tour_id):
-    cvc_tournaments = get_object_or_404(ClanTournament, id=tour_id)
-    match_data = cvc_tournaments.load_match_data_from_file()
-    tour_kind ='cvc'
-    images.generate_table_image(match_data)
-    return redirect('cvc_details')
+    if request.method == "POST":
+        indi_tournaments = get_object_or_404(IndiTournament, id=tour_id)
+        match_data = indi_tournaments.load_match_data_from_file()
+        for team,team_data in match_data["table"].items():
+            team_data['avatar'] =  User.objects.get(username=team).profile.profile_picture.url
+            print(team_data['avatar'])
+        images.generate_table_image(match_data)
+        return redirect("indi_details", tour_id)
+    return redirect("indi_details", tour_id)
     
 
 
