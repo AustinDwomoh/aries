@@ -124,7 +124,42 @@
         </div>
     </div>
 </nav>
+<nav class="navbar navbar-expand-lg">
+    <div class="container-fluid">
+        <div class="dropdown ">
+            <button class="btn btn-secondary dropdown-toggle" 
+                    type="button" 
+                    id="dropdownMenuButton" 
+                    data-bs-toggle="dropdown" 
+                    aria-expanded="false">
+                    Share
+            </button>
 
+            <ul class="dropdown-menu text-center" aria-labelledby="dropdownMenuButton">
+                <li>
+                    <a class="dropdown-item active" 
+                       href="#section-1" 
+                       data-target="#section-1" 
+                       aria-controls="section-1" onclick="captureSection('#section-1')">
+                       Leaderboard
+                    </a>
+                </li>
+                {% for rounds in match_data.fixtures %}
+                <li>
+                    <a class="dropdown-item " 
+                       href="#section{{ forloop.counter }}" 
+                       data-target="#section{{ forloop.counter }}" 
+                       aria-controls="section{{ forloop.counter }}"
+                       onclick="captureSection('#section{{ forloop.counter }}')"
+                       >
+                       Round {{ forloop.counter }}
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</nav>
 <div id="section-1" class="content-section active-content">
     <section class="content-info">
         <div class="container py-3">
@@ -144,15 +179,6 @@
                                 <th class="text-center">P</th>
                             </tr>
                         </thead>
-                        <a href="#" 
-                            onclick="event.preventDefault(); document.getElementById('join-clan-form').submit();" 
-                            class="btn btn-success">
-                            Request to Join
-                        </a>
-                        <form id="join-clan-form" action="{% url 'make_image' tour.id%}" method="post" style="display: none;">
-                            {% csrf_token %}
-                        </form>
-                            {{tour.id}}
                         <tbody class="text-center">
                             {% for team_name, team_stats in match_data.table.items %}
                             <tr> 
@@ -185,7 +211,9 @@
     </section>
 </div>
 
+
 {% for round, matches in match_data.fixtures.items %}
+
 <div id="section{{ forloop.counter }}" class="content-section ">
     {% for match in matches %}
     <div class="card-body mx-auto">
@@ -230,4 +258,6 @@
     </div>
     {% endfor %}
 </div>
+
 {% endfor %} 
+<!-- Include html2canvas library -->

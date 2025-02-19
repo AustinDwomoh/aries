@@ -8,7 +8,7 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone
 from django.urls import reverse
-from . import images
+
 
 def tours(request):
     """View function to display all tournaments with optional search functionality."""
@@ -482,17 +482,7 @@ def update_clan_tour(request, tour_id):
         "round": round_num,
     })
 
-def get_image(request,tour_id):
-    if request.method == "POST":
-        indi_tournaments = get_object_or_404(IndiTournament, id=tour_id)
-        match_data = indi_tournaments.load_match_data_from_file()
-        for team,team_data in match_data["table"].items():
-            team_data['avatar'] =  User.objects.get(username=team).profile.profile_picture.url
-            print(team_data['avatar'])
-        images.generate_table_image(match_data)
-        return redirect("indi_details", tour_id)
-    return redirect("indi_details", tour_id)
-    
+  
 
 
     

@@ -13,7 +13,6 @@ urlpatterns = [
     
     path('update_indi_tournament/<int:tour_id>/', views.update_indi_tour, name='update_indi_tournament'),  # Update Individual tournament
     path('update_clan_tournament/<int:tour_id>/', views.update_clan_tour, name='update_clan_tournament'),  # Update Clan vs Clan tournament
-    path('make_table_img/<int:tour_id>/', views.get_image, name="make_image")
     ]   
 
 # Serve media files during development
