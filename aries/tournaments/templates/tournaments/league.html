@@ -160,6 +160,7 @@
         </div>
     </div>
 </nav>
+
 <div id="section-1" class="content-section active-content">
     <section class="content-info">
         <div class="container py-3">
@@ -214,7 +215,7 @@
 
 {% for round, matches in match_data.fixtures.items %}
 
-<div id="section{{ forloop.counter }}" class="content-section ">
+<div id="section{{ forloop.counter }}" class="content-section my-4">
     {% for match in matches %}
     <div class="card-body mx-auto">
         <div class="text-body">

@@ -127,7 +127,7 @@
                    href="#section-ko1" 
                    data-target="#section-ko1" 
                    aria-controls="section-ko1">
-                   K.O Table
+                   K.O Stats
                 </a>
             </li>
             {% for data in match_data.knock_outs.rounds %}
@@ -144,6 +144,66 @@
         </ul>
     </div>
 </nav>
+<nav class="navbar navbar-expand-lg">
+    <div class="container-fluid">
+        <div class="dropdown ">
+            <button class="btn btn-secondary dropdown-toggle" 
+                    type="button" 
+                    id="dropdownMenuButton" 
+                    data-bs-toggle="dropdown" 
+                    aria-expanded="false">
+                    Share
+            </button>
+
+            <ul class="dropdown-menu text-center" aria-labelledby="dropdownMenuButton">
+                <li>
+                    <a class="dropdown-item active" 
+                       href="#section-1" 
+                       data-target="#section-1" 
+                       aria-controls="section-1" onclick="captureSection('#section-1')">
+                       Groups
+                    </a>
+                </li>
+                {% for round in rounds %}
+                <li>
+                    <a class="dropdown-item " 
+                       href="#section{{ forloop.counter }}" 
+                       data-target="#section{{ forloop.counter }}" 
+                       aria-controls="section{{ forloop.counter }}"
+                       onclick="captureSection('#section{{ forloop.counter }}')"
+                       >
+                       Round {{ forloop.counter }}
+                    </a>
+                </li>
+                {% endfor %}
+                {% if match_data.knock_outs %}
+                <li>
+                    <a class="dropdown-item" 
+                       href="#section-ko1" 
+                       data-target="#section-ko1" 
+                       aria-controls="section-ko1"
+                       onclick="captureSection('#section-ko1')"
+                       >
+                       K.O Stats
+                    </a>
+                </li>
+                {% for data in match_data.knock_outs.rounds %}
+                <li>
+                    <a class="dropdown-item" 
+                       href="#section-ko{{ forloop.counter|add:1 }}" 
+                       data-target="#section-ko{{ forloop.counter|add:1 }}" 
+                       aria-controls="section-ko{{ forloop.counter|add:1 }}"
+                       onclick="captureSection('#section{{ forloop.counter|add:1 }}')">
+                       K.O Round {{ forloop.counter}}
+                    </a>
+                </li>
+                {% endfor %}
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</nav>
+
 <div id="section-1" class="content-section active-content">
     <section class="content-info">
         {%  for group_key, group_stats in match_data.group_stages.items %}

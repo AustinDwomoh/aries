@@ -103,57 +103,32 @@
 <script>
     function captureSection(sectionId) {
         let section = document.querySelector(sectionId); // Select section dynamically
-
+        if (!confirm("Do you want save?")) return;
         if (!section) {
             alert("Section not found!"); // Handle errors
             return;
         }
 
-        html2canvas(section, {
-            scale: 2,
-            useCORS: true
-        }).then(canvas => {
-            let imgURL = canvas.toDataURL("image/png");
-
-            let downloadLink = document.createElement("a");
-            downloadLink.href = imgURL;
-            downloadLink.download = sectionId.replace("#", "") + ".png"; // Name based on section
-            downloadLink.click();
-        });
-    }
-    <script>
-        function getVisibleSection() {
-            let sections = document.querySelectorAll(".content-section"); // Select all sections
-            let currentSection = null;
-    
-            sections.forEach(section => {
-                let rect = section.getBoundingClientRect(); // Get position
-                if (rect.top >= 0 && rect.bottom <= window.innerHeight) {
-                    currentSection = section.id; // Set current visible section
-                }
-            });
-    
-            return currentSection;
-        }
-    
-        function captureCurrentSection() {
-            let activeSectionId = getVisibleSection();
-            if (!activeSectionId) {
-                alert("No visible section found!");
-                return;
-            }
-    
-            let section = document.getElementById(activeSectionId);
-    
-            html2canvas(section, { scale: 2, useCORS: true }).then(canvas => {
+        section.style.backgroundColor = "#ffffff";  
+            section.style.border = "5px solid black";   
+            
+            html2canvas(section, {
+                scale: 3,  // Ultra-sharp quality
+                useCORS: true
+            }).then(canvas => {
                 let imgURL = canvas.toDataURL("image/png");
+
                 let downloadLink = document.createElement("a");
                 downloadLink.href = imgURL;
-                downloadLink.download = activeSectionId + ".png";
+                downloadLink.download = sectionId.replace("#", "") + ".png";
                 downloadLink.click();
+
+                // 🖌 Revert styles
+                section.style.backgroundColor = "";
+                section.style.border = "";
             });
         }
-    </script>
+
 </script>
 <footer class="text-center text-lg-start text-white" style="background-color: #BAC7BE;bottom:0">
         <div class="container p-4 pb-0">
