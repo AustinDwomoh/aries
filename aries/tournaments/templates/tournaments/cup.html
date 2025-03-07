@@ -28,42 +28,6 @@
         </div>
     </div>
 </nav>
-<nav class="navbar navbar-expand-lg">
-    <div class="container-fluid">
-        <div class="dropdown ">
-            <button class="btn btn-secondary dropdown-toggle" 
-                    type="button" 
-                    id="dropdownMenuButton" 
-                    data-bs-toggle="dropdown" 
-                    aria-expanded="false">
-                    Share
-            </button>
-
-            <ul class="dropdown-menu text-center" aria-labelledby="dropdownMenuButton">
-                <li>
-                    <a class="dropdown-item active" 
-                       href="#section-1" 
-                       data-target="#section-1" 
-                       aria-controls="section-1" onclick="captureSection('#section-1')">
-                       Stats
-                    </a>
-                </li>
-                {% for rounds in match_data.rounds %}
-                <li>
-                    <a class="dropdown-item " 
-                       href="#section{{ forloop.counter }}" 
-                       data-target="#section{{ forloop.counter }}" 
-                       aria-controls="section{{ forloop.counter }}"
-                       onclick="captureSection('#section{{ forloop.counter }}')"
-                       >
-                       Round {{ forloop.counter }}
-                    </a>
-                </li>
-                {% endfor %}
-            </ul>
-        </div>
-    </div>
-</nav>
 
 <div id="section-1" class="content-section active-content">
     <section class="content-info">
@@ -162,5 +126,22 @@
         </div>
     </div>
     {% endfor %}
+        <a class="dropdown-item active" 
+           href="#section-1" 
+           data-target="#section-1" 
+           aria-controls="section-1" onclick="captureSection('#section-1')">
+           Stats
+        </a>
+        <a class="btn btn-secondary" 
+           href="#section{{ forloop.counter }}" 
+           data-target="#section{{ forloop.counter }}" 
+           aria-controls="section{{ forloop.counter }}"
+           onclick="captureSection('#section{{ forloop.counter }}')"
+           >
+           Round {{ forloop.counter }}
+        </a>
+   
+
+
 </div>
 {% endfor %}
