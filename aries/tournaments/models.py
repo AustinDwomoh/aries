@@ -30,7 +30,7 @@ class ClanTournament(models.Model):
         """Save match data to a JSON file."""
         file_path = self.get_json_file_path()
         with open(file_path, 'w') as json_file:
-            json.dump(self.match_data, json_file)
+            json.dump(self.load_match_data_from_file(), json_file)
 
     def load_match_data_from_file(self):
         """Load match data from the JSON file."""

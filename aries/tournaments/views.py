@@ -277,7 +277,7 @@ def update_clan_tour(request, tour_id):
 
     round_num = int(request.GET.get('round', 0) or request.GET.get('kround', 0))
         
-    def store_records(winner, loser, winner_goals, loser_goals, result_type="win"):
+    def player_store_records(winner, loser, winner_goals, loser_goals, result_type="win"):
         """
         Update and store  records for the match result.
 
@@ -340,15 +340,15 @@ def update_clan_tour(request, tour_id):
         winner_stats.save_match_data_to_file()
         loser_stats.save_match_data_to_file()
 
-    def update_team_db_stats(team,gf,ga,result_type="draw"):
+    def update_player_stats(player, goals_scored, goals_conceded, result_type="draw"):
         """
-        Update clan statistics based on the tournament results.
+        Update user statistics based on the tournament results.
         """
-        user = User.objects.get(username=team)
+        user = User.objects.get(username=player)
         user_stat = user.profile.stats
-        user_stat.gd += gf-ga
-        user_stat.gf += gf
-        user_stat.ga += ga
+        user_stat.gd += goals_scored-goals_conceded
+        user_stat.gf += goals_scored
+        user_stat.ga += goals_conceded
         user_stat.games_played += 1
         if result_type =="win":
             user_stat.total_wins  += 1
@@ -359,8 +359,47 @@ def update_clan_tour(request, tour_id):
         win_rate = ((user_stat.total_wins + user_stat.total_draws/2) / user_stat.games_played) * 100 if user_stat.games_played > 0 else 0
         user_stat.win_rate = round(win_rate,3)
         user_stat.save()
+
+        data = cvc_tournaments.load_match_data_from_file()
+        print(data)
+        if "player_stats" not in data:
+            data["player_stats"] = {}  # Create an empty dictionary if missing
+
+        # Ensure player exists in 'player_stats'
+        if player not in data["player_stats"]:
+            data["player_stats"][player] = {
+                "goals_scored": 0,
+                "goals_conceded": 0,
+                "goal_difference": 0,
+                "points": 0,
+                "matches_played": 0,
+                "win": 0,
+                "draw": 0,
+                "loss": 0
+            }  # Create empty player data if missing
+
+        player_data = data["player_stats"][player] 
+        player_data["goals_scored"] += goals_scored
+        player_data["goals_conceded"] += goals_conceded
+        player_data["goal_difference"] = ( player_data["goals_scored"] - player_data["goals_conceded"])
+        player_data["matches_played"] += 1
+        player_data[result_type] += 1
+     
+        sorted_table = sorted(
+            data["player_stats"].items(),
+            key=lambda item: (
+                item[1]["win"],  # Sorting by number of wins first
+                item[1]["goals_scored"]  # Then by total goals scored
+            ),
+            reverse=True
+        )
+
+        # ✅ Store sorted data properly
+        data["player_stats"] = {team[0]: team[1] for team in sorted_table}
+
+        cvc_tournaments.save_match_data_to_file()
     
-    def update_elo_for_match(winner_name, loser_name, k=32):
+    def update_elo_for_player(winner_name, loser_name, k=32):
         """
         Update Elo ratings for a match.
 
@@ -405,6 +444,8 @@ def update_clan_tour(request, tour_id):
             loser_instance.set_rank_based_on_elo()
     
 
+        
+
     if request.method == "POST":
         player_a_ids =  [request.POST[key] for key in request.POST if key.startswith('player_a_')]
         player_b_ids = [request.POST[key] for key in request.POST if key.startswith('player_b_')]
@@ -433,20 +474,20 @@ def update_clan_tour(request, tour_id):
 
             if score_a > score_b:
                 team_a_wins += 1
-                store_records(player_a.user.username, player_b.user.username, score_a, score_b)
-                update_team_db_stats(player_a.user.username, score_a, score_b, "win")
-                update_team_db_stats(player_b.user.username, score_b, score_a, "loss")
-                update_elo_for_match(player_a.user.username, player_b.user.username)
+                player_store_records(player_a.user.username, player_b.user.username, score_a, score_b)
+                update_player_stats(player_a.user.username, score_a, score_b, "win")
+                update_player_stats(player_b.user.username, score_b, score_a, "loss")
+                update_elo_for_player(player_a.user.username, player_b.user.username)
             elif score_a < score_b:
                 team_b_wins += 1
-                store_records(player_b.user.username, player_a.user.username, score_b, score_a)
-                update_team_db_stats(player_a.user.username, score_a, score_b, "loss")
-                update_team_db_stats(player_b.user.username, score_b, score_a, "win")
-                update_elo_for_match(player_b.user.username, player_a.user.username)
+                player_store_records(player_b.user.username, player_a.user.username, score_b, score_a)
+                update_player_stats(player_a.user.username, score_a, score_b, "loss")
+                update_player_stats(player_b.user.username, score_b, score_a, "win")
+                update_elo_for_player(player_b.user.username, player_a.user.username)
             else:
-                store_records(player_a.user.username, player_b.user.username, score_a, score_b, "draw")
-                update_team_db_stats(player_a.user.username, score_a, score_b, "draw")
-                update_team_db_stats(player_b.user.username, score_b, score_a, "draw")
+                player_store_records(player_a.user.username, player_b.user.username, score_a, score_b, "draw")
+                update_player_stats(player_a.user.username, score_a, score_b, "draw")
+                update_player_stats(player_b.user.username, score_b, score_a, "draw")
 
         final_match_results = [{
         "round": round_num,

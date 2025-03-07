@@ -1,0 +1,67 @@
+{
+    "matches": [
+        {
+            "date": "2025-03-07 17:06:30",
+            "tour_name": "cup-CvC",
+            "opponent": "clan4_profile_1",
+            "result": "loss",
+            "score": "2:3"
+        },
+        {
+            "date": "2025-03-07 17:09:30",
+            "tour_name": "cup-CvC",
+            "opponent": "clan4_profile_1",
+            "result": "loss",
+            "score": "2:3"
+        },
+        {
+            "date": "2025-03-07 17:11:50",
+            "tour_name": "cup-CvC",
+            "opponent": "clan4_profile_1",
+            "result": "loss",
+            "score": "2:3"
+        },
+        {
+            "date": "2025-03-07 17:12:31",
+            "tour_name": "cup-CvC",
+            "opponent": "clan4_profile_1",
+            "result": "loss",
+            "score": "2:3"
+        },
+        {
+            "date": "2025-03-07 17:16:50",
+            "tour_name": "cup-CvC",
+            "opponent": "clan4_profile_1",
+            "result": "loss",
+            "score": "2:3"
+        },
+        {
+            "date": "2025-03-07 17:17:37",
+            "tour_name": "cup-CvC",
+            "opponent": "clan4_profile_1",
+            "result": "loss",
+            "score": "2:3"
+        },
+        {
+            "date": "2025-03-07 17:18:44",
+            "tour_name": "cup-CvC",
+            "opponent": "clan4_profile_1",
+            "result": "loss",
+            "score": "2:3"
+        },
+        {
+            "date": "2025-03-07 17:24:39",
+            "tour_name": "cup-CvC",
+            "opponent": "clan4_profile_1",
+            "result": "loss",
+            "score": "2:3"
+        },
+        {
+            "date": "2025-03-07 17:26:24",
+            "tour_name": "cup-CvC",
+            "opponent": "clan4_profile_1",
+            "result": "win",
+            "score": "2:1"
+        }
+    ]
+}
