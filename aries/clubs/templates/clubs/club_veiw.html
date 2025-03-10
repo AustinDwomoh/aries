@@ -25,6 +25,8 @@
            {% csrf_token %}
        </form>
           {% endif %}
+          <a href="{% url 'follow_club' clan.id%}">F</a>
+          <a href="{% url 'unfollow_club' clan.id%}">UF</a>
           {% if request.user.profile.clan == clan%}
           <a href="{% url 'leave_clan' clan.id %}" class="btn btn-danger">Leave</a>
           {%endif%}

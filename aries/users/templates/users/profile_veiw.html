@@ -24,6 +24,8 @@
       {% else %}
         <p>Clanless</p>
       {% endif %}
+      <a href="{% url 'follow_user' player.profile.id%}">F</a>
+      <a href="{% url 'unfollow_user' player.profile.id%}">F</a>
       {% if match_results %}
       <p>
         {% for result in match_results %}
@@ -117,6 +119,16 @@
                   </tr>
               </thead>
               <tbody>
+                <!-- <form method="GET" action="{% url 'gamers' %}" class="mb-4 d-flex justify-content-center">
+                  <input type="text" name="q" class="form-control w-50" placeholder="Search for a player..." value="{{ query }}">
+                  <button type="submit" class="btn btn-primary mx-2">Search</button>
+              </form>
+          </div>
+          {% if no_results %}
+                  <div class="alert alert-warning text-center" role="alert">
+                    No players found for "{{ query }}". Please try a different search term.
+                  </div>
+                {% endif %} -->
                   {% for match in match_data.matches %}
                   <tr>
                       <td>{{ match.date }}</td>
