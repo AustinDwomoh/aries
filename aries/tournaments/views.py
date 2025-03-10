@@ -43,7 +43,6 @@ def tours(request):
     }
     return render(request, 'tournaments/tours.html', context)
 
-
 def tours_cvc_view(request,tour_id):
     """View function to display details of a specific Clan vs Clan tournament."""
     cvc_tournaments = get_object_or_404(ClanTournament, id=tour_id)
@@ -110,7 +109,6 @@ def tours_cvc_view(request,tour_id):
                     team_stats["team_logo"] = team_profile.clan_logo
 
     return render(request,'tournaments/cvc_tours_veiw.html',{'tour':cvc_tournaments, 'match_data': match_data,'rounds':rounds,'tour_kind':tour_kind  })
-
 
 def tours_indi_view(request,tour_id):
     """View function to display details of a indi tournament."""
@@ -179,7 +177,6 @@ def tours_indi_view(request,tour_id):
 
     return render(request,'tournaments/indi_tours_veiw.html',{'tour':indi_tournaments, 'match_data': match_data,'rounds':rounds,'tour_kind':tour_kind    })
 
-
 @login_required
 def create_clan_tournament(request):
     """View function to create a new Clan Tournament."""
@@ -191,7 +188,7 @@ def create_clan_tournament(request):
             tour.save()  
             teams = form.cleaned_data.get('teams')
             tour.teams.set(teams)  
-            tour.save()
+            #tour.save()
             tour.logo = form.cleaned_data.get('logo', tour.logo)
             tour.save()  # Save the match instance
             return redirect(reverse("cvc_details", kwargs={"tour_id": tour.id}))  
@@ -199,7 +196,6 @@ def create_clan_tournament(request):
         form = ClanTournamentForm()
 
     return render(request, 'tournaments/create_clan_tour.html', {'form': form})
-
 
 @login_required
 def create_indi_tournament(request):
@@ -220,7 +216,6 @@ def create_indi_tournament(request):
         form = IndiTournamentForm()
 
     return render(request, 'tournaments/create_indi_tour.html', {'form': form})
-
 
 @login_required
 def update_indi_tour(request, tour_id):
@@ -258,7 +253,6 @@ def update_indi_tour(request, tour_id):
         "team_b_name": team_b_name,
         'round':round
     })
-
 
 @login_required
 def update_clan_tour(request, tour_id):
@@ -361,30 +355,27 @@ def update_clan_tour(request, tour_id):
         user_stat.save()
 
         data = cvc_tournaments.load_match_data_from_file()
-        print(data)
         if "player_stats" not in data:
             data["player_stats"] = {}  # Create an empty dictionary if missing
-
+    
         # Ensure player exists in 'player_stats'
         if player not in data["player_stats"]:
             data["player_stats"][player] = {
                 "goals_scored": 0,
                 "goals_conceded": 0,
                 "goal_difference": 0,
-                "points": 0,
+                "clan": user.profile.clan.clan_tag,
                 "matches_played": 0,
                 "win": 0,
                 "draw": 0,
                 "loss": 0
             }  # Create empty player data if missing
-
         player_data = data["player_stats"][player] 
         player_data["goals_scored"] += goals_scored
         player_data["goals_conceded"] += goals_conceded
         player_data["goal_difference"] = ( player_data["goals_scored"] - player_data["goals_conceded"])
         player_data["matches_played"] += 1
         player_data[result_type] += 1
-     
         sorted_table = sorted(
             data["player_stats"].items(),
             key=lambda item: (
@@ -393,11 +384,9 @@ def update_clan_tour(request, tour_id):
             ),
             reverse=True
         )
-
         # ✅ Store sorted data properly
         data["player_stats"] = {team[0]: team[1] for team in sorted_table}
-
-        cvc_tournaments.save_match_data_to_file()
+        cvc_tournaments.save_match_data_to_file(data)
     
     def update_elo_for_player(winner_name, loser_name, k=32):
         """
@@ -523,7 +512,3 @@ def update_clan_tour(request, tour_id):
         "round": round_num,
     })
 
-  
-
-
-    

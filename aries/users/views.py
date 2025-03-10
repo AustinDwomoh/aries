@@ -32,7 +32,6 @@ def profile(request):
         match_results = []
         if match_data:
             for match in match_data["matches"][-5:]:
-                print(match)
                 result = match["result"]
                 if result == "win":
                     match_results.append("W")
@@ -67,7 +66,6 @@ def all_gamers(request):
         match_results = []
         if match_data:
             for match in match_data["matches"][-5:]:
-                print(match)
                 result = match["result"]
                 if result == "win":
                     match_results.append("W")

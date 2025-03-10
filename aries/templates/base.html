@@ -108,6 +108,10 @@
             alert("Section not found!"); // Handle errors
             return;
         }
+        let links = section.querySelectorAll("a");
+
+        // Hide all <a> elements
+        links.forEach(link => link.style.display = "none");
 
         section.style.backgroundColor = "#ffffff";  
             section.style.border = "5px solid black";   
@@ -124,6 +128,7 @@
                 downloadLink.click();
 
                 // 🖌 Revert styles
+                links.forEach(link => link.style.display = "");
                 section.style.backgroundColor = "";
                 section.style.border = "";
             });

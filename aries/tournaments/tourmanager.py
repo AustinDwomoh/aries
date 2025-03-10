@@ -1,11 +1,10 @@
 import random
-import time
 from django.utils import timezone
-from typing import List,Dict
+from typing import Dict
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
-from .models import PlayerStats,ClanStats,Clans,Profile
+from .models import Clans,ClanStats
 class TourManager:
     def __init__(self, json_data, teams_names, tournament_type,teams_advance=None,tour_name="Not specifed"):
         """
@@ -111,7 +110,7 @@ class TourManager:
                         self.update_team_db_stats(team_a, goals_a, goals_b)
                         self.update_team_db_stats(team_b, goals_b, goals_a)
                     match['status'] ="complete"
-        return self.match_data['fixtures'][round_key]
+        return self.match_data
     
     def update_table(self, team, goals_scored, goals_conceded, result_type):
         """Update the league table for a team based on match result."""

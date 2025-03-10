@@ -18,77 +18,77 @@
     white-space: nowrap;
     flex-grow: 1;
     min-width: 0;
-}
-.team-info {
-    display: flex;
-    align-items: center;
-    max-width: 100px; /* Adjust as needed */
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-}
-}
-    table {
-        width: 100%;
-        background: #fff;
-        border: 1px solid #dedede;
     }
-    
-    table thead tr th {
-        padding: 20px;
-        border: 1px solid #dedede;
-        color: #000;
-    }
-    
-    table.table-striped tbody tr:nth-of-type(odd) {
-        background: #f9f9f9;
-    }
-    
-    table.result-point tr td.number {
-        width: 100px;
-        position: relative;
-    } 
-    
-    .text-left {
-        text-align: left!important;
-    }
-    
-    table tr td {
-        padding: 10px 20px;
-        border: 1px solid #dedede;
-    }
-    table.result-point tr td .fa.fa-caret-up {
-        color: green;
-    }
-    
-    table.result-point tr td .fa {
-        font-size: 20px;
-        position: absolute;
-        right: 20px;
-    }
-    
-    table tr td {
-        padding: 10px 40px;
-        border: 1px solid #dedede;
-    }
-    
-    
     .team-info {
-    display: flex;
-    align-items: center;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-}
-.team-info img {
-    width: 25px; /* Keep the image small */
-    height: 25px;
-    margin-right: 8px; /* Space between logo and text */
-    object-fit: contain; /* Ensures it fits well */
-}
+        display: flex;
+        align-items: center;
+        max-width: 100px; /* Adjust as needed */
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+    }
+        table {
+            width: 100%;
+            background: #fff;
+            border: 1px solid #dedede;
+        }
+        
+        table thead tr th {
+            padding: 20px;
+            border: 1px solid #dedede;
+            color: #000;
+        }
+        
+        table.table-striped tbody tr:nth-of-type(odd) {
+            background: #f9f9f9;
+        }
+        
+        table.result-point tr td.number {
+            width: 100px;
+            position: relative;
+        } 
+        
+        .text-left {
+            text-align: left!important;
+        }
+        
+        table tr td {
+            padding: 10px 20px;
+            border: 1px solid #dedede;
+        }
+        table.result-point tr td .fa.fa-caret-up {
+            color: green;
+        }
+        
+        table.result-point tr td .fa {
+            font-size: 20px;
+            position: absolute;
+            right: 20px;
+        }
+        
+        table tr td {
+            padding: 10px 40px;
+            border: 1px solid #dedede;
+        }
+        
+        
+        .team-info {
+        display: flex;
+        align-items: center;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+    .team-info img {
+        width: 25px; /* Keep the image small */
+        height: 25px;
+        margin-right: 8px; /* Space between logo and text */
+        object-fit: contain; /* Ensures it fits well */
+    }
 
-    
-    
+        
+        
 </style>
 <nav class="navbar navbar-expand-lg">
     <div class="container-fluid">
@@ -109,6 +109,14 @@
                            data-target="#section-1" 
                            aria-controls="section-1">
                            Groups
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" 
+                           href="#section-2" 
+                           data-target="#section-2" 
+                           aria-controls="section-2">
+                           Statistics
                         </a>
                     </li>
             {% for round in rounds %}
@@ -142,65 +150,6 @@
             {% endfor %}
             {% endif %}
         </ul>
-    </div>
-</nav>
-<nav class="navbar navbar-expand-lg">
-    <div class="container-fluid">
-        <div class="dropdown ">
-            <button class="btn btn-secondary dropdown-toggle" 
-                    type="button" 
-                    id="dropdownMenuButton" 
-                    data-bs-toggle="dropdown" 
-                    aria-expanded="false">
-                    Share
-            </button>
-
-            <ul class="dropdown-menu text-center" aria-labelledby="dropdownMenuButton">
-                <li>
-                    <a class="dropdown-item active" 
-                       href="#section-1" 
-                       data-target="#section-1" 
-                       aria-controls="section-1" onclick="captureSection('#section-1')">
-                       Groups
-                    </a>
-                </li>
-                {% for round in rounds %}
-                <li>
-                    <a class="dropdown-item " 
-                       href="#section{{ forloop.counter }}" 
-                       data-target="#section{{ forloop.counter }}" 
-                       aria-controls="section{{ forloop.counter }}"
-                       onclick="captureSection('#section{{ forloop.counter }}')"
-                       >
-                       Round {{ forloop.counter }}
-                    </a>
-                </li>
-                {% endfor %}
-                {% if match_data.knock_outs %}
-                <li>
-                    <a class="dropdown-item" 
-                       href="#section-ko1" 
-                       data-target="#section-ko1" 
-                       aria-controls="section-ko1"
-                       onclick="captureSection('#section-ko1')"
-                       >
-                       K.O Stats
-                    </a>
-                </li>
-                {% for data in match_data.knock_outs.rounds %}
-                <li>
-                    <a class="dropdown-item" 
-                       href="#section-ko{{ forloop.counter|add:1 }}" 
-                       data-target="#section-ko{{ forloop.counter|add:1 }}" 
-                       aria-controls="section-ko{{ forloop.counter|add:1 }}"
-                       onclick="captureSection('#section{{ forloop.counter|add:1 }}')">
-                       K.O Round {{ forloop.counter}}
-                    </a>
-                </li>
-                {% endfor %}
-                {% endif %}
-            </ul>
-        </div>
     </div>
 </nav>
 
@@ -250,12 +199,60 @@
                             {% endfor %}
                         </tbody>
                     </table>
+                    <a href="#section-1" class="btn btn-primary" data-target="#section-1" 
+                aria-controls="section-1" onclick="captureSection('#section-1')">Save</a>
                 </div>
             </div>
         </div>
         {% endfor %}
     </section>
 </div>
+
+{% if tour_kind == "cvc" %}
+<div id="section-2" class="content-section">
+    <section class="content-info">
+        <div class="container py-3">
+            <div class="row">
+                <div class="col-12">
+                    <table class="table table-striped table-hover result-point">
+                        <thead class="table-dark">
+                            <tr>
+                                <th class="text-start">Player</th>
+                                <th class="text-center">Clan</th>
+                                <th class="text-center">P</th>
+                                <th class="text-center">W</th>
+                                <th class="text-center">D</th>
+                                <th class="text-center">L</th>
+                                <th class="text-center">GS</th>
+                                <th class="text-center">GA</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-center">
+                            {% for team_name, team_stats in match_data.player_stats.items %}
+                            <tr>
+                                <td class="text-start">
+                                    <span>{{ team_name }}</span>
+                                </td>
+                                <td>{{ team_stats.clan }}</td>
+                                <td>{{ team_stats.matches_played }}</td>
+                                <td>{{ team_stats.win }}</td>
+                                <td>{{ team_stats.draw }}</td>
+                                <td>{{ team_stats.loss }}</td>
+                                <td>{{ team_stats.goals_scored }}</td>
+                                <td>{{ team_stats.goals_conceded }}</td>
+
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    <a href="#section-2" class="btn btn-primary" data-target="#section-2" 
+                aria-controls="section-2" onclick="captureSection('#section-2')">Save</a>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+{% endif %}
 
 {% for items in rounds %}
 <div id="section{{ forloop.counter }}" class="content-section ">
@@ -301,6 +298,10 @@
         </div>
     </div>
     {% endfor %}
+    <div class=" d-flex justify-content-center m-3" >
+    <a href="#section{{ forloop.counter }}" class="btn btn-primary " data-target="#section{{ forloop.counter }}" 
+                aria-controls="section{{ forloop.counter }}" onclick="captureSection('#section{{ forloop.counter }}')">Save</a>
+    </div>
 </div>
 {% endfor %} 
 
