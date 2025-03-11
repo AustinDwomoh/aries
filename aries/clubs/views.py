@@ -48,18 +48,12 @@ def leave_clan(request,clan_id):
     profile.save()
     return redirect("clubs-home")
 
-    
-
 def change_recruitment_state(request,clan_id):
     clan = get_object_or_404(Clans, id=clan_id)
     clan.is_recruiting = not clan.is_recruiting
     clan.save()
     return redirect('clan_dashboard')
     
-    
-
-
-
 def club_view(request, clan_id):
     """
     Displays detailed information using the clan_id about a specific clan, including its stats, members, and recent match results.
@@ -79,6 +73,19 @@ def club_view(request, clan_id):
                 match_results.append("L") 
             else:
                 match_results.append("D") 
+        match_data["matches"] = match_data["matches"][:5]
+    query = request.GET.get('q', '')
+    if query:
+        # Filter players using list comprehension
+        match_data["matches"] = [
+        match for match in match_data['matches']
+        if (query.lower() in match['date'].lower() or
+            query.lower() in match['tour_name'].lower() or
+            query.lower() in match['opponent'].lower() or
+            query.lower() in match['result'].lower() or
+            query.lower() in match['score'].lower())
+        ]
+   #bad i know but this is the best way i could think of slicing it
     
     members =User.objects.filter(profile__clan=clan)
     context = {
@@ -86,10 +93,10 @@ def club_view(request, clan_id):
         'stats': clan_stats,
         'players': members,
         "match_results": match_results,
-        "match_data": match_data
+        "match_data": match_data,
+        'query':query
     }
     return render(request, 'clubs/club_veiw.html', context)
-
 
 @login_required#ensures only users with accounts can create clubs
 def clan_register(request):
@@ -108,7 +115,6 @@ def clan_register(request):
     else:
         form = ClanRegistrationForm()  
     return render(request, 'clubs/create_club.html', {'form': form})
-
 
 @login_required #ensures only users with accounts can create clubs
 def clan_login(request):
@@ -134,14 +140,12 @@ def clan_login(request):
 
     return render(request, 'clubs/clan_login.html', {'form': form})
 
-
 def clan_logout(request):
     """
     Handles clan logout by clearing the session data and redirecting to the login page.
     """
     request.session.flush()  # Clear all session data
     return redirect('clubs/clan_login')  # Redirect to the login page
-
 
 def clan_login_required(view_func):
     """
@@ -153,7 +157,6 @@ def clan_login_required(view_func):
         return view_func(request, *args, **kwargs)
     return wrapper
 
-
 @clan_login_required
 def clan_dashboard(request):
     clan = get_object_or_404(Clans, id=request.session['clan_id'])
@@ -162,7 +165,19 @@ def clan_dashboard(request):
     form = AddPlayerToClanForm(request.POST or None)
     members =User.objects.filter(profile__clan=clan)
     join_requests = ClanJoinRequest.objects.filter(clan=clan, status="pending")
-
+    query = request.GET.get('q', '')
+    if query:
+        # Filter players using list comprehension
+        match_data["matches"] = [
+        match for match in match_data['matches']
+        if (query.lower() in match['date'].lower() or
+            query.lower() in match['tour_name'].lower() or
+            query.lower() in match['opponent'].lower() or
+            query.lower() in match['result'].lower() or
+            query.lower() in match['score'].lower())
+        ]
+   #bad i know but this is the best way i could think of slicing it
+    match_data["matches"] = match_data["matches"][:5]
     if request.method == "POST":
         if "add_player" in request.POST and form.is_valid():
             player = form.cleaned_data["username"]  # Get the selected user
@@ -197,6 +212,7 @@ def clan_dashboard(request):
         "players": members,
         "match_data": match_data,
         "join_requests": join_requests,
-        "form":form
+        "form":form,
+        'query':query
     }
     return render(request, "clubs/clan_dashboard.html", context)

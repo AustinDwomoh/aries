@@ -194,50 +194,54 @@
     </div>
 
 <section id="events">
-    {% if match_data %}
-    <div class="card-body p-4 text-black">
-      <div class="mb-5  text-body">
-        <div class="row">
-          <div class="container mt-4">
-            <h4 class="text-center">Match History</h4>
-            <table class="table table-striped table-hover">
-                <thead class="table-dark">
-                    <tr>
-                        <th>Date</th>
-                        <th>Opponent</th>
-                        <th>Result</th>
-                        <th>Score</th>
-                    </tr>
-                </thead>
-                <!-- <form method="GET" action="{% url 'gamers' %}" class="mb-4 d-flex justify-content-center">
-                  <input type="text" name="q" class="form-control w-50" placeholder="Search for a player..." value="{{ query }}">
-                  <button type="submit" class="btn btn-primary mx-2">Search</button>
-              </form>
-          </div>
-          {% if no_results %}
-                  <div class="alert alert-warning text-center" role="alert">
-                    No players found for "{{ query }}". Please try a different search term.
-                  </div>
-                {% endif %} -->                <tbody>
-                    {% for match in match_data.matches reversed %}
-                    <tr>
-                        <td>{{ match.date }}</td>
-                        <td>{{ match.opponent }}</td>
-                        <td class="{% if match.result == 'win' %}text-success{% elif match.result == 'loss' %}text-danger{% else %}text-warning{% endif %}">
-                            {{ match.result }}
-                        </td>
-                        <td>{{ match.score }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        
-        </div>
-      </div>
+  {% if match_data %}
+  <div class="card-body p-4 text-black">
+    <div class="mb-5  text-body">
+      <div class="row">
+        <div class="container mt-4">
+          <h4 class="text-center">Match History</h4>
+          <form method="GET" action="{% url 'clan_details' clan.id %}" class="mb-4 d-flex justify-content-center">
+            <input type="text" name="q" class="form-control w-50" placeholder="Search for a match..." value="{{ query }}">
+            <button type="submit" class="btn btn-primary mx-2">Search</button>
+          </form>
   
+          <!-- No Results Message -->
+          {% if no_results %}
+          <div class="alert alert-warning text-center" role="alert">
+            No matches found for "{{ query }}". Please try a different search term.
+          </div>
+          {% endif %}
+          <table class="table table-striped table-hover">
+              <thead class="table-dark">
+                  <tr>
+                      <th>Date</th>
+                      <th>Tournament</th>
+                      <th>Opponent</th>
+                      <th>Result</th>
+                      <th>Score</th>
+                  </tr>
+              </thead>
+              <tbody>
+                  {% for match in match_data.matches reversed %}
+                  <tr>
+                      <td>{{ match.date }}</td>
+                      <td>{{match.tour_name}}</td>
+                      <td>{{ match.opponent }}</td>
+                      <td class="{% if match.result == 'win' %}text-success{% elif match.result == 'loss' %}text-danger{% else %}text-warning{% endif %}">
+                          {{ match.result }}
+                      </td>
+                      <td>{{ match.score }}</td>
+                  </tr>
+                  {% endfor %}
+              </tbody>
+          </table>
+      </div>
+      
+      </div>
     </div>
-    {% endif %}
+
+  </div>
+  {% endif %}
 </section>
 
 

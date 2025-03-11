@@ -21,29 +21,40 @@ def register(request):
         form = UserRegisterForm()
     return render(request, 'users/register.html', {'form':form})
 
-
-
 @login_required
 def profile(request):
     """Profile view for the logged-in user"""
-    try:
-        player = User.objects.filter(username__iexact=request.user).first()
-        match_data = player.profile.stats.load_match_data_from_file()
-        match_results = []
-        if match_data:
-            for match in match_data["matches"][-5:]:
-                result = match["result"]
-                if result == "win":
-                    match_results.append("W")
-                elif result == "loss":
-                    match_results.append("L")
-                else:
-                    match_results.append("D")
-    except User.DoesNotExist:
-        match = None
+
+    player = User.objects.filter(username__iexact=request.user).first()
+    match_data = player.profile.stats.load_match_data_from_file()
+    match_results = []
+    if match_data:
+        for match in match_data["matches"][-5:]:
+            result = match["result"]
+            if result == "win":
+                match_results.append("W")
+            elif result == "loss":
+                match_results.append("L")
+            else:
+                match_results.append("D")
+        match_data["matches"] = match_data["matches"][:5]
+    query = request.GET.get('q', '')
+    if query:
+        # Filter players using list comprehension
+        match_data["matches"] = [
+        match for match in match_data['matches']
+        if (query.lower() in match['date'].lower() or
+            query.lower() in match['tour_name'].lower() or
+            query.lower() in match['opponent'].lower() or
+            query.lower() in match['result'].lower() or
+            query.lower() in match['score'].lower())
+        ]
+   #bad i know but this is the best way i could think of slicing it
+    
     context ={
         "match_data":match_data,
-        "match_results":match_results
+        "match_results":match_results,
+        'query':query
     }
     return render(request, 'users/profile.html',context)
 
@@ -105,9 +116,23 @@ def gamer_view(request,player_id):
                 match_results.append("L")
             else:
                 match_results.append("D")
+        match_data["matches"] = match_data["matches"][:5]
+    query = request.GET.get('q', '')
+    if query:
+        # Filter players using list comprehension
+        match_data["matches"] = [
+        match for match in match_data['matches']
+        if (query.lower() in match['date'].lower() or
+            query.lower() in match['tour_name'].lower() or
+            query.lower() in match['opponent'].lower() or
+            query.lower() in match['result'].lower() or
+            query.lower() in match['score'].lower())
+        ]
+   #bad i know but this is the best way i could think of slicing it
+    
   
  
-    return render(request,'users/profile_veiw.html',{'player':player,"match_results":match_results,"match_data":match_data})
+    return render(request,'users/profile_veiw.html',{'player':player,"match_results":match_results,"match_data":match_data,'query':query})
 
 def edit_profile(request):
     """ Edit profile view"""
