@@ -1,19 +1,18 @@
-from django.db import models
 from django.contrib.auth.models import User
-from clubs.models import Clans
-# Create your models here.
+from django.db import models
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
+
 class Follow(models.Model):
-    follower = models.ForeignKey(User, on_delete=models.CASCADE, related_name="following")  # User who follows
-    following_user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True, related_name="followers")  # Followed user
-    following_club = models.ForeignKey(Clans, on_delete=models.CASCADE, null=True, blank=True, related_name="followers")  # Followed club
+    follower_type = models.ForeignKey(ContentType, on_delete=models.CASCADE, related_name="following_type")
+    follower_id = models.PositiveIntegerField()
+    follower = GenericForeignKey('follower_type', 'follower_id')  # Who is following?
+
+    followed_type = models.ForeignKey(ContentType, on_delete=models.CASCADE, related_name="followed_type")
+    followed_id = models.PositiveIntegerField()
+    followed = GenericForeignKey('followed_type', 'followed_id')  # Who is being followed?
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ('follower', 'following_user')  # Prevent duplicate follows
-        unique_together = ('follower', 'following_club')
-
-    def __str__(self):
-        if self.following_user:
-            return f"{self.follower.username} follows {self.following_user.username}"
-        if self.following_club:
-            return f"{self.follower.username} follows {self.following_club.name}"
+        unique_together = ('follower_type', 'follower_id', 'followed_type', 'followed_id')  # Prevent duplicates

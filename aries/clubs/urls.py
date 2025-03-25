@@ -28,7 +28,8 @@ urlpatterns = [
     path("leave/<int:clan_id>/", views.leave_clan, name="leave_clan"),
 
     #change req state
-    path("change/<int:clan_id>/", views.change_recruitment_state,name="change_recruitment_state")
+    path("change/<int:clan_id>/", views.change_recruitment_state,name="change_recruitment_state"),
+    path('<str:action>/<str:followed_model>/<int:followed_id>/', views.follow_unfollow, name='clan_follow_unfollow'),
 ]
 
 # Serve media files during development

@@ -24,8 +24,9 @@
       {% else %}
         <p>Clanless</p>
       {% endif %}
-      <a href="{% url 'follow_user' player.profile.id%}">F</a>
-      <a href="{% url 'unfollow_user' player.profile.id%}">F</a>
+      <button id="follow-btn"  onclick="toggleFollow({{ player.profile.id }}, 'user')">Follow</button>
+<div id="follow-message" style="display: none; color: green;"></div>
+
       {% if match_results %}
       <p>
         {% for result in match_results %}
@@ -151,4 +152,21 @@
   </div>
   {% endif %}
 </section>
+
+<script>
+  function toggleFollow(followedId, followedModel) {
+    let button = document.getElementById("follow-btn");
+    let messageBox = document.getElementById("follow-message");
+    
+    let action = button.innerText.trim() === "Follow" ? "follow" : "unfollow";
+
+    fetch(`/users/${action}/${followedModel}/${followedId}/`)
+        .then(response => response.json())
+        .then(data => {
+          document.getElementById("follow-btn").innerText = action === "follow" ? "Unfollow" : "Follow";
+          document.getElementById("follow-message").innerText = data.context.message;
+          document.getElementById("follow-message").style.display = "block";
+      });
+}
+</script>
 {% endblock content %}

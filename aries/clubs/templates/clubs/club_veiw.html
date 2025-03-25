@@ -25,8 +25,9 @@
            {% csrf_token %}
        </form>
           {% endif %}
-          <a href="{% url 'follow_club' clan.id%}">F</a>
-          <a href="{% url 'unfollow_club' clan.id%}">UF</a>
+          <button id="follow-btn"  onclick="toggleFollow({{ player.profile.id }}, 'user')">Follow</button>
+          <a href="{% url 'clan_follow_unfollow' 'follow' 'clan' clan.id %}">Follow</a>
+        <div id="follow-message" style="display: none; color: green;"></div>
           {% if request.user.profile.clan == clan%}
           <a href="{% url 'leave_clan' clan.id %}" class="btn btn-danger">Leave</a>
           {%endif%}
@@ -214,5 +215,20 @@
     {% endif %}
 </section>
 
+<script>
+  function toggleFollow(followedId, followedModel) {
+    let button = document.getElementById("follow-btn");
+    let messageBox = document.getElementById("follow-message");
+    
+    let action = button.innerText.trim() === "Follow" ? "follow" : "unfollow";
 
+    fetch(`/users/${action}/${followedModel}/${followedId}/`)
+        .then(response => response.json())
+        .then(data => {
+          document.getElementById("follow-btn").innerText = action === "follow" ? "Unfollow" : "Follow";
+          document.getElementById("follow-message").innerText = data.context.message;
+          document.getElementById("follow-message").style.display = "block";
+      });
+}
+</script>
 {% endblock %}

@@ -5,6 +5,11 @@ from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
 from .forms import UserRegisterForm,UserUpdateForm,ProfileUpdateForm
 from django.contrib.auth.models import User
+from django.http import JsonResponse
+from django.contrib.contenttypes.models import ContentType
+from Home.models import Follow
+from clubs.models import Clans
+
 
 
 # Create your views here.
@@ -149,3 +154,54 @@ def edit_profile(request):
         p_form = ProfileUpdateForm()
     return render(request, "users/edit_profile.html",{"u_form":u_form,
         "p_form":p_form,})
+
+
+@login_required
+def follow_unfollow(request, action, followed_model, followed_id):
+    """
+    Allows a user or a club to follow or unfollow another user or club dynamically.
+    :param action: "follow" or "unfollow"
+    :param followed_id: ID of the entity being followed or unfollowed
+    """
+    # Determine follower type
+    if isinstance(request.user, User):
+        follower_type = ContentType.objects.get_for_model(User)
+        follower_id = request.user.id
+    else:
+        follower_type = ContentType.objects.get_for_model(Clans)
+        follower_id = request.clan.id 
+   
+    # Get the followed entity
+    if followed_model == "user":
+        followed_obj = get_object_or_404(User, id=followed_id)
+    else:
+        return JsonResponse({"error": "Invalid model type"}, status=400)
+    followed_type = ContentType.objects.get_for_model(followed_obj)
+
+    if action == "follow":
+        follow, created = Follow.objects.get_or_create(
+            follower_type=follower_type,
+            follower_id=follower_id,
+            followed_type=followed_type,
+            followed_id=followed_obj.id
+        )
+        if created:
+            return JsonResponse({"context": {"message": f"You are now following {followed_model} with ID {followed_id}"}})
+        return JsonResponse({"message": f"Already following {followed_model} with ID {followed_id}"})
+    
+    elif action == "unfollow":
+        deleted, _ = Follow.objects.filter(
+            follower_type=follower_type,
+            follower_id=follower_id,
+            followed_type=followed_type,
+            followed_id=followed_obj.id
+        ).delete()
+        if deleted:
+            return JsonResponse({"context": {"message": f"You have unfollowed {followed_model} with ID {followed_id}"}})
+        return JsonResponse({"context": {"message": "You weren't following this entity"}})
+
+    return JsonResponse({"error": "Invalid action"}, status=400)
+
+""" bob_followers = Follow.objects.filter(followed_type=user_type, followed_id=bob.id)
+bob_following = Follow.objects.filter(follower_type=user_type, follower_id=bob.id)
+ """
