@@ -20,7 +20,7 @@ urlpatterns = [
 
     # Clan details page (view specific clan by ID)
     path('clan_view/<int:clan_id>/', views.club_view, name='clan_details'),
-
+    path('<str:action>/<str:followed_model>/<int:followed_id>/', views.club_follow_unfollow, name='clan_follow_unfollow'),
     #request to join a clan
     path("join/<int:clan_id>/", views.request_to_join_clan, name="request_to_join_clan"),
 
@@ -29,7 +29,7 @@ urlpatterns = [
 
     #change req state
     path("change/<int:clan_id>/", views.change_recruitment_state,name="change_recruitment_state"),
-    path('<str:action>/<str:followed_model>/<int:followed_id>/', views.follow_unfollow, name='clan_follow_unfollow'),
+   
 ]
 
 # Serve media files during development

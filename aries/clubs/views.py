@@ -9,10 +9,7 @@ from .forms import ClanRegistrationForm, ClanLoginForm,AddPlayerToClanForm
 from django.http import JsonResponse
 from django.contrib.contenttypes.models import ContentType
 from Home.models import Follow
-# ============================================================================ #
-#                                   important                                  #
-# ============================================================================ #
-# the clans are clubs to create a pro feel i am calling them club in the htmls but clans in the back
+
 @login_required
 def clubs(request):
     """
@@ -65,7 +62,10 @@ def club_view(request, clan_id):
     clan_stats = get_object_or_404(ClanStats, id=clan_id)  # Fetch the clan's stats
     match_data = clan_stats.load_match_data_from_file()  # Load match data from the JSON file
     # Process match results for display
-    
+    followed_type = ContentType.objects.get_for_model(Clans)
+    club_followers = Follow.objects.filter(followed_type=followed_type, followed_id=clan_id).count()
+    club_following = Follow.objects.filter(follower_type=followed_type, follower_id=clan_id)
+    print(club_followers,club_following)
     match_results = []
     if match_data:
         for match in match_data["matches"][-5:]:  # Get the last 5 matches
@@ -97,7 +97,9 @@ def club_view(request, clan_id):
         'players': members,
         "match_results": match_results,
         "match_data": match_data,
-        'query':query
+        'query':query,
+        'followers':club_followers,
+        'following':club_following,
     }
     return render(request, 'clubs/club_veiw.html', context)
 
@@ -221,12 +223,13 @@ def clan_dashboard(request):
     return render(request, "clubs/clan_dashboard.html", context)
 
 
-def follow_unfollow(request, action, followed_model, followed_id):
+def club_follow_unfollow(request, action, followed_model, followed_id):
     """
     Allows a user or a club to follow or unfollow another user or club dynamically.
     :param action: "follow" or "unfollow"
     :param followed_id: ID of the entity being followed or unfollowed
     """
+    print(action,followed_model)
     # Determine follower type
     if isinstance(request.user, User):
         follower_type = ContentType.objects.get_for_model(User)
@@ -234,10 +237,12 @@ def follow_unfollow(request, action, followed_model, followed_id):
     else:
         follower_type = ContentType.objects.get_for_model(Clans)
         follower_id = request.clan.id 
+
+    print(follower_id)
    
     # Get the followed entity
     if followed_model == "clan":
-        followed_obj = get_object_or_404(User, id=followed_id)
+        followed_obj = get_object_or_404(Clans, id=followed_id)
     else:
         return JsonResponse({"error": "Invalid model type"}, status=400)
     followed_type = ContentType.objects.get_for_model(followed_obj)
@@ -250,8 +255,8 @@ def follow_unfollow(request, action, followed_model, followed_id):
             followed_id=followed_obj.id
         )
         if created:
-            return JsonResponse({"context": {"message": f"You are now following {followed_model} with ID {followed_id}"}})
-        return JsonResponse({"message": f"Already following {followed_model} with ID {followed_id}"})
+            return JsonResponse({"context": {"message": f"You are now following {followed_obj.clan_name}"}})
+        return JsonResponse({"message": f"Already following {followed_obj.clan_name}"})
     
     elif action == "unfollow":
         deleted, _ = Follow.objects.filter(
@@ -261,9 +266,7 @@ def follow_unfollow(request, action, followed_model, followed_id):
             followed_id=followed_obj.id
         ).delete()
         if deleted:
-            return JsonResponse({"context": {"message": f"You have unfollowed {followed_model} with ID {followed_id}"}})
-        return JsonResponse({"context": {"message": "You weren't following this entity"}})
+            return JsonResponse({"context": {"message": f"You have unfollowed {followed_obj.clan_name}"}})
+        return JsonResponse({"context": {"message": "You weren't following this account"}})
 
     return JsonResponse({"error": "Invalid action"}, status=400)
-""" club_followers = Follow.objects.filter(followed_type=club_type, followed_id=chess_club.id)
-club_following = Follow.objects.filter(follower_type=club_type, follower_id=chess_club.id) """
