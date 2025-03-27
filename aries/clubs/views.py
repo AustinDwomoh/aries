@@ -64,7 +64,7 @@ def club_view(request, clan_id):
     # Process match results for display
     followed_type = ContentType.objects.get_for_model(Clans)
     club_followers = Follow.objects.filter(followed_type=followed_type, followed_id=clan_id).count()
-    club_following = Follow.objects.filter(follower_type=followed_type, follower_id=clan_id)
+    club_following = Follow.objects.filter(follower_type=followed_type, follower_id=clan_id).count()
     print(club_followers,club_following)
     match_results = []
     if match_data:
