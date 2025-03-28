@@ -8,71 +8,83 @@
     background-color: #fff !important;
   }
 </STYle>
-
 <section>
-  <div class="rounded-top text-white d-flex flex-row" style="background-image: url('{{ player.profile.clan.clan_profile_pic.url }}'); background-size: cover; background-position: center; height: 220px;">
-    <div class="ms-2 mt-5 d-flex flex-column" style="width: 150px;">
+  <div class="rounded-top text-white d-flex flex-column text-center text-md-start" style="background-image: url('{{ player.profile.clan.clan_profile_pic.url }}'); background-size: cover; background-position: center; height: 220px;">
+    <div class="mt-5 mx-auto mx-md-2" style="width: 150px;">
       <img src="{{ player.profile.profile_picture.url }}" 
            alt="Inphinithy"  class="img-fluid img-thumbnail mt-2 mb-2" style="width:150px;height:160px;z-index: 1" loading="lazy">
     </div>
   </div>
-  <div class="d-flex justify-content-between align-items-center py-2 px-3 text-body bg-light rounded shadow-sm" style="width: 100%;">
-    <div class="text-left">
+  
+  <div class="d-flex justify-content-evenly justify-content-md-between align-items-center py-2 px-3 text-body bg-light rounded shadow-sm" style="width: 100%;">
+    <div class="text-center text-md-start">
       <h5>{{ player.username }}</h5>
       {% if player.profile.clan.clan_name %}
         <p>{{ player.profile.clan.clan_name }}({{player.profile.clan.clan_tag}}){% if  player.profile.role  %}[{{ player.profile.role}}]{% endif %}</p>
       {% else %}
         <p>Clanless</p>
       {% endif %}
-      <div class="d-flex text-center ">
-        <div class="mx-2">
-          <p class="mb-1 h6 text-primary">{{ followers }}</p>
-          <p class="small text-muted mb-0">Followers</p>
-        </div>
-        <div class="mx-2">
-          <p class="mb-1 h6 text-success">{{ following }}</p>
-          <p class="small text-muted mb-0">Following</p>
-        </div>
-        <div class="mx-2">
-          <button id="follow-btn"  onclick="toggleFollow({{ player.profile.id }}, 'user')">Follow</button>
-        </div>
-      </div>
-     
-<div id="follow-message" style="display: none; color: green;"></div>
-
       {% if match_results %}
-      <p>
-        {% for result in match_results %}
-            <span class="badge {% if result == 'W' %}bg-success{% elif result == 'L' %}bg-danger{% else %}bg-warning{% endif %} ">
-                {% if result == 'W' %}
-                    W
-                {% elif result == 'L' %}
-                    L
-                {% else %}
-                    D
-                {% endif %}
-            </span>
-        {% endfor %}
-    </p>
-    {% endif %}
-    </div>
+        <p>
+          {% for result in match_results %}
+              <span class="badge {% if result == 'W' %}bg-success{% elif result == 'L' %}bg-danger{% else %}bg-warning{% endif %} ">
+                  {% if result == 'W' %}
+                      W
+                  {% elif result == 'L' %}
+                      L
+                  {% else %}
+                      D
+                  {% endif %}
+              </span>
+          {% endfor %}
+      </p>
+      {% endif %}
+      <div class="row justify-content-evenly  text-center">
+        <!-- First Section: Followers & Following -->
+        <div class="col-md-5 d-flex justify-content-evenly mb-2 align-items-center gap-4">
+          <div>
+            <p class="mb-1 h6 text-primary">{{ followers }}</p>
+            <p class="small text-muted mb-0">Followers</p>
+          </div>
+          <div>
+            <p class="mb-1 h6 text-success">{{ following }}</p>
+            <p class="small text-muted mb-0">Following</p>
+          </div>
+        </div>
       
+        <!-- Second Section: Win Rate, Matches & Ranking -->
+        <div class="col-md-5 d-flex justify-content-evenly mb-2 align-items-center gap-4">
+          <div>
+            <p class="mb-1 h6 text-primary">{{ player.profile.stats.win_rate }}%</p>
+            <p class="small text-muted mb-0">Win Rate</p>
+          </div>
+          <div>
+            <p class="mb-1 h6 text-success">{{ player.profile.stats.games_played }}</p>
+            <p class="small text-muted mb-0">Matches</p>
+          </div>
+          <div>
+            <p class="mb-1 h6 text-warning">{{ player.profile.stats.rank }}</p>
+            <p class="small text-muted mb-0">Rank</p>
+          </div>
+        </div>
+
+        <!--THird section- button-->
+        <div class="col-md-5 d-flex justify-content-evenly mb-2 align-items-center gap-4">
+          <div>
+            <button id="follow-btn" class="btn btn-primary"  onclick="toggleFollow({{ player.profile.id }}, 'user')">
+              {% if is_following %} Unfollow {% else %} Follow {% endif %}
+            </button>
+            <div id="follow-message" style="display: none; color: green;"></div>
+          </div>
+          
+        </div>
+      </div> 
       
-    <div class="d-flex text-center ">
-      <div class="mx-2">
-        <p class="mb-1 h6 text-primary">{{ player.profile.stats.win_rate }}%</p>
-        <p class="small text-muted mb-0">Win Rate</p>
-      </div>
-      <div class="mx-2">
-        <p class="mb-1 h6 text-success">{{ player.profile.stats.games_played }}</p>
-        <p class="small text-muted mb-0">Matches</p>
-      </div>
-      <div class="mx-2">
-        <p class="mb-1 h6 text-warning">{{ player.profile.stats.rank }}</p>
-        <p class="small text-muted mb-0">Rank</p>
-      </div>
     </div>
   </div>
+  
+  
+
 
   <div class="card-body p-4 text-black">
     <div class="mb-5  text-body">
@@ -115,7 +127,10 @@
     </div>
 
   </div>
+  
+</section>
 
+<section>
   {% if match_data %}
   <div class="card-body p-4 text-black">
     <div class="mb-5  text-body">
@@ -157,8 +172,7 @@
                   {% endfor %}
               </tbody>
           </table>
-      </div>
-      
+      </div> 
       </div>
     </div>
 
@@ -179,6 +193,7 @@
           document.getElementById("follow-btn").innerText = action === "follow" ? "Unfollow" : "Follow";
           document.getElementById("follow-message").innerText = data.context.message;
           document.getElementById("follow-message").style.display = "block";
+          location.reload();
       });
 }
 </script>

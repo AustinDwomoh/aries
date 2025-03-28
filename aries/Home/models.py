@@ -6,7 +6,7 @@ from django.contrib.contenttypes.models import ContentType
 class Follow(models.Model):
     follower_type = models.ForeignKey(ContentType, on_delete=models.CASCADE, related_name="following_type")
     follower_id = models.PositiveIntegerField()
-    follower = GenericForeignKey('follower_type', 'follower_id')  # Who is following?
+    follower = GenericForeignKey('follower_type', 'follower_id')  
 
     followed_type = models.ForeignKey(ContentType, on_delete=models.CASCADE, related_name="followed_type")
     followed_id = models.PositiveIntegerField()

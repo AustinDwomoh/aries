@@ -8,6 +8,7 @@ from django.contrib.auth.decorators import login_required
 from .forms import ClanRegistrationForm, ClanLoginForm,AddPlayerToClanForm
 from django.http import JsonResponse
 from django.contrib.contenttypes.models import ContentType
+from django.db.models import Count,Q
 from Home.models import Follow
 
 @login_required
@@ -35,9 +36,9 @@ def request_to_join_clan(request, clan_id):
 
     existing_request = ClanJoinRequest.objects.filter(player=request.user, clan=clan, status="pending").exists()
     if existing_request:
-        return render(request, "message.html", {"message": "You have already requested to join this clan."})
+        return JsonResponse({"message": "You have already requested to join this clan.Contact admin if possible"})
     ClanJoinRequest.objects.create(player=request.user, clan=clan)
-    return redirect("clubs-home")
+    return JsonResponse({"message": "Request sent"})
 
 def leave_clan(request,clan_id):
     """Allow players to leave clans"""
@@ -62,34 +63,39 @@ def club_view(request, clan_id):
     clan_stats = get_object_or_404(ClanStats, id=clan_id)  # Fetch the clan's stats
     match_data = clan_stats.load_match_data_from_file()  # Load match data from the JSON file
     # Process match results for display
+    # Fetching followers and following count for the club
+    # ============================================================================ #
+    #                          Fetching followers and following count                #
+    # ============================================================================ #
     followed_type = ContentType.objects.get_for_model(Clans)
-    club_followers = Follow.objects.filter(followed_type=followed_type, followed_id=clan_id).count()
-    club_following = Follow.objects.filter(follower_type=followed_type, follower_id=clan_id).count()
-    print(club_followers,club_following)
+    followed_type = ContentType.objects.get_for_model(Clans)
+    follow_data = Follow.objects.filter(followed_type=followed_type, followed_id=clan_id).aggregate(followers=Count('id'),
+following=Count('id', filter=Q(follower_id=clan_id))
+    )
+    followers = follow_data['followers']
+    following = follow_data['following']
+    is_following =  Follow.objects.filter(followed_type=followed_type, followed_id=clan_id, follower_id=request.user.id).exists()
+  
+   # ============================================================================ #
+   #                          Check for clan matches data                         #
+   # ============================================================================ #
     match_results = []
     if match_data:
-        for match in match_data["matches"][-5:]:  # Get the last 5 matches
-            result = match["result"]
-            if result == "win":
-                match_results.append("W")  
-            elif result == "loss":
-                match_results.append("L") 
-            else:
-                match_results.append("D") 
-        match_data["matches"] = match_data["matches"][:5]
+        last_5_matches = match_data["matches"][-5:]  # Get last 5 matches
+        match_results = ["W" if match["result"] == "win" else "L" if match["result"] == "loss" else "D" for match in last_5_matches]
+        match_data["matches"] = last_5_matches  # Avoid slicing again later
+    
+    # ========================= searching for match data ========================= #
     query = request.GET.get('q', '')
     if query:
         # Filter players using list comprehension
+        query_lower = query.lower()
         match_data["matches"] = [
-        match for match in match_data['matches']
-        if (query.lower() in match['date'].lower() or
-            query.lower() in match['tour_name'].lower() or
-            query.lower() in match['opponent'].lower() or
-            query.lower() in match['result'].lower() or
-            query.lower() in match['score'].lower())
+            match for match in match_data['matches']
+            if any(query_lower in str(match[field]).lower() for field in ['date', 'tour_name', 'opponent', 'result', 'score'])
         ]
-   #bad i know but this is the best way i could think of slicing it
-    
+    #no_results = not match_data["matches"]
+
     members =User.objects.filter(profile__clan=clan)
     context = {
         'clan': clan,
@@ -98,8 +104,9 @@ def club_view(request, clan_id):
         "match_results": match_results,
         "match_data": match_data,
         'query':query,
-        'followers':club_followers,
-        'following':club_following,
+        'followers':followers,
+        'following':following,
+        'is_following': is_following# Check if the user is following the clan
     }
     return render(request, 'clubs/club_veiw.html', context)
 
@@ -164,25 +171,39 @@ def clan_login_required(view_func):
 
 @clan_login_required
 def clan_dashboard(request):
+    """
+    Displays the dashboard for logged-in clans.
+    """
     clan = get_object_or_404(Clans, id=request.session['clan_id'])
     clan_stats = get_object_or_404(ClanStats, id=request.session['clan_id'])
     match_data = clan_stats.load_match_data_from_file()
     form = AddPlayerToClanForm(request.POST or None)
     members =User.objects.filter(profile__clan=clan)
     join_requests = ClanJoinRequest.objects.filter(clan=clan, status="pending")
+    followed_type = ContentType.objects.get_for_model(Clans)
+    followed_type = ContentType.objects.get_for_model(Clans)
+    follow_data = Follow.objects.filter(followed_type=followed_type, followed_id=request.session['clan_id']).aggregate(followers=Count('id'),
+following=Count('id', filter=Q(follower_id=request.session['clan_id']))
+    )
+    followers = follow_data['followers']
+    following = follow_data['following']
+    # ============================ get last 5 matches ============================ #
+    match_results = []
+    if match_data:
+        last_5_matches = match_data["matches"][-5:]  # Get last 5 matches
+        match_results = ["W" if match["result"] == "win" else "L" if match["result"] == "loss" else "D" for match in last_5_matches]
+        match_data["matches"] = last_5_matches
+
+    # ============================ searching for match data ============================ #
     query = request.GET.get('q', '')
     if query:
         # Filter players using list comprehension
+        query_lower = query.lower()
         match_data["matches"] = [
-        match for match in match_data['matches']
-        if (query.lower() in match['date'].lower() or
-            query.lower() in match['tour_name'].lower() or
-            query.lower() in match['opponent'].lower() or
-            query.lower() in match['result'].lower() or
-            query.lower() in match['score'].lower())
+            match for match in match_data['matches']
+            if any(query_lower in str(match[field]).lower() for field in ['date', 'tour_name', 'opponent', 'result', 'score'])
         ]
-   #bad i know but this is the best way i could think of slicing it
-    match_data["matches"] = match_data["matches"][:5]
+
     if request.method == "POST":
         if "add_player" in request.POST and form.is_valid():
             player = form.cleaned_data["username"]  # Get the selected user
@@ -215,10 +236,13 @@ def clan_dashboard(request):
         "clan": clan,
         "stats": clan_stats,
         "players": members,
+        "match_results": match_results,
         "match_data": match_data,
         "join_requests": join_requests,
         "form":form,
-        'query':query
+        'query':query,
+        'followers':followers,
+        'following':following,
     }
     return render(request, "clubs/clan_dashboard.html", context)
 
@@ -238,7 +262,6 @@ def club_follow_unfollow(request, action, followed_model, followed_id):
         follower_type = ContentType.objects.get_for_model(Clans)
         follower_id = request.clan.id 
 
-    print(follower_id)
    
     # Get the followed entity
     if followed_model == "clan":
@@ -256,7 +279,7 @@ def club_follow_unfollow(request, action, followed_model, followed_id):
         )
         if created:
             return JsonResponse({"context": {"message": f"You are now following {followed_obj.clan_name}"}})
-        return JsonResponse({"message": f"Already following {followed_obj.clan_name}"})
+        return JsonResponse({"context": {"message":f"Already following {followed_obj.clan_name}"}})
     
     elif action == "unfollow":
         deleted, _ = Follow.objects.filter(

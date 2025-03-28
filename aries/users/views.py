@@ -109,7 +109,11 @@ def gamer_view(request,player_id):
     player = get_object_or_404(User, id=player_id)
     player_stats = player.profile.stats  
     match_data = player_stats.load_match_data_from_file()
-    
+    followed_type = ContentType.objects.get_for_model(Clans)
+
+    followers = Follow.objects.filter(followed_type=followed_type, followed_id=player_id).count()
+    following = Follow.objects.filter(follower_type=followed_type, follower_id=player_id).count()
+    is_following =  Follow.objects.filter(followed_type=followed_type, followed_id=player_id, follower_id=request.user.id).exists()
     # Extract match results (W, L, D)
     match_results = []
     if match_data:
@@ -134,10 +138,18 @@ def gamer_view(request,player_id):
             query.lower() in match['score'].lower())
         ]
    #bad i know but this is the best way i could think of slicing it
-    
+    context ={
+        'player':player,
+        "match_results":match_results,
+        "match_data":match_data,
+        'query':query,
+        'followers':followers,
+        'following':following,
+        'is_following': is_following
+        }
   
  
-    return render(request,'users/profile_veiw.html',{'player':player,"match_results":match_results,"match_data":match_data,'query':query})
+    return render(request,'users/profile_veiw.html',context)
 
 def edit_profile(request):
     """ Edit profile view"""
