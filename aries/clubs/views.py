@@ -177,7 +177,7 @@ def clan_dashboard(request):
     clan = get_object_or_404(Clans, id=request.session['clan_id'])
     clan_stats = get_object_or_404(ClanStats, id=request.session['clan_id'])
     match_data = clan_stats.load_match_data_from_file()
-    form = AddPlayerToClanForm(request.POST or None)
+    form = AddPlayerToClanForm(request.POST or None, clan=clan)
     members =User.objects.filter(profile__clan=clan)
     join_requests = ClanJoinRequest.objects.filter(clan=clan, status="pending")
     followed_type = ContentType.objects.get_for_model(Clans)
@@ -195,6 +195,7 @@ following=Count('id', filter=Q(follower_id=request.session['clan_id']))
         match_data["matches"] = last_5_matches
 
     # ============================ searching for match data ============================ #
+   
     query = request.GET.get('q', '')
     if query:
         # Filter players using list comprehension
@@ -203,34 +204,7 @@ following=Count('id', filter=Q(follower_id=request.session['clan_id']))
             match for match in match_data['matches']
             if any(query_lower in str(match[field]).lower() for field in ['date', 'tour_name', 'opponent', 'result', 'score'])
         ]
-
-    if request.method == "POST":
-        if "add_player" in request.POST and form.is_valid():
-            player = form.cleaned_data["username"]  # Get the selected user
-            profile, created = Profile.objects.get_or_create(user=player)
-          
-            if profile.clan:
-                return render(request, "clubs/clan_dashboard.html", {
-                    "clan": clan, "stats": clan_stats, "players": members, "match_data": match_data,
-                    "join_requests": join_requests, 
-                    "error": f"{player.username} is already in a clan!"
-                })
-            
-            profile.clan = clan  # Assign the player to the clan
-            profile.save()
-            return redirect("clan_dashboard", clan_id=clan.id) 
-
-        elif "manage_request" in request.POST:
-            request_id = request.POST.get("request_id")
-            action =  request.POST.get("manage_request")
-            join_request = get_object_or_404(ClanJoinRequest, id=request_id)
-            
-            if action == "approve":
-                join_request.approve()
-            elif action == "reject":
-                join_request.reject()
-
-            return redirect("clan_dashboard")
+        
         
     context = {
         "clan": clan,
@@ -246,6 +220,39 @@ following=Count('id', filter=Q(follower_id=request.session['clan_id']))
     }
     return render(request, "clubs/clan_dashboard.html", context)
 
+def approve_reject(request):
+    request_id = request.POST.get("request_id")
+    action = request.POST.get("manage_request")
+    join_request = get_object_or_404(ClanJoinRequest, id=request_id)
+    if action == "approve":
+        join_request.approve()
+        return JsonResponse({"message": "Join request approved."})
+    elif action == "reject":
+        join_request.reject()
+        return JsonResponse({"message": "Join request rejected."})
+    return JsonResponse({"error": "Invalid request"}, status=400)
+
+def add_remove_players(request):
+    clan = get_object_or_404(Clans, id=request.session['clan_id'])
+    form = AddPlayerToClanForm(request.POST or None,clan=clan)
+    if request.method == "POST"  and form.is_valid():
+        action = request.POST.get("action")
+        print(action)
+        player = form.cleaned_data.get("username")  # Get the selected user
+        profile = get_object_or_404(Profile, user=player)
+        if action == "add_player":
+            if profile.clan:
+                return JsonResponse({"message": f"{player.username} is already in a clan!"})
+
+            profile.clan = clan  # Assign the player to the clan
+            profile.save()
+            return JsonResponse({"message": f"{player.username} has joined"})
+        elif action == "remove_player":
+            profile.clan = None  # Assign the player to the clan
+            profile.save()
+            return JsonResponse({"message": f"{player} has been removed from the clan."})
+         
+    return JsonResponse({"error": "Invalid request"}, status=400)
 
 def club_follow_unfollow(request, action, followed_model, followed_id):
     """

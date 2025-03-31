@@ -18,6 +18,9 @@ urlpatterns = [
     # Clan dashboard page (for logged-in clans)
     path('dashboard/', views.clan_dashboard, name='clan_dashboard'),
 
+    path('add_remove/', views.add_remove_players, name='update_list'),
+    path('add_remove_player/', views.approve_reject, name='update_player_list'),
+    
     # Clan details page (view specific clan by ID)
     path('clan_view/<int:clan_id>/', views.club_view, name='clan_details'),
     path('<str:action>/<str:followed_model>/<int:followed_id>/', views.club_follow_unfollow, name='clan_follow_unfollow'),

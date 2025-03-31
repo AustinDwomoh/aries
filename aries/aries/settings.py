@@ -56,6 +56,11 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',  # Default user login
+    'yourapp.auth_backends.ClanAuthBackend',  # Clan login
+]
+
 ROOT_URLCONF = 'aries.urls'
 
 TEMPLATES = [

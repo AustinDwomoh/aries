@@ -4,19 +4,20 @@
 {% endblock %}
 {% load static %} 
 {% block content %}
-<section  class="d-md-none " >
+<!--Smaller screen-->
+<section  class="d-md-none" >
   <!--Name and follow stats-->
     <div class="rounded-top text-white d-flex flex-column text-center text-md-start" 
           style="background-image: url('{{ clan.clan_profile_pic.url }}');     background-size: cover; background-position: center; height: 220px;">
 
       <!-- Clan Logo -->
-     <div class="mt-5 mx-auto mx-md-4 position-relative" style="width: 150px;">
-      <img src="{{ clan.clan_logo.url }}" 
-           alt="{{ clan.clan_name }}"  
-           class="img-fluid img-thumbnail border-3 border-white shadow-lg rounded-circle" 
-           style="width: 150px; height: 160px; object-fit: cover;" 
-           loading="lazy">
-    </div>
+      <div class="mt-5 mx-auto mx-md-4 position-relative" style="width: 150px;">
+        <img src="{{ clan.clan_logo.url }}" 
+            alt="{{ clan.clan_name }}"  
+            class="img-fluid img-thumbnail border-3 border-white shadow-lg rounded-circle" 
+            style="width: 150px; height: 160px; object-fit: cover;" 
+            loading="lazy">
+      </div>
     </div>
     
     <div class="d-flex justify-content-evenly justify-content-md-between align-items-center py-2 px-3 text-body bg-light rounded shadow-sm" style="width: 100%;">
@@ -60,6 +61,7 @@
     </div>
 </section>
 
+<!--Medium screen upwards-->
 <section class="d-none d-md-block">
   <!-- Clan Banner with Logo -->
   <div class="rounded-top text-white d-flex flex-column text-center text-md-start position-relative" 
@@ -229,19 +231,17 @@
  <section>
   <div class="container-fluid text-center">
     <h3>Add a Player to the Clan</h3>
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}  <!-- Django renders the form -->
-        <button type="submit" class="btn btn-success" name="add_player">Add Player</button>
-    </form>
-    {% if message %}
-        <p style="color: green;">{{ message }}</p>
-    {% endif %}
-    {% if error %}
-        <p style="color: red;">{{ error }}</p>
-    {% endif %}
-  </div>>
+    <form id="add-player-form" method="post">
+      {% csrf_token %}
+      {{ form.as_p }}  <!-- Django renders the form -->
+      <button type="submit" class="btn btn-success" name="action" value="add_player">Add Player</button>
+  <button type="submit" class="btn btn-danger" name="action" value="remove_player">Remove Player</button>
+  </form>
+  <p id="message" style="color: green; display: none;"></p>
+  <p id="error" style="color: red; display: none;"></p>  
+  </div>
   
+  <!--Player finding script-->
   <script type="text/javascript">
     $(document).ready(function() {
         $('.select2').select2({
@@ -251,21 +251,110 @@
         });
     });
   </script>
-  
+  <script>
+      function submitForm(formId, url) {
+          document.getElementById(formId).addEventListener("submit", function(event) {
+              event.preventDefault(); // Prevent page reload
+              let formData = new FormData(this);
+              let clickedButton = document.activeElement; 
+              if (clickedButton && clickedButton.name === "action") {
+                  formData.set("action", clickedButton.value);
+              }
+              fetch(url, { 
+                  method: "POST",
+                  body: formData,
+                  headers: {
+                      "X-Requested-With": "XMLHttpRequest"
+                  }
+              })
+              .then(response => response.json())
+              .then(data => {
+                  let messageEl = document.getElementById("message");
+                  messageEl.innerText = data.message;
+                  messageEl.style.display = "block";
+                  location.reload(); 
+              })
+              .catch(error => console.error("Error:", error));
+          });}
+      document.addEventListener("DOMContentLoaded", function() {
+          submitForm("add-player-form", "{% url 'update_list' %}");
+      });
+  </script>
+    
   {% if join_requests %}
   <h3>Pending Join Requests</h3>
   {% for request in join_requests %}
-      <form method="post">
-          {% csrf_token %}
-          <p>{{ request.player.username }} wants to join.</p>
-          <input type="hidden" name="request_id" value="{{ request.id }}">
-          <button type="submit" name="manage_request" class="btn btn-success" value="approve">Approve</button>
-          <button type="submit" name="manage_request" class="btn btn-danger" value="reject">Reject</button>
-      </form>
-  {% endfor %}
+    <form method="post" id="join-request-form-{{ request.id }}">
+        {% csrf_token %}
+        <p>{{ request.player.username }} wants to join.</p>
+        <input type="hidden" name="request_id" value="{{ request.id }}">
+        <p id="status-message-{{ request.id }}" style="color: green; display: none;"></p> <!-- For success/error message -->
+
+        <button id="approve-button-{{ request.id }}" class="btn btn-success">Approve</button>
+        <button id="reject-button-{{ request.id }}" class="btn btn-danger">Reject</button>
+    </form>
+     <!-- Message area -->
+{% endfor %}
   {% endif %}
-  
     </div>
+    <!--* ======================= Request form aprove  script ====================== -->
+    <script>
+      document.addEventListener("DOMContentLoaded", function() {
+          // Loop through each request for join handling
+          {% for request in join_requests %}
+          // Get buttons for approve/reject actions
+          let approveButton = document.getElementById("approve-button-{{ request.id }}");
+          let rejectButton = document.getElementById("reject-button-{{ request.id }}");
+          
+          // Handle the approve action
+          approveButton.addEventListener("click", function(event) {
+              event.preventDefault(); // Prevent page reload
+              handleJoinRequest(event, "{{ request.id }}", "approve");
+          });
+          const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        
+          // Handle the reject action
+          rejectButton.addEventListener("click", function(event) {
+              event.preventDefault(); // Prevent page reload
+              handleJoinRequest(event, "{{ request.id }}", "reject");
+          });
+  
+          // Function to handle both approve/reject actions
+          function handleJoinRequest(event, requestId, action) {
+              let formData = new FormData();
+              formData.append("request_id", requestId);
+              formData.append("manage_request", action);
+  
+              // Send the request using Fetch API
+              fetch("{% url 'update_player_list' %}", {  // URL to handle the request
+                  method: "POST",  // POST method for form submission
+                  body: formData,  // Send form data
+                  headers: {
+                      "X-Requested-With": "XMLHttpRequest" ,
+                      "X-CSRFToken": csrfToken // Ensure it's an AJAX request
+                  }
+              })
+              .then(response => response.json())  // Parse the response as JSON
+              .then(data => {
+                  // Display the response message
+                  let statusMessageEl = document.getElementById("status-message-{{ request.id }}");
+                  statusMessageEl.innerText = data.message;  // Display message from the response
+                  statusMessageEl.style.display = "block";  // Make the message visible
+  
+                  approveButton.disabled = true;
+                  rejectButton.disabled = true;
+  
+                 
+                   location.reload();  // Uncomment to reload the page
+              })
+              .catch(error => {
+                  console.error("Error:", error);
+              });
+          }
+          {% endfor %}
+      });
+    </script>
+  
 </section>
 
 <!--Match DAta section-->
@@ -282,11 +371,7 @@
           </form>
   
           <!-- No Results Message fix them in the queries -->
-          {% if no_results %}
-          <div class="alert alert-warning text-center" role="alert">
-            No matches found for "{{ query }}". Please try a different search term.
-          </div>
-          {% endif %}
+         
           <table class="table table-striped table-hover">
               <thead class="table-dark">
                   <tr>

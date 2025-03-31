@@ -358,14 +358,12 @@
         .then(data => {
             messageBox.innerText = data.message;
             messageBox.style.display = "block";
-
             document.querySelector(".btn-success").innerText = "Request Sent";
             document.querySelector(".btn-success").disabled = true;
+            location.reload();
         })
         .catch(error => console.error("Error:", error));
-        setTimeout(() => {
-          location.reload();
-      }, 1500)
+
       }
 </script>
 {% endblock %}

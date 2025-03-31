@@ -41,8 +41,12 @@ class AddPlayerToClanForm(forms.Form):
     """
     Form for selecting a player to add to a clan.
     """
-    username = forms.ModelChoiceField(
-        queryset=User.objects.filter(profile__clan__isnull=True),  # Users not in any clan
-        widget=forms.Select(attrs={'class': 'select2', 'style': 'width: 100%;'}),
-        empty_label="Select a user"
-    )
+    def __init__(self, *args, **kwargs):
+        clan = kwargs.pop('clan', None)
+        super().__init__(*args, **kwargs)
+
+        self.fields['username'] = forms.ModelChoiceField(
+                queryset=User.objects.filter(profile__clan=clan),  # Filter users that are in the clan
+                widget=forms.Select(attrs={'class': 'select2', 'style': 'width: 100%;'}),
+                empty_label="Select a user"
+            )
