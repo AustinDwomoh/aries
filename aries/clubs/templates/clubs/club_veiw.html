@@ -343,6 +343,7 @@
       });
       }
 
+ 
   function joinClub() {
         let form = document.getElementById("join-clan-form");
         let messageBox = document.getElementById("join-message");
@@ -355,12 +356,14 @@
             }
         })
         .then(response => response.json())
+
         .then(data => {
+          console.log(data);
             messageBox.innerText = data.message;
             messageBox.style.display = "block";
             document.querySelector(".btn-success").innerText = "Request Sent";
             document.querySelector(".btn-success").disabled = true;
-            location.reload();
+            
         })
         .catch(error => console.error("Error:", error));
 

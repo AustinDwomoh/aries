@@ -36,8 +36,10 @@ def request_to_join_clan(request, clan_id):
 
     existing_request = ClanJoinRequest.objects.filter(player=request.user, clan=clan, status="pending").exists()
     if existing_request:
+        print('here')
         return JsonResponse({"message": "You have already requested to join this clan.Contact admin if possible"})
     ClanJoinRequest.objects.create(player=request.user, clan=clan)
+    print('here1')
     return JsonResponse({"message": "Request sent"})
 
 def leave_clan(request,clan_id):
@@ -260,7 +262,9 @@ def club_follow_unfollow(request, action, followed_model, followed_id):
     :param action: "follow" or "unfollow"
     :param followed_id: ID of the entity being followed or unfollowed
     """
-    print(action,followed_model)
+    # Check if the user is authenticated
+    if not request.user.is_authenticated:
+        return JsonResponse({"error": "You need to be logged in to follow or unfollow."}, status=401)
     # Determine follower type
     if isinstance(request.user, User):
         follower_type = ContentType.objects.get_for_model(User)

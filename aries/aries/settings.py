@@ -58,7 +58,7 @@ MIDDLEWARE = [
 
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',  # Default user login
-    'yourapp.auth_backends.ClanAuthBackend',  # Clan login
+    #'yourapp.auth_backends.ClanAuthBackend',  # Clan login
 ]
 
 ROOT_URLCONF = 'aries.urls'
