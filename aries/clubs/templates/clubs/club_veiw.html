@@ -4,7 +4,7 @@
 {% endblock %}
 {% block content %}
 <!-- Section for small screens (up to md) -->
-<section  class="d-md-none " >
+<section id="section-sm" class="d-md-none " >
   <!--Name and follow stats-->
     <div class="rounded-top text-white d-flex flex-column text-center text-md-start" 
           style="background-image: url('{{ clan.clan_profile_pic.url }}');     background-size: cover; background-position: center; height: 220px;">
@@ -61,23 +61,23 @@
             {% if not request.user.profile.clan and clan.is_recruiting %}
             <div>
                 <a href="#" 
-                onclick="event.preventDefault(); joinClub();" 
+                onclick="event.preventDefault(); joinClub('section-sm');" 
                 class="btn btn-success">
                 Request to Join
               </a>
-              <form id="join-clan-form" action="{% url 'request_to_join_clan' clan.id %}" method="post" style="display: none;">
+              <form class="join-clan-form" action="{% url 'request_to_join_clan' clan.id %}" method="post" style="display: none;">
                   {% csrf_token %}
               </form>
-              <div id="join-message" style="display: none; color: green;"></div>  
+              <div class="join-message" style="display: none; color: green;"></div>  
             </div>
             {% endif %}
 
-            <div>
-              <button id="follow-btn" class="btn btn-primary" 
-                  onclick="toggleFollow({{ clan.id }}, 'clan')">
+            <div >
+              <button  class="follow-btn btn btn-primary" 
+                  onclick="toggleFollow({{ clan.id }}, 'clan', 'section-sm')">
                   {% if is_following %} Unfollow {% else %} Follow {% endif %}
               </button>
-              <div id="follow-message" style="display: none; color: green;"></div>
+              <div class="follow-message" style="display: none; color: green;"></div>
             </div>
             {% if request.user.profile.clan == clan%}
             <div> 
@@ -92,7 +92,7 @@
     </div>
 </section>
 
-<section class="d-none d-md-block">
+<section id="section-md"class="d-none d-md-block">
   <!-- Clan Banner with Logo -->
   <div class="rounded-top text-white d-flex flex-column text-center text-md-start position-relative" 
        style="background-image: url('{{ clan.clan_profile_pic.url }}'); 
@@ -142,25 +142,27 @@
      </div>
 
      <!-- Buttons Section -->
-     <div class="d-flex gap-3">
+     <div class="d-flex gap-3" >
        {% if not request.user.profile.clan and clan.is_recruiting %}
-       <a href="#" onclick="event.preventDefault(); joinClub();" class="btn btn-success btn-sm">
+       <a href="#" onclick="event.preventDefault(); joinClub('section-md');" class="btn btn-success btn-sm">
          Request to Join
        </a>
-       <form id="join-clan-form" action="{% url 'request_to_join_clan' clan.id %}" method="post" style="display: none;">
+       <form class="join-clan-form" action="{% url 'request_to_join_clan' clan.id %}" method="post" style="display: none;">
            {% csrf_token %}
        </form>
-       <div id="join-message" style="display: none; color: green;"></div>  
+       <div class="join-message" style="display: none; color: green;"></div>  
        {% endif %}
 
-       <button id="follow-btn" class="btn btn-primary btn-sm" onclick="toggleFollow({{ clan.id }}, 'clan')">
-           {% if is_following %} Unfollow {% else %} Follow {% endif %}
-       </button>
-       <div id="follow-message" style="display: none; color: green;"></div>
-
-       {% if request.user.profile.clan == clan %}
-       <a href="{% url 'leave_clan' clan.id %}" class="btn btn-danger btn-sm">Leave</a>
-       {% endif %}
+        <button  class="follow-btn btn btn-primary" 
+            onclick="toggleFollow({{ clan.id }}, 'clan','section-md')">
+            {% if is_following %} Unfollow {% else %} Follow {% endif %}
+        </button>
+        <div class="follow-message" style="display: none; color: green;"></div>
+        {% if request.user.profile.clan == clan%}
+        <div> 
+          <a href="{% url 'leave_clan' clan.id %}" class="btn btn-danger">Leave</a>
+        </div>
+        {%endif%}
      </div>
   </div>
 </section>
@@ -327,27 +329,29 @@
 </section>
 
 <script>
-  function toggleFollow(followedId, followedModel) {
-    let button = document.getElementById("follow-btn");
-    let messageBox = document.getElementById("follow-message");
-    
+  function toggleFollow(followedId, followedModel,sectionId) {
+    let section = document.getElementById(sectionId);
+  
+    let button = section.querySelector('.follow-btn');
+    let messageBox = section.querySelector('.follow-message');
     let action = button.innerText.trim() === "Follow" ? "follow" : "unfollow";
-
+    console.log(button.innerText)
     fetch(`/clubs/${action}/${followedModel}/${followedId}/`)
         .then(response => response.json())
         .then(data => {
-          document.getElementById("follow-btn").innerText = action === "follow" ? "Unfollow" : "Follow";
-          document.getElementById("follow-message").innerText = data.context.message;
-          document.getElementById("follow-message").style.display = "block";
-          location.reload();
+          button.innerText = action === "follow" ? "Unfollow" : "Follow";
+          messageBox.innerText = data.context.message;
+          messageBox.style.display = "block";
+          setTimeout(() => {location.reload();}, 3000);
       });
-      }
+  }
 
  
-  function joinClub() {
-        let form = document.getElementById("join-clan-form");
-        let messageBox = document.getElementById("join-message");
-
+  function joinClub(sectionId) {
+        let section = document.getElementById(sectionId);
+        let form = section.querySelector(".join-clan-form");
+        let messageBox = section.querySelector(".join-message");
+        let button = section.querySelector(".btn-success")
         fetch(form.action, {
             method: "POST",
             body: new FormData(form),
@@ -361,12 +365,12 @@
           console.log(data);
             messageBox.innerText = data.message;
             messageBox.style.display = "block";
-            document.querySelector(".btn-success").innerText = "Request Sent";
-            document.querySelector(".btn-success").disabled = true;
-            
+            button.innerText = "Request Sent";
+            button.disabled = true;
+            setTimeout(() => {location.reload();}, 3000);
         })
         .catch(error => console.error("Error:", error));
 
-      }
+  }
 </script>
 {% endblock %}
