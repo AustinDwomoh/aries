@@ -32,6 +32,8 @@ urlpatterns = [
 
     #change req state
     path("change/<int:clan_id>/", views.change_recruitment_state,name="change_recruitment_state"),
+
+    path("desc_change/<int:clan_id>/", views.change_description,name="change_description"),
    
 ]
 

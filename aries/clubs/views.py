@@ -1,6 +1,8 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from .models import Clans, ClanStats,ClanJoinRequest
 from django.db.models import Q
+from django.utils.safestring import mark_safe
+import markdown
 from django.contrib.auth.models import User
 from users.models import Profile
 from django.contrib.sessions.models import Session
@@ -50,20 +52,31 @@ def leave_clan(request,clan_id):
     profile.clan = None
     profile.save()
     return redirect("clubs-home")
-
 def change_recruitment_state(request,clan_id):
     clan = get_object_or_404(Clans, id=clan_id)
     clan.is_recruiting = not clan.is_recruiting
     clan.save()
     return redirect('clan_dashboard')
     
+def change_description(request,clan_id):
+    clan = get_object_or_404(Clans, id=clan_id)
+    if request.method == "POST":
+        new_description = request.POST.get("clan_description", "").strip()
+        if new_description:  # Ensure it's not empty
+            clan.clan_description = new_description
+            clan.save()
+            return JsonResponse({"message": "Description updated successfully!"})  # Return JSON response
+
+    return JsonResponse({"error": "Invalid request"}, status=400)
+
 def club_view(request, clan_id):
     """
     Displays detailed information using the clan_id about a specific clan, including its stats, members, and recent match results.
     """
     clan = get_object_or_404(Clans, id=clan_id)  # Fetch the clan or return a 404 error if not found
     clan_stats = get_object_or_404(ClanStats, id=clan_id)  # Fetch the clan's stats
-    match_data = clan_stats.load_match_data_from_file()  # Load match data from the JSON file
+    match_data = clan_stats.load_match_data_from_file()
+    clan.clan_description = mark_safe(markdown.markdown(clan.clan_description))  # Load match data from the JSON file
     # Process match results for display
     # Fetching followers and following count for the club
     # ============================================================================ #
@@ -179,6 +192,7 @@ def clan_dashboard(request):
     clan = get_object_or_404(Clans, id=request.session['clan_id'])
     clan_stats = get_object_or_404(ClanStats, id=request.session['clan_id'])
     match_data = clan_stats.load_match_data_from_file()
+    clan.clan_description = mark_safe(markdown.markdown(clan.clan_description))
     form = AddPlayerToClanForm(request.POST or None, clan=clan)
     members =User.objects.filter(profile__clan=clan)
     join_requests = ClanJoinRequest.objects.filter(clan=clan, status="pending")
