@@ -6,46 +6,25 @@
   <div class=" px-4 py-4 my-4  text-center">
     <img class="d-block mx-auto mb-4" src="/static/images/areis-1.png" alt="" width="76" height="60" loading="lazy">
     <h1 class="display-5 fw-bold text-body-emphasis">Welcome To Aries</h1>
-    <div class="col-lg-6 mx-auto">
-      <p class="lead mb-4">Clan gamaing just got better. Join and play both individual tournaments and clan tournaments. Your acheivements will all be recorded</p>
-      <div class="d-grid gap-2 d-md-flex justify-content-sm-between" >
-      
-        <a class="btn btn-primary "href="{% url 'register' %}">Sign Up</a>
-        <a class="btn btn-success" href="{% url 'tournament-home'%}">Create Tournament</a>
-        <a class="btn btn-primary" href="{% url 'clubs-home' %}">Join A Club</a>
-      
+      <div class="row justify-content-evenly  text-center">
+        <p class="lead mb-4">Clan gaming just got better. Join and play both individual tournaments and clan tournaments. Your acheivements will all be recorded</p>
+       
+        <div class="col-md-5 d-flex justify-content-evenly mb-2 align-items-center gap-4">
+          <div>
+            <a class="btn btn-primary "href="{% url 'register' %}">Sign Up</a>
+          </div>
+          <div>
+            <a class="btn btn-success" href="{% url 'tournament-home'%}">Create Tournament</a>
+          </div>
+          <div>
+            <a class="btn btn-primary" href="{% url 'clubs-home' %}">Join A Club</a>
+          </div>
+        </div>
+      </div>
     </div>
-    </div>
-  </div>
+  
 <style>
-  .podium { display: flex; gap: 10px; }
-  .position { text-align: center; padding: 10px; font-weight: bold; }
-  .first { height: 120px; background: gold; }
-  .second { height: 100px; background: silver; }
-  .third { height: 80px; background: #cd7f32; }
-  tbody tr:nth-child(1) { color: gold; font-weight: bold; }
-  tbody tr:nth-child(2) { background-color: silver; font-weight: bold; }
-  tbody tr:nth-child(3) { background-color: #cd7f32; font-weight: bold; }
-  @media screen and (max-width: 768px) {
-    .hide {
-        display: none;
-    }
-    .team-info span {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    flex-grow: 1;
-    min-width: 0;
-  }
-  .team-info {
-    display: flex;
-    align-items: center;
-    max-width: 100px; /* Adjust as needed */
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-  }
-  }
+ 
     table {
         width: 100%;
         background: #fff;
@@ -109,13 +88,48 @@
   <div class=" container-fluid text-secondary pt-1 text-center">
       <h1 class="display-5 fw-bold text-dark">Rankings</h1>
       <div class="row">
-        <!-- <div class="podium d-flex justify-content-center align-items-end">
-          <div class="position second">🥈 {{ players.1.username }}</div>
-          <div class="position first">🥇 {{ players.0.username }}</div>
-          <div class="position third">🥉 {{ players.2.username }}</div>
-      </div> -->
-      
-        <div class="col-lg-6 mx-auto">
+        {% comment %} col-md-6 {% endcomment %}
+        <div class=" mx-auto mb-2 table-responsive">
+          <table class="table table-striped table-hover ">
+            <thead class="table-dark">
+                <tr>
+                    <th class="text-start">Clan</th>
+                    <th class="text-center hide">MP</th>
+                    <th class="text-center">W</th>
+                    <th class="text-center hide">D</th>
+                    <th class="text-center hide">L</th>
+                    <th class="text-center">GS</th>
+                    <th class="text-center">Win Rate</th>
+                    <th class="text-center">Tier</th>
+                </tr>
+            </thead>
+            <tbody class="text-center">
+                {% for clan in clans %}
+                <tr> 
+                    <td class="text-start d-flex">
+                       <span class="fw-bold me-3">{{ forloop.counter }}</span> 
+                        <div class="team-info d-flex align-items-center gap-2">
+                          {% if clan.clan_logo %}
+                              <img src="{{ clan.clan_logo.url }}" alt="{{ clan.clan_name }}" class="img-fluid" style="max-width: 30px;max-height: 30px;" loading="lazy">
+                          {% else %}
+                              <span>No Logo</span>
+                          {% endif %}
+                          <span>{{ clan.clan_name }}</span>
+                        </div>
+                    </td>
+                    <td class="hide">{{ clan.stat.total_matches }}</td>
+                    <td>{{ clan.stat.wins }}</td>
+                    <td class="hide">{{ clan.stat.draws }}</td>
+                    <td class="hide">{{ clan.stat.losses }}</td>
+                    <td>{{ clan.stat.gf }}</td>
+                    <td>{{ clan.stat.win_rate}}%</td>
+                    <td>{{ clan.stat.ranking }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+         </table>
+        </div>
+        <div class="mx-auto mb-2 table-responsive">
           <table class="table table-striped table-hover ">
             <thead class="table-dark">
                 <tr>
@@ -134,7 +148,7 @@
                 <tr> 
                     <td class="text-start d-flex">
                        <span class="fw-bold me-3">{{ forloop.counter }}</span> 
-                        <div class="team-info">
+                        <div class="team-info d-flex align-items-center gap-2">
                         {% if player.profile.profile_picture %}
                             <img src="{{ player.profile.profile_picture.url }}" alt="{{ player.username }}" class="img-fluid" style="max-width: 30px;max-height: 30px;" loading="lazy">
                         {% else %}
@@ -153,64 +167,30 @@
                 </tr>
                 {% endfor %}
             </tbody>
-        </table>  
+         </table>  
         </div>
-        <div class="col-lg-6 mx-auto">
-          <table class="table table-striped table-hover ">
-            <thead class="table-dark">
-                <tr>
-                    <th class="text-start">Clan</th>
-                    <th class="text-center hide">MP</th>
-                    <th class="text-center">W</th>
-                    <th class="text-center hide">D</th>
-                    <th class="text-center hide">L</th>
-                    <th class="text-center">GS</th>
-                    <th class="text-center">Win Rate</th>
-                    <th class="text-center">Rank</th>
-                </tr>
-            </thead>
-            <tbody class="text-center">
-                {% for clan in clans %}
-                <tr> 
-                    <td class="text-start d-flex">
-                       <span class="fw-bold me-3">{{ forloop.counter }}</span> 
-                        <div class="team-info">
-                        {% if clan.clan_logo %}
-                            <img src="{{ clan.clan_logo.url }}" alt="{{ clan.clan_name }}" class="img-fluid" style="max-width: 30px;max-height: 30px;" loading="lazy">
-                        {% else %}
-                            <span>No Logo</span>
-                        {% endif %}
-                        <span>{{ clan.clan_name }}</span>
-                        </div>
-                    </td>
-                    <td class="hide">{{ clan.stat.total_matches }}</td>
-                    <td>{{ clan.stat.wins }}</td>
-                    <td class="hide">{{ clan.stat.draws }}</td>
-                    <td class="hide">{{ clan.stat.losses }}</td>
-                    <td>{{ clan.stat.gf }}</td>
-                    <td>{{ clan.stat.win_rate}} %</td>
-                    <td>{{ clan.stat.ranking }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        </div>
+        
       </div>
-  
   </div>
 
 
 <div class="container col-xxl-8 px-4 py-5">
-  <div class="row flex-lg-row-reverse align-items-center g-5 py-5">
+  <div class="row flex-lg-row-reverse justify-content-evenly align-items-center g-5 py-5">
     <div class="col-10 col-sm-8 col-lg-6">
-      <img src="bootstrap-themes.png" class="d-block mx-lg-auto img-fluid" alt="Bootstrap Themes" width="700" height="500" loading="lazy">
+      <img src="media/black-mamba.jpg" class="img-fluid img-thumbnail border-3 border-white shadow-lg rounded-circle" 
+      style="width: 700px; height: 500px; object-fit: cover;" 
+      loading="lazy" >
     </div>
     <div class="col-lg-6">
-      <h1 class="display-5 fw-bold lh-1 mb-3">Features</h1>
+      <h1 class="display-5 fw-bold lh-1 mb-3">Associate</h1>
       <p class="lead">We have tournaments, club pages, user pages and we keep track of all your games for you</p>
-      <div class="d-grid gap-2 d-md-flex justify-content-md-start">
-        <a href="{% url 'gamers'%}" class="btn btn-primary">Users</a>
-        <a href="{% url 'clubs-home'%}" class="btn btn-primary">Clubs</a>
+      <div class="col-md-5 d-flex justify-content-evenly mb-2 align-items-center gap-4">
+        <div>
+          <a href="{% url 'gamers'%}" class="btn btn-primary">Users</a>
+        </div>
+        <div>
+          <a href="{% url 'clubs-home'%}" class="btn btn-primary">Clubs</a>
+        </div>
       </div>
     </div>
   </div>

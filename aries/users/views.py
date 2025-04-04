@@ -9,7 +9,7 @@ from django.http import JsonResponse
 from django.contrib.contenttypes.models import ContentType
 from Home.models import Follow
 from clubs.models import Clans
-
+from django.contrib.auth.views import LoginView
 
 
 # Create your views here.
@@ -214,6 +214,17 @@ def follow_unfollow(request, action, followed_model, followed_id):
 
     return JsonResponse({"error": "Invalid action"}, status=400)
 
-""" bob_followers = Follow.objects.filter(followed_type=user_type, followed_id=bob.id)
-bob_following = Follow.objects.filter(follower_type=user_type, follower_id=bob.id)
- """
+
+
+class CustomLoginView(LoginView):
+    def form_valid(self, form):
+        remember = self.request.POST.get('remember_me')
+        # Call the original form_valid to log the user in
+        response = super().form_valid(form)
+
+        if remember:
+            self.request.session.set_expiry(60 * 60 * 24 * 7) 
+        else:
+            self.request.session.set_expiry(0)  
+
+        return response

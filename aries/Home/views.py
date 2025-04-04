@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render,redirect
 from django.contrib.auth.models import User
 from clubs.models import Clans
 
@@ -13,6 +13,8 @@ def home(request):
     Returns:
         HttpResponse: Renders the 'Home/index.html' template as the response.
     """
+    if request.user.is_authenticated:
+        return redirect('user-home')  
     clans = Clans.objects.all().order_by('-stat__elo_rating')[:10] 
     players = User.objects.all().order_by('-profile__stats__elo_rating')[:10]
     context ={
