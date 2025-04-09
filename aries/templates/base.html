@@ -11,6 +11,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="{% static 'images/favicon/apple-touch-icon.png' %}">
     <link rel="icon" type="image/png" sizes="32x32" href="{% static 'images/favicon/favicon-32x32.png' %}">
     <link rel="icon" type="image/png" sizes="16x16" href="{% static 'images/favicon/favicon-16x16.png' %}">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">{% comment %} this is for the animations {% endcomment %} 
     <link rel="icon" href="{% static 'images/favicon/favicon.ico' %}">
     <!-- Include jQuery (required by Select2) -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -179,8 +180,18 @@
             {% comment %} Icons {% endcomment %}
         </div>
         <div class="text-center p-3" style="background-color: rgba(0, 0, 0, 0.2)">
-        <P>© {% now "Y" %} Your Developed: <a class="text-white" href="https://austindwomoh.xyz/">Inphinthy</a></p>
+        <P>© {% now "Y" %} Developed: <a class="text-white" href="https://austindwomoh.xyz/">Inphinthy</a></p>
         </div>
+        <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+<script>
+    // this is for the animations
+   AOS.init({
+    easing: 'ease-in-out',   // Global easing
+    once: true,              // Only animate once
+    delay: 200               // Global delay before animation
+  });
+</script>
+
 </footer>
 </body>
 

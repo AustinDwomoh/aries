@@ -83,7 +83,7 @@ def club_view(request, clan_id):
     #                          Fetching followers and following count                #
     # ============================================================================ #
     followed_type = ContentType.objects.get_for_model(Clans)
-    followed_type = ContentType.objects.get_for_model(Clans)
+  
     follow_data = Follow.objects.filter(followed_type=followed_type, followed_id=clan_id).aggregate(followers=Count('id'),
 following=Count('id', filter=Q(follower_id=clan_id))
     )

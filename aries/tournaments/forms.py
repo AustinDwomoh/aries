@@ -1,9 +1,12 @@
 # forms.py
 from django import forms
 from clubs.models import Clans
+from django.contrib.auth.models import User
 from .models import  ClanTournament, IndiTournament,Profile
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Submit
+from django.contrib.contenttypes.models import ContentType
+from Home.models import Follow
 
 class MatchResultForm(forms.Form):
     """
@@ -24,6 +27,7 @@ class IndiTournamentForm(forms.ModelForm):
     """
     Form for creating or updating an individual tournament.
     """
+
     class Meta:
         model = IndiTournament
         fields = ['name', 'description', 'players', 'tour_type','logo']
@@ -33,7 +37,27 @@ class IndiTournamentForm(forms.ModelForm):
             'tour_type': forms.Select(),
             
         }
-    players = forms.ModelMultipleChoiceField(queryset=Profile.objects.all(), widget=forms.SelectMultiple(attrs={'class': 'select2'}))
+
+    
+    
+    def __init__(self, *args, current_profile=None, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        if current_profile:
+            profile_type = ContentType.objects.get_for_model(User)
+
+            # Get the list of follower ids
+            follower_ids = Follow.objects.filter(
+                followed_type=profile_type,
+                followed_id=current_profile.id,
+                follower_type=profile_type
+            ).values_list('follower_id', flat=True)
+
+            self.fields['players'] = forms.ModelMultipleChoiceField(queryset=Profile.objects.filter(id__in=follower_ids), widget=forms.SelectMultiple(attrs={'class': 'select2'}))
+        else:
+            # Fallback: No followers, empty queryset for 'players'
+            self.fields['players'] = forms.ModelMultipleChoiceField(queryset=Profile.objects.none(), widget=forms.SelectMultiple(attrs={'class': 'select2'}))
+    #
 
 class ClanTournamentForm(forms.ModelForm):
     """

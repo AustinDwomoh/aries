@@ -201,7 +201,8 @@ def create_clan_tournament(request):
 def create_indi_tournament(request):
     """View function to create a new indi Tournament."""
     if request.method == 'POST':
-        form = IndiTournamentForm(request.POST, request.FILES)  # Handle files for logo
+        form = IndiTournamentForm(request.POST, request.FILES,current_profile=request.user.profile)  # Handle files for logo
+        print(request.user.profile)
         if form.is_valid():
             tour = form.save(commit=False)
             tour.created_by = request.user  
@@ -213,8 +214,8 @@ def create_indi_tournament(request):
             tour.save()
             return redirect(reverse("indi_details", kwargs={"tour_id": tour.id}))
     else:
-        form = IndiTournamentForm()
-
+        form = IndiTournamentForm(current_profile=request.user.profile)
+        print(request.user.profile)
     return render(request, 'tournaments/create_indi_tour.html', {'form': form})
 
 @login_required
