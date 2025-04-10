@@ -71,10 +71,25 @@ class ClanTournamentForm(forms.ModelForm):
         widgets = {
             'name': forms.TextInput(attrs={'placeholder': 'Match Name'}),
             'description': forms.Textarea(attrs={'placeholder': 'Match Description'}),
-            'tour_type': forms.Select(),
-            
-        }
-    teams = forms.ModelMultipleChoiceField(queryset=Clans.objects.all(), widget=forms.SelectMultiple(attrs={'class': 'select2'}))
+            'tour_type': forms.Select(),}
+    def __init__(self, *args, current_profile=None, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        if current_profile:
+            profile_type = ContentType.objects.get_for_model(Clans)
+
+            # Get the list of follower ids
+            follower_ids = Follow.objects.filter(
+                followed_type=profile_type,
+                followed_id=current_profile.id,
+                follower_type=profile_type
+            ).values_list('follower_id', flat=True)
+
+            self.fields['teams'] = forms.ModelMultipleChoiceField(queryset=Clans.objects.filter(id__in=follower_ids), widget=forms.SelectMultiple(attrs={'class': 'select2'}))
+        else:
+            # Fallback: No followers, empty queryset for 'players'
+            self.fields['teams'] = forms.ModelMultipleChoiceField(queryset=Clans.objects.none(), widget=forms.SelectMultiple(attrs={'class': 'select2'}))
+    #teams = forms.ModelMultipleChoiceField(queryset=Clans.objects.all(), widget=forms.SelectMultiple(attrs={'class': 'select2'}))
 
    
 
