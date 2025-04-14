@@ -33,6 +33,11 @@ def profile(request):
     player = User.objects.filter(username__iexact=request.user).first()
     match_data = player.profile.stats.load_match_data_from_file()
     match_results = []
+    followed_type = ContentType.objects.get_for_model(Clans)
+
+    followers = Follow.objects.filter(followed_type=followed_type, followed_id=player.profile.id).count()
+    following = Follow.objects.filter(follower_type=followed_type, follower_id=player.id).count()
+    
     if match_data:
         for match in match_data["matches"][-5:]:
             result = match["result"]
@@ -59,7 +64,10 @@ def profile(request):
     context ={
         "match_data":match_data,
         "match_results":match_results,
-        'query':query
+        'query':query,
+        'followers':followers,
+        'following':following,
+        
     }
     return render(request, 'users/profile.html',context)
 

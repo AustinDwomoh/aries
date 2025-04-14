@@ -8,82 +8,146 @@
     background-color: #fff !important;
   }
 </STYle>
-<section>
-  <div class="rounded-top text-white d-flex flex-column text-center text-md-start" style="background-image: url('{{ player.profile.clan.clan_profile_pic.url }}'); background-size: cover; background-position: center; height: 220px;">
-    <div class="mt-5 mx-auto mx-md-2" style="width: 150px;">
-      <img src="{{ player.profile.profile_picture.url }}" 
-           alt="Inphinithy"  class="img-fluid img-thumbnail mt-2 mb-2" style="width:150px;height:160px;z-index: 1" loading="lazy">
-    </div>
-  </div>
-  
-  <div class="d-flex justify-content-evenly justify-content-md-between align-items-center py-2 px-3 text-body bg-light rounded shadow-sm" style="width: 100%;">
-    <div class="text-center text-md-start">
-      <h5>{{ player.username }}</h5>
-      {% if player.profile.clan.clan_name %}
-        <p>{{ player.profile.clan.clan_name }}({{player.profile.clan.clan_tag}}){% if  player.profile.role  %}[{{ player.profile.role}}]{% endif %}</p>
-      {% else %}
-        <p>Clanless</p>
-      {% endif %}
-      {% if match_results %}
-        <p>
-          {% for result in match_results %}
-              <span class="badge {% if result == 'W' %}bg-success{% elif result == 'L' %}bg-danger{% else %}bg-warning{% endif %} ">
-                  {% if result == 'W' %}
-                      W
-                  {% elif result == 'L' %}
-                      L
-                  {% else %}
-                      D
-                  {% endif %}
-              </span>
-          {% endfor %}
-      </p>
-      {% endif %}
-      <div class="row justify-content-evenly  text-center">
-        <!-- First Section: Followers & Following -->
-        <div class="col-md-5 d-flex justify-content-evenly mb-2 align-items-center gap-4">
-          <div>
-            <p class="mb-1 h6 text-primary">{{ followers }}</p>
-            <p class="small text-muted mb-0">Followers</p>
-          </div>
-          <div>
-            <p class="mb-1 h6 text-success">{{ following }}</p>
-            <p class="small text-muted mb-0">Following</p>
-          </div>
-        </div>
-      
-        <!-- Second Section: Win Rate, Matches & Ranking -->
-        <div class="col-md-5 d-flex justify-content-evenly mb-2 align-items-center gap-4">
-          <div>
-            <p class="mb-1 h6 text-primary">{{ player.profile.stats.win_rate }}%</p>
-            <p class="small text-muted mb-0">Win Rate</p>
-          </div>
-          <div>
-            <p class="mb-1 h6 text-success">{{ player.profile.stats.games_played }}</p>
-            <p class="small text-muted mb-0">Matches</p>
-          </div>
-          <div>
-            <p class="mb-1 h6 text-warning">{{ player.profile.stats.rank }}</p>
-            <p class="small text-muted mb-0">Rank</p>
-          </div>
-        </div>
+  <!-- Section for small screens (up to md) -->
+<section id="section-sm" class="d-md-none " >
+  <!--Name and follow stats-->
+    <div class="rounded-top text-white d-flex flex-column text-center text-md-start" 
+          style="background-image: url('{{ player.profile.clan.clan_profile_pic.url }}');     background-size: cover; background-position: center; height: 220px;">
 
-        <!--THird section- button-->
-        <div class="col-md-5 d-flex justify-content-evenly mb-2 align-items-center gap-4">
-          <div>
-            <button id="follow-btn" class="btn btn-primary"  onclick="toggleFollow({{ player.profile.id }}, 'user')">
-              {% if is_following %} Unfollow {% else %} Follow {% endif %}
-            </button>
-            <div id="follow-message" style="display: none; color: green;"></div>
-          </div>
-          
-        </div>
-      </div> 
-      
+      <!-- user logo Logo -->
+      <div class="mt-5 mx-auto mx-md-4 position-relative" style="width: 150px;">
+        <img src="{{ player.profile.profile_picture.url }}" 
+            alt="{{ player.profile.username }}"  
+            class="img-fluid img-thumbnail border-3 border-white shadow-lg rounded-circle" 
+            style="width: 150px; height: 160px; object-fit: cover;" 
+            loading="lazy">
+      </div>
     </div>
-  </div>
+    <div class="d-flex justify-content-evenly justify-content-md-between align-items-center py-2 px-3 text-body bg-light rounded shadow-sm" style="width: 100%;">
+      <div class="text-center text-md-start">
+          <h4 class="mb-1 text-dark fw-bold">
+          {{ player.username }}
+          </h4>
+        <p class="small text-muted">Ranking: <strong>{{ player.profile.stats.rank }}</strong></p>
+        {% if player.profile.clan.clan_name %}
+          <p>{{ player.profile.clan.clan_name }}({{player.profile.clan.clan_tag}}){% if  player.profile.role  %}[{{ player.profile.role}}]{% endif %}</p>
+        {% else %}
+          <p>Clanless</p>
+        {% endif %}
+        {% if match_results %}
+          <p>
+            {% for result in match_results %}
+                <span class="badge {% if result == 'W' %}bg-success{% elif result == 'L' %}bg-danger{% else %}bg-warning{% endif %} ">
+                    {% if result == 'W' %}
+                        W
+                    {% elif result == 'L' %}
+                        L
+                    {% else %}
+                        D
+                    {% endif %}
+                </span>
+            {% endfor %}
+        </p>
+        {% endif %}
+        <div class="row justify-content-evenly  text-center">
+          <!-- First Section: Followers & Following -->
+          <div class="col-md-5 d-flex justify-content-evenly mb-2 align-items-center gap-4">
+            <div>
+              <p class="mb-1 h6 text-primary">{{ followers }}</p>
+              <p class="small text-muted mb-0">Followers</p>
+            </div>
+            <div>
+              <p class="mb-1 h6 text-success">{{ following }}</p>
+              <p class="small text-muted mb-0">Following</p>
+            </div>
+          </div>
+      
+          <!--second section- button-->
+          <div class="col-md-5 d-flex justify-content-evenly mb-2 align-items-center gap-4">
+            <div>
+              <button id="follow-btn" class="btn btn-primary"  onclick="toggleFollow({{ player.profile.id }}, 'user')">
+                {% if is_following %} Unfollow {% else %} Follow {% endif %}
+              </button>
+              <div id="follow-message" style="display: none; color: green;"></div>
+            </div>
+            
+          </div>
+        </div> 
+      </div>
+    </div>
+</section>
   
-  
+<section id="section-md"class="d-none d-md-block">
+  <!--Name and follow stats-->
+    <div class="rounded-top text-white d-flex flex-column text-center text-md-start" 
+          style="background-image: url('{{ player.profile.clan.clan_profile_pic.url }}');     background-size: cover; background-position: center; height: 220px;">
+
+      <!-- user logo Logo -->
+      <div class="mt-5 mx-auto mx-md-4 position-relative" style="width: 150px;">
+        <img src="{{ player.profile.profile_picture.url }}" 
+            alt="{{ player.profile.username }}"  
+            class="img-fluid img-thumbnail border-3 border-white shadow-lg rounded-circle" 
+            style="width: 150px; height: 160px; object-fit: cover;" 
+            loading="lazy">
+      </div>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center py-3 px-4 bg-light rounded shadow-sm">
+      <div>
+       <h4 class="mb-1 text-dark fw-bold">
+          {{ player.username }}
+          </h4>
+        
+        {% if player.profile.clan.clan_name %}
+          <p>{{ player.profile.clan.clan_name }}({{player.profile.clan.clan_tag}}){% if  player.profile.role  %}[{{ player.profile.role}}]{% endif %}</p>
+        {% else %}
+          <p>Clanless</p>
+        {% endif %}
+        {% if match_results %}
+          <p>
+            {% for result in match_results %}
+                <span class="badge {% if result == 'W' %}bg-success{% elif result == 'L' %}bg-danger{% else %}bg-warning{% endif %} ">
+                    {% if result == 'W' %}
+                        W
+                    {% elif result == 'L' %}
+                        L
+                    {% else %}
+                        D
+                    {% endif %}
+                </span>
+            {% endfor %}
+        </p>
+        {% endif %}
+      </div>
+        <!-- Followers & Following -->
+      <div class="d-flex gap-4">
+        <div class="text-center">
+          <p class="mb-1 h5 text-primary">{{ followers }}</p>
+          <p class="small text-muted mb-0">Followers</p>
+        </div>
+        <div class="text-center">
+          <p class="mb-1 h5 text-success">{{ following }}</p>
+          <p class="small text-muted mb-0">Following</p>
+        </div>
+        <div class="text-center">
+          <p class="mb-1 h5 text-success"><strong>{{ player.profile.stats.rank }}</strong></p>
+          <p class="small text-muted mb-0">Rank</p>
+        </div>
+        
+      </div>
+      
+      <!--second section- button-->
+      <div class="d-flex gap-3" >
+        <div>
+          <button id="follow-btn" class="btn btn-primary"  onclick="toggleFollow({{ player.profile.id }}, 'user')">
+            {% if is_following %} Unfollow {% else %} Follow {% endif %}
+          </button>
+          <div id="follow-message" style="display: none; color: green;"></div>
+        </div>
+      </div>
+    </div> 
+
+</section>
 
 
   <div class="card-body p-4 text-black">
@@ -119,6 +183,18 @@
                     <td>Conceeded</td>
                     <td>{{ player.profile.stats.ga }}</td>
                 </tr>
+                <tr>
+                  <td>Win Rate</td>
+                  <td>{{ player.profile.stats.win_rate|floatformat:1}}%</td>
+              </tr>
+              <tr>
+                <td>Total Matches</td>
+                <td>{{ player.profile.stats.games_played }}</td>
+            </tr>
+            <tr>
+              <td>Total Wins</td>
+              <td>{{ player.profile.stats.total_wins }}</td>
+          </tr>
             </tbody>
         </table>
       </div>

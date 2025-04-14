@@ -28,23 +28,26 @@ Clubs
       </form>
   </div>
 </div>
+<div class="container-fluid my-4">
 {% if no_results %}
         <div class="alert alert-warning text-center" role="alert">
           No Clan found for "{{ query }}". Please try a different search term.
         </div>
       {% endif %}
-<div class="container-fluid my-4">
-  <div class="row">
+
+  <div class="row" >
       {% for clan in clans %}
-      <div class="col-md-4">
+      <div class="col-md-4" data-aos="fade-right" data-aos-delay="{{ forloop.counter0|add:"0" }}00">
         <a href="{% url 'clan_details' clan.id %}">
           <!-- Player Card -->
-          <div class="card my-3">
-              <div class="card-body text-center" style="background-image: url('{{ clan.clan_profile_pic.url }}');background-size: cover; background-position: center;text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);color:white">
+          <div class="card my-3 rounded-3 shadow" >
+            <div class="card-body text-center  rounded-3"style="background-image: url('{{ clan.clan_profile_pic.url }}');background-size: cover; background-position: center;text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);color:white">
+              <div class="rounded-3 " style="position: absolute; top: 0; right: 0; bottom: 0; left: 0; background: rgba(0,0,0,0.5); z-index: 1;"></div>
+              <div  style="position: relative; z-index: 2;">
                   <img src="{{ clan.clan_logo.url }}" alt="{{ player.username }}'s avatar" class="img-fluid rounded-circle mb-3" style="width: 100px; height: 100px;" loading="lazy">
                   <h5 class="card-title">{{ clan.clan_name }}</h5>
                   <p>{{ clan.primary_game }}|{{ clan.country }} </p>
-                  {% if match_results %}
+                      {% if match_results %}
                       <p>
                           {% for result in match_results %}
                               <span class="badge {% if result == 'W' %}bg-success{% elif result == 'L' %}bg-danger{% else %}bg-warning{% endif %} ">
@@ -59,7 +62,6 @@ Clubs
                           {% endfor %}
                       </p>
                       {% endif %}
-                  <p class="card-text">
                       <div class="d-flex justify-content-between text-center ">
                           <div class="mx-2">
                             <p class="mb-1 h6 text-primary">{{ clan.stat.win_rate }}%</p>
@@ -72,21 +74,20 @@ Clubs
                           <div class="mx-2">
                             <p class="mb-1 h6 text-warning">{{ clan.stat.ranking }}</p>
                             <p class="small  mb-0">Tier</p>
-                        </div>
+                          </div>
                         {% if clan.is_recruiting %}
                         <div class="mx-2">
                           <p class="mb-1 h6 text-success">Open</p>
                           <p class="small  mb-0">Recruiting</p>
-                      </div>
+                        </div>
                       {% endif %}
-                  </div>
-                  </p>
+                      </div>
               </div>
+            </div>
           </div>
-        </a></div>
-    
+        </a>
+      </div>
       {% endfor %}
-      
     </div>
 </div>
   {% endblock %}
