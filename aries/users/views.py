@@ -117,7 +117,7 @@ def gamer_view(request,player_id):
     player = get_object_or_404(User, id=player_id)
     player_stats = player.profile.stats  
     match_data = player_stats.load_match_data_from_file()
-    followed_type = ContentType.objects.get_for_model(Clans)
+    followed_type = ContentType.objects.get_for_model(User)
 
     followers = Follow.objects.filter(followed_type=followed_type, followed_id=player_id).count()
     following = Follow.objects.filter(follower_type=followed_type, follower_id=player_id).count()
@@ -146,6 +146,7 @@ def gamer_view(request,player_id):
             query.lower() in match['score'].lower())
         ]
    #bad i know but this is the best way i could think of slicing it
+    
     context ={
         'player':player,
         "match_results":match_results,
@@ -187,12 +188,14 @@ def follow_unfollow(request, action, followed_model, followed_id):
     if isinstance(request.user, User):
         follower_type = ContentType.objects.get_for_model(User)
         follower_id = request.user.id
+        
     else:
         follower_type = ContentType.objects.get_for_model(Clans)
         follower_id = request.clan.id 
    
     # Get the followed entity
     if followed_model == "user":
+        
         followed_obj = get_object_or_404(User, id=followed_id)
     else:
         return JsonResponse({"error": "Invalid model type"}, status=400)
@@ -205,9 +208,11 @@ def follow_unfollow(request, action, followed_model, followed_id):
             followed_type=followed_type,
             followed_id=followed_obj.id
         )
+       
         if created:
+            
             return JsonResponse({"context": {"message": f"You are now following {followed_model} with ID {followed_id}"}})
-        return JsonResponse({"message": f"Already following {followed_model} with ID {followed_id}"})
+        return JsonResponse({"context": {"message": f"Already following {followed_model} with ID {followed_id}"}})
     
     elif action == "unfollow":
         deleted, _ = Follow.objects.filter(

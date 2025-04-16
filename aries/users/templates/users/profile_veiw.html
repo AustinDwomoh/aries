@@ -257,7 +257,8 @@
 </section>
 
 <script>
-  function toggleFollow(followedId, followedModel) {
+  const toggleFollow = (followedId, followedModel)=> {
+    console.log(1);
     let button = document.getElementById("follow-btn");
     let messageBox = document.getElementById("follow-message");
     
