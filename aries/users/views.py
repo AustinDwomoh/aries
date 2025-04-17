@@ -3,14 +3,15 @@ from django.contrib import messages
 from django.db.models import Q
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
-from .forms import UserRegisterForm,UserUpdateForm,ProfileUpdateForm
+from .forms import UserRegisterForm,UserUpdateForm,ProfileUpdateForm,SocialLinkForm
 from django.contrib.auth.models import User
 from django.http import JsonResponse
 from django.contrib.contenttypes.models import ContentType
 from Home.models import Follow
 from clubs.models import Clans
 from django.contrib.auth.views import LoginView
-
+from django.forms import formset_factory
+SocialLinkFormSet = formset_factory(SocialLinkForm, extra=3)
 
 # Create your views here.
 def register(request):
@@ -162,19 +163,45 @@ def gamer_view(request,player_id):
 
 def edit_profile(request):
     """ Edit profile view"""
+    profile = request.user.profile
     if request.method == 'POST':
         u_form = UserUpdateForm(request.POST,instance=request.user)
         p_form = ProfileUpdateForm(request.POST,request.FILES,instance=request.user.profile)
-        if u_form.is_valid() and p_form.is_valid():
+
+        social_formset = SocialLinkFormSet(request.POST)
+        print(profile.social_links)
+        if u_form.is_valid() and p_form.is_valid() :
             u_form.save() 
             p_form.save()
+            social_links = profile.social_links or {}
+
+            for form in social_formset:
+                print(social_formset)
+                if form.cleaned_data and form.is_valid():
+                    platform = form.cleaned_data.get('platform')
+                    url = form.cleaned_data.get('url')
+                    if platform and url:
+                        social_links[platform] = url
+            
+            print(profile.social_links)
+            profile.save()
             messages.success(request,f"Your account has been updated!")
             return redirect('user-home')
     else:
         u_form = UserUpdateForm(instance=request.user)
         p_form = ProfileUpdateForm()
-    return render(request, "users/edit_profile.html",{"u_form":u_form,
-        "p_form":p_form,})
+        social_links_data = []
+        if profile.social_links:
+            for platform, url in profile.social_links.items():
+                social_links_data.append({'platform': platform, 'url': url})
+        social_formset = SocialLinkFormSet(initial=social_links_data)
+
+    return render(request, 'users/edit_profile.html', {
+        'u_form': u_form,
+        'p_form': p_form,
+        'social_formset': social_formset,
+        'social_links': profile.social_links
+    })
 
 
 @login_required

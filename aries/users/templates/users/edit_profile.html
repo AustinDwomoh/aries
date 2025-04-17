@@ -34,7 +34,14 @@
           {{ u_form|crispy }}
           
           {{ p_form|crispy }}
+          <h5>Social Links</h5>
+          {% for form in social_formset %}
+            <div class="form-row">
+              {{form|crispy}}
+            </div>
+          {% endfor %}
       </fieldset>
+      
       <div class="form-group ">
           <button class="btn btn-primary button1" type="submit">Update</button>
       </div>
