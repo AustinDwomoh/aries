@@ -13,19 +13,12 @@ class Profile(models.Model):
     """
     ROLE_CHOICES = [('admin', 'Admin'),('captain', 'Captain'),('member', 'Member'),]
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    clan = models.ForeignKey(Clans, null=True, blank=True, on_delete=models.SET_NULL, related_name="members")
-    social_links = models.JSONField(blank=True, null=True) 
+    clan = models.ForeignKey(Clans, null=True, blank=True, on_delete=models.SET_NULL, related_name="members") 
     profile_picture = models.ImageField(default="default.jpg",upload_to='profile_pics')
     role = models.CharField(max_length=100,choices=ROLE_CHOICES, blank=True, null=True)
     is_organizer =  models.BooleanField(default=False)
     
-    def get_social_link(self, platform):
-        """
-        Retrieves a specific social media link if it exists in the JSON field.
-        :param platform: The name of the social media platform (e.g., 'twitter', 'discord').
-        :return: URL as a string if found, otherwise None.
-        """
-        return self.social_links.get(platform, "") if self.social_links else None
+
 
     def __str__(self):
         return f'{self.user.username}'
@@ -111,3 +104,22 @@ class PlayerStats(models.Model):
         if os.path.exists(file_path):
             os.remove(file_path)
         super().delete(*args, **kwargs)
+
+
+class SocialLink(models.Model):
+    SOCIAL_CHOICES = [
+        ('github', 'GitHub'),
+        ('linkedin', 'LinkedIn'),
+        ('twitter', 'Twitter'),
+        ('instagram', 'Instagram'),
+        ('website', 'Website'),
+        ('other', 'Other'),
+    ]
+
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='social_links')
+    link_type = models.CharField(max_length=20, choices=SOCIAL_CHOICES)
+    url = models.URLField()
+
+    def __str__(self):
+        return f"{self.get_link_type_display()}: {self.url}"
+
