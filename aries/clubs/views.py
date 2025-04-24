@@ -3,6 +3,7 @@ from .models import Clans, ClanStats,ClanJoinRequest
 from django.db.models import Q
 from django.utils.safestring import mark_safe
 import markdown
+from tournaments.models import ClanTournament
 from django.contrib.auth.models import User
 from users.models import Profile
 from django.contrib.sessions.models import Session
@@ -52,6 +53,7 @@ def leave_clan(request,clan_id):
     profile.clan = None
     profile.save()
     return redirect("clubs-home")
+
 def change_recruitment_state(request,clan_id):
     clan = get_object_or_404(Clans, id=clan_id)
     clan.is_recruiting = not clan.is_recruiting
@@ -77,6 +79,7 @@ def club_view(request, clan_id):
     clan_stats = get_object_or_404(ClanStats, id=clan_id)  # Fetch the clan's stats
     match_data = clan_stats.load_match_data_from_file()
     clan.clan_description = mark_safe(markdown.markdown(clan.clan_description))  # Load match data from the JSON file
+    tournaments = ClanTournament.objects.filter(teams=clan)
     # Process match results for display
     # Fetching followers and following count for the club
     # ============================================================================ #
@@ -94,6 +97,10 @@ following=Count('id', filter=Q(follower_id=clan_id))
    # ============================================================================ #
    #                          Check for clan matches data                         #
    # ============================================================================ #
+    print("Tournaments:")
+    for tournament in tournaments:
+        print("-", tournament.name)
+
     match_results = []
     if match_data:
         last_5_matches = match_data["matches"][-5:]  # Get last 5 matches
