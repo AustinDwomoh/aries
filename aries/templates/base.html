@@ -109,10 +109,10 @@
             alert("Section not found!"); // Handle errors
             return;
         }
-        let links = section.querySelectorAll("a");
-
+        let btns = document.querySelectorAll('.btn');
+        btns.forEach(btn => btn.style.display = "none");
         // Hide all <a> elements
-        links.forEach(link => link.style.display = "none");
+
 
         section.style.backgroundColor = "#ffffff";  
             section.style.border = "5px solid black";   
@@ -129,7 +129,7 @@
                 downloadLink.click();
 
                 // 🖌 Revert styles
-                links.forEach(link => link.style.display = "");
+                btns.forEach(btn => btn.style.display = "");
                 section.style.backgroundColor = "";
                 section.style.border = "";
             });

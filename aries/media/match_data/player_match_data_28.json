@@ -118,6 +118,13 @@
             "opponent": "clan1_profile_1",
             "result": "loss",
             "score": "1:4"
+        },
+        {
+            "date": "2025-05-08 15:57:30",
+            "tour_name": "Austin Dwomoh-CvC",
+            "opponent": "clan1_profile_1",
+            "result": "win",
+            "score": "2:1"
         }
     ]
 }

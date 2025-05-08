@@ -27,6 +27,7 @@ class Clans(models.Model):
     is_recruiting = models.BooleanField(default=False)
     recruitment_requirements = models.TextField(blank=True, null=True)
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+    
 
     class Meta:
         verbose_name = "Clan"

@@ -20,6 +20,13 @@
             "opponent": "Clan 1",
             "result": "loss",
             "score": "0:1"
+        },
+        {
+            "date": "2025-05-08 15:57:31",
+            "tour_name": "Austin Dwomoh",
+            "opponent": "Clan 1",
+            "result": "win",
+            "score": "1:0"
         }
     ]
 }
