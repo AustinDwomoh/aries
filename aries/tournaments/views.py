@@ -1,7 +1,7 @@
-from django.shortcuts import render, redirect,get_object_or_404
+from django.shortcuts import render, redirect,get_object_or_404,HttpResponse
 from django.contrib.auth.decorators import login_required
 from .forms import IndiTournamentForm, ClanTournamentForm,MatchResultForm
-from .models import ClanTournament, IndiTournament,Clans,ClanStats
+from .models import ClanTournament, IndiTournament,Clans,ClanStats, ClanTournamentPlayer
 from users.models import Profile
 from django.db.models import Count,Q
 from django.contrib.auth.models import User
@@ -254,6 +254,21 @@ def update_indi_tour(request, tour_id):
         "team_b_name": team_b_name,
         'round':round
     })
+
+@login_required
+def assign_user_to_tournament(request, tournament_id, clan_id):
+    if request.method == "POST":
+        user_id = request.POST.get('user_id')
+        user = User.objects.get(pk=user_id)
+        tournament = ClanTournament.objects.get(pk=tournament_id)
+        clan = Clans.objects.get(pk=clan_id)
+
+        if tournament.player_mode == 'fixed':
+            # Check if mid-season update is allowed
+            return HttpResponse("Player assignments are fixed for this tournament.")
+        
+        ClanTournamentPlayer.objects.get_or_create(user=user, clan=clan, tournament=tournament)
+        return redirect('some-success-page')
 
 @login_required
 def update_clan_tour(request, tour_id):

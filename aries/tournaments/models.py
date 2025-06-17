@@ -11,10 +11,18 @@ from PIL import Image
 class ClanTournament(models.Model):
     """Clan tournamnet model"""
     TOUR_CHOICES = [('league', 'League'),('cup', 'Cup'),('groups_knockout', 'Groups + Knockout')]
+    PLAYER_MODE_CHOICES = [('fixed', 'Fixed'), ('dynamic', 'Dynamic')]
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
     created_by = models.ForeignKey(User, on_delete=models.CASCADE)
-    teams = models.ManyToManyField(Clans, related_name="clans")  # Many-to-many relation with Clans
+    teams = models.ManyToManyField(Clans, related_name="clans")
+    player_mode = models.CharField(
+    max_length=10,
+    choices=PLAYER_MODE_CHOICES,
+    default='dynamic',
+    help_text="Whether clans can change players mid-tournament"
+)
+    # Many-to-many relation with Clans
     logo = models.ImageField(default="tours-defualt.jpg", upload_to='tour_logos')
     tour_type = models.CharField(max_length=100, choices=TOUR_CHOICES, blank=True, null=True)
     
@@ -66,6 +74,10 @@ class ClanTournament(models.Model):
         """Extract team names from the related teams."""
         return [team.clan_name for team in self.teams.all()]
 
+    def toggle_player_mode(self):
+        self.player_mode = 'fixed' if self.player_mode == 'dynamic' else 'dynamic'
+        self.save()
+    
     def create_matches(self):
         team_names = self.get_team_names()
         match_data = self.load_match_data_from_file()
@@ -103,7 +115,7 @@ class ClanTournament(models.Model):
                 match_data = tour_manager.update_groups_knockout(round_number,match_results)
         else:
             raise ValueError(f"Invalid tournament type: {self.tour_type}")
-        print(match_data)
+
         self.save_match_data_to_file(match_data)
         return match_data
 
@@ -120,6 +132,14 @@ class ClanTournament(models.Model):
             img.thumbnail(output_size)
             img.save(self.logo.path)
         
+class ClanTournamentPlayer(models.Model):
+    clan = models.ForeignKey(Clans, on_delete=models.CASCADE)
+    tournament = models.ForeignKey(ClanTournament, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    class Meta:
+        unique_together = ('clan', 'tournament', 'user')
+
 
 class IndiTournament(models.Model):
     """
