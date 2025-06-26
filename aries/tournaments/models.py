@@ -1,8 +1,8 @@
 from django.db import models
 from django.conf import settings
 from django.contrib.auth.models import User
-from clubs.models import Clans,ClanStats
-from users.models import Profile,PlayerStats
+from clans.models import Clans
+from users.models import Profile
 from .tourmanager import TourManager
 import os,json
 from PIL import Image
@@ -16,12 +16,7 @@ class ClanTournament(models.Model):
     description = models.TextField(blank=True, null=True)
     created_by = models.ForeignKey(User, on_delete=models.CASCADE)
     teams = models.ManyToManyField(Clans, related_name="clans")
-    player_mode = models.CharField(
-    max_length=10,
-    choices=PLAYER_MODE_CHOICES,
-    default='dynamic',
-    help_text="Whether clans can change players mid-tournament"
-)
+    player_mode = models.CharField(max_length=10,choices=PLAYER_MODE_CHOICES,default='dynamic',help_text="Whether clans can change players mid-tournament")
     # Many-to-many relation with Clans
     logo = models.ImageField(default="tours-defualt.jpg", upload_to='tour_logos')
     tour_type = models.CharField(max_length=100, choices=TOUR_CHOICES, blank=True, null=True)

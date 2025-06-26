@@ -1,14 +1,16 @@
 from django.shortcuts import render,redirect,get_object_or_404
 from django.contrib import messages
+from itertools import chain
 from django.db.models import Q
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
 from .forms import UserRegisterForm,UserUpdateForm,ProfileUpdateForm, SocialLinkFormSet
+from tournaments.models import ClanTournament, IndiTournament,ClanTournamentPlayer
 from django.contrib.auth.models import User
 from django.http import JsonResponse
 from django.contrib.contenttypes.models import ContentType
 from Home.models import Follow
-from clubs.models import Clans
+from clans.models import Clans
 from django.contrib.auth.views import LoginView
 
 
@@ -37,7 +39,13 @@ def profile(request):
 
     followers = Follow.objects.filter(followed_type=followed_type, followed_id=player.profile.id).count()
     following = Follow.objects.filter(follower_type=followed_type, follower_id=player.id).count()
-    
+    player_tour_ids = ClanTournamentPlayer.objects.filter(user=request.user).values_list('tournament_id', flat=True)
+    cvc_tournaments =  ClanTournament.objects.filter(Q(created_by=request.user) | Q(id__in=player_tour_ids)).distinct().order_by('-id')[:5]
+    indi_1 = IndiTournament.objects.filter(created_by=request.user).order_by('-id')[:5]
+    indi_2 = IndiTournament.objects.filter(players=request.user.profile).order_by('-id')[:5]
+    combined = list(chain(indi_1, indi_2))
+    indi_tournaments = sorted(set(combined), key=lambda x: x.id, reverse=True)[:5]
+
     if match_data:
         for match in match_data["matches"][-5:]:
             result = match["result"]
@@ -60,6 +68,7 @@ def profile(request):
             query.lower() in match['score'].lower())
         ]
    #bad i know but this is the best way i could think of slicing it
+
     
     context ={
         "match_data":match_data,
@@ -67,6 +76,8 @@ def profile(request):
         'query':query,
         'followers':followers,
         'following':following,
+        'indi_tournaments':indi_tournaments,
+        'cvc_tournaments':cvc_tournaments
         
     }
     return render(request, 'users/profile.html',context)

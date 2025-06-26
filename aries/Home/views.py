@@ -1,6 +1,6 @@
 from django.shortcuts import render,redirect
 from django.contrib.auth.models import User
-from clubs.models import Clans
+from clans.models import Clans
 
 
 def home(request):

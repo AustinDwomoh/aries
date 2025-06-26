@@ -4,7 +4,7 @@ from typing import Dict
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
-from .models import Clans,ClanStats
+from clans.models import Clans,ClanStats
 class TourManager:
     def __init__(self, json_data, teams_names, tournament_type,teams_advance=None,tour_name="Not specifed"):
         """

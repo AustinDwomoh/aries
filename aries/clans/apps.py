@@ -1,0 +1,10 @@
+from django.apps import AppConfig
+
+
+class ClansConfig(AppConfig):
+    default_auto_field = 'django.db.models.BigAutoField'
+    name = 'clans'
+
+    def ready(self):
+        """imports club signals"""
+        import clans.signals  

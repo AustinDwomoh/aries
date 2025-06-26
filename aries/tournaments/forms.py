@@ -1,6 +1,6 @@
 # forms.py
 from django import forms
-from clubs.models import Clans
+from clans.models import Clans
 from django.contrib.auth.models import User
 from .models import  ClanTournament, IndiTournament,Profile
 from crispy_forms.helper import FormHelper

@@ -1,7 +1,7 @@
 from django.db import models
 from django.conf import settings
 from django.contrib.auth.models import User
-from clubs.models import Clans  
+from clans.models import Clans  
 import os,json
 from PIL import Image
 
@@ -23,14 +23,15 @@ class Profile(models.Model):
     def __str__(self):
         return f'{self.user.username}'
     
-    def save(self): 
-        super().save()
+    def save(self,*args, **kwargs): 
+        super().save(*args, **kwargs)
         img = Image.open(self.profile_picture.path)
-
+        if img.mode in ("RGBA", "P"):
+            img = img.convert("RGB")
         if img.height > 300 or img.width > 300:
             output_size = (300,300)
             img.thumbnail(output_size)
-            img.save(self.profile_picture.path)
+        img.save(self.profile_picture.path)
    
 
 class PlayerStats(models.Model):
@@ -53,22 +54,22 @@ class PlayerStats(models.Model):
 
     def set_rank_based_on_elo(self):
         """Set the rank of the player based on the Elo value."""
-        if self.elo_rating < 1200:
-            self.rank = 'rookie'
-        elif self.elo_rating < 1400:
-            self.rank = 'prodigy'
-        elif self.elo_rating < 1600:
-            self.rank = 'veteran'
-        elif self.elo_rating < 1800:
-            self.rank = 'legend'
-        elif self.elo_rating < 2000:
-            self.rank = 'superstar'
-        elif self.elo_rating < 2200:
-            self.rank = 'elite'
-        elif self.elo_rating < 2400:
-            self.rank = 'mvp'
-        else:
-            self.rank = 'world_class'
+        ranking_thresholds = [
+            (1200, 'bronze'),
+            (1400, 'silver'),
+            (1600, 'gold'),
+            (1800, 'platinum'),
+            (2000, 'diamond'),
+            (2200, 'master'),
+            (2400, 'grandmaster'),
+            (2600, 'champion'),
+        ]
+        self.ranking = 'invincible'
+
+        for threshold, rank in ranking_thresholds:
+            if self.elo_rating < threshold:
+                self.ranking = rank
+                break
 
         self.save()
 

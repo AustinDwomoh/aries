@@ -39,11 +39,11 @@
               </button>
               <div class="collapse navbar-collapse" id="navbarSupportedContent">
                 <ul class="navbar-nav ms-auto align-items-center">
-                  <li class="nav-item"><a class="nav-link mx-2" href="{% url "Home" %}">Home</a></li>
-                  <li class="nav-item"><a class="nav-link mx-2" href="{% url "clubs-home" %}">Club</a></li>
-                  <li class="nav-item"><a class="nav-link mx-2" href="{% url "gamers" %}">Gamers</a></li>
-                  <li class="nav-item"><a class="nav-link mx-2" href="{% url "tournament-home" %}">Tournament</a></li>
-                  <li class="nav-item"><a class="nav-link mx-2" href="{% url "About" %}">About</a></li>
+                  <li class="nav-item"><a class="nav-link mx-2" href="{% url 'Home' %}">Home</a></li>
+                  <li class="nav-item"><a class="nav-link mx-2" href="{% url 'clan_home' %}">Clan</a></li>
+                  <li class="nav-item"><a class="nav-link mx-2" href="{% url 'gamers' %}">Gamers</a></li>
+                  <li class="nav-item"><a class="nav-link mx-2" href="{% url 'tournament-home' %}">Tournament</a></li>
+                  <li class="nav-item"><a class="nav-link mx-2" href="{% url 'About' %}">About</a></li>
                   <li class="nav-item dropdown">
                     {% if user.is_authenticated %}
                         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -57,7 +57,7 @@
                             </li>
                             
                             <li>
-                                <a class="dropdown-item" href="{% url "clan_login" %}" id="clan_dashboard">Manage Club </a>
+                                <a class="dropdown-item" href="{% url "clan_login" %}" id="clan_dashboard">Manage Clan </a>
                             </li>
                         
                             <li>
@@ -149,7 +149,7 @@
                     <h5 class="text-uppercase">Important Links</h5>
                     <ul class="list-unstyled mb-0">
                     <li><a class="text-white" href="{% url 'Home' %}">Home</a></li>
-                    <li><a class="text-white" href="{% url 'clubs-home' %}">Club</a></li>
+                    <li><a class="text-white" href="{% url 'clan_home' %}">Clan</a></li>
                     <li><a class="text-white" href="{% url 'tournament-home'%}">Tournament</a></li>
                     <li><a class="text-white" href="{% url 'gamers' %}">Gamers</a></li>
                     <li><a class="text-white" href="{% url 'About' %}">About</a></li>
@@ -160,7 +160,7 @@
                     <ul class="list-unstyled mb-0 text-center">
                     <li><a class="text-white" href="{% url 'register' %}">Sign Up</a></li>
                     <li><a href="{% url 'login' %}" class="text-white">Log In</a></li>
-                    <li><a href="{% url 'clan_register' %}" class="text-white">Register Club</a></li>
+                    <li><a href="{% url 'clan_register' %}" class="text-white">Register Clan</a></li>
                     </ul>
                 </div>
 

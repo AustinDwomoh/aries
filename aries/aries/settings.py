@@ -33,7 +33,7 @@ ALLOWED_HOSTS = []
 
 INSTALLED_APPS = [
     'Home.apps.HomeConfig',
-    'clubs.apps.ClubsConfig',
+    'clans.apps.ClansConfig',
     'tournaments.apps.TournamentsConfig',
     'users.apps.UsersConfig',
     'crispy_forms',

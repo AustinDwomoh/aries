@@ -1,4 +1,4 @@
-from clubs.models import Clans, ClanStats
+from clans.models import Clans, ClanStats
 from users.models import Profile, PlayerStats
 from django.contrib import admin
 from tournaments.models import ClanTournament, IndiTournament
