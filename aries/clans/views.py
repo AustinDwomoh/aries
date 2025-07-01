@@ -137,11 +137,11 @@ def clan_register(request):
         form = ClanRegistrationForm(request.POST,request.FILES)  
         created_by = request.user
         if form.is_valid():
-            clan = form.save(commit=False)  # Create a clan instance but don't save it yet
+            clan = form.save(commit=False)  
             clan.created_by = request.user
-            clan.set_password(form.cleaned_data['password'])  # Hash the password
-            clan.save()  # Save the clan to the database
-            return redirect('clan_login')  # Redirect to the login page after registration
+            clan.set_password(form.cleaned_data['password'])  
+            clan.save()  
+            return redirect('clan_login')  
     else:
         form = ClanRegistrationForm()  
     return render(request, 'clans/create_clan.html', {'form': form})
@@ -157,16 +157,13 @@ def clan_login(request):
             email = form.cleaned_data['email']
             password = form.cleaned_data['password']
             try:
-                clan = Clans.objects.get(email=email)  # Fetch the clan by email
-                #if clan.check_password(password):  # Verify the password
-                request.session['clan_id'] = clan.id  # Store the clan ID in the session
-                return redirect('clan_dashboard')  # Redirect to the dashboard
-                #else:
-                    #form.add_error('password', 'Incorrect password.')  # Add an error for incorrect password
+                clan = Clans.objects.get(email=email)  
+                request.session['clan_id'] = clan.id 
+                return redirect('clan_dashboard')  
             except Clans.DoesNotExist:
-                form.add_error('email', 'Clan not found.')  # Add an error if the clan doesn't exist
+                form.add_error('email', 'Clan not found.')  
     else:
-        form = ClanLoginForm()  # Display an empty form for GET requests
+        form = ClanLoginForm()  
 
     return render(request, 'clans/clan_login.html', {'form': form})
 
@@ -182,8 +179,8 @@ def clan_login_required(view_func):
     Custom decorator to ensure that only logged-in clans can access certain views.
     """
     def wrapper(request, *args, **kwargs):
-        if 'clan_id' not in request.session:  # Check if the clan is logged in
-            return redirect('clans/clan_login')  # Redirect to the login page if not logged in
+        if 'clan_id' not in request.session:  
+            return redirect('clans/clan_login')  
         return view_func(request, *args, **kwargs)
     return wrapper
 
@@ -325,98 +322,3 @@ def clan_follow_unfollow(request, action, followed_model, followed_id):
     return JsonResponse({"error": "Invalid action"}, status=400)
 
 
-
-""" 
-from django.shortcuts import render, get_object_or_404
-from django.utils.safestring import mark_safe
-from django.contrib.contenttypes.models import ContentType
-from django.db.models import Count, Q
-import markdown
-
-def unified_clan_view(request, clan_id=None):
-    when we start to comnbine methods use this as refrence
-    is_own_dashboard = False
-
-    if clan_id:
-        clan = get_object_or_404(Clans, id=clan_id)
-        clan_stats = get_object_or_404(ClanStats, id=clan_id)
-    else:
-        clan_id = request.session.get('clan_id')
-        if not clan_id:
-            return render(request, 'error.html', {'message': 'No clan ID found.'})
-        clan = get_object_or_404(Clans, id=clan_id)
-        clan_stats = get_object_or_404(ClanStats, id=clan_id)
-        is_own_dashboard = True
-
-    match_data = clan_stats.load_match_data_from_file()
-    clan.clan_description = mark_safe(markdown.markdown(clan.clan_description or ""))
-
-    # Follower data
-    followed_type = ContentType.objects.get_for_model(Clans)
-    follow_data = Follow.objects.filter(
-        followed_type=followed_type, 
-        followed_id=clan_id
-    ).aggregate(
-        followers=Count('id'),
-        following=Count('id', filter=Q(follower_id=clan_id))
-    )
-    followers = follow_data['followers']
-    following = follow_data['following']
-    is_following = False
-    if request.user.is_authenticated and not is_own_dashboard:
-        is_following = Follow.objects.filter(
-            followed_type=followed_type, 
-            followed_id=clan_id, 
-            follower_id=request.user.id
-        ).exists()
-
-    # Members
-    members = User.objects.filter(profile__clan=clan)
-
-    # Tournaments
-    tournaments = ClanTournament.objects.filter(teams=clan).order_by('-id')[:5]
-
-    # Match results
-    match_results = []
-    if match_data:
-        last_5_matches = match_data.get("matches", [])[-5:]
-        match_results = [
-            "W" if m["result"] == "win" else "L" if m["result"] == "loss" else "D"
-            for m in last_5_matches
-        ]
-        match_data["matches"] = last_5_matches
-
-    # Search
-    query = request.GET.get('q', '').lower()
-    if query:
-        match_data["matches"] = [
-            m for m in match_data.get("matches", [])
-            if any(query in str(m.get(field, '')).lower() for field in ['date', 'tour_name', 'opponent', 'result', 'score'])
-        ]
-
-    context = {
-        'clan': clan,
-        'stats': clan_stats,
-        'players': members,
-        'tournaments': tournaments,
-        'match_results': match_results,
-        'match_data': match_data,
-        'query': query,
-        'followers': followers,
-        'following': following,
-        'is_following': is_following,
-    }
-    # For public view
-path('clans/<int:clan_id>/', unified_clan_view, name='clan_public_view'),
-
-# For personal dashboard
-path('clan/dashboard/', unified_clan_view, name='clan_dashboard'),
-
-    if is_own_dashboard:
-        context["form"] = AddPlayerToClanForm(request.POST or None, clan=clan)
-        context["join_requests"] = ClanJoinRequest.objects.filter(clan=clan, status="pending")
-        return render(request, "clubs/clan_dashboard.html", context)
-
-    return render(request, 'clubs/club_view.html', context)
-
-"""

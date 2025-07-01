@@ -6,7 +6,7 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
 from clans.models import Clans,ClanStats
 class TourManager:
-    def __init__(self, json_data, teams_names, tournament_type,teams_advance=None,tour_name="Not specifed"):
+    def __init__(self, json_data, teams_names, tournament_type,home_or_away,teams_advance=None,tour_name="Not specifed"):
         """
         Initialize the TourManager.
 
@@ -20,6 +20,7 @@ class TourManager:
         self.tournament_type = tournament_type
         self.teams_to_advance = teams_advance
         self.tour_name = tour_name
+        self.home_or_away= home_or_away
 # ============================================================================ #
 #                                    leagues                                   #
 # ============================================================================ #
@@ -51,6 +52,22 @@ class TourManager:
                 })
             round_robin['fixtures'][f"round_{round_number + 1}"] = round_matches
             self.teams.insert(1, self.teams.pop())
+        if self.home_or_away:
+            original_rounds = list(round_robin["fixtures"].items())
+            for round_number, matches in original_rounds:
+                new_round_matches = []
+                for match in matches:
+                    new_round_matches.append({
+                        "match": match["match"],
+                        "team_a": match["team_b"],     # swap
+                        "team_b": match["team_a"],     # swap
+                        "team_a_goals": None,
+                        "team_b_goals": None,
+                        "winner": None,
+                        "status": 'pending'
+                    })
+                new_round_key = f"round_{len(round_robin['fixtures']) + 1}"
+                round_robin['fixtures'][new_round_key] = new_round_matches
         for team in self.teams:
             if team == "Bye":
                 continue  # Exclude "Bye" from the table
@@ -79,69 +96,14 @@ class TourManager:
                 if match:
                     match["team_a_goals"] = result["team_a_goals"]
                     match["team_b_goals"] = result["team_b_goals"]
-
                     team_a = match["team_a"]
                     team_b = match["team_b"]
                     goals_a = result["team_a_goals"]
                     goals_b = result["team_b_goals"]
-
-                    # Determine winner or draw
-                    if goals_a > goals_b:
-                        match["winner"] = team_a
-                        self.update_elo_for_match(team_a,team_b)
-                        self.update_table(team_a, goals_a, goals_b, result_type="win")
-                        self.update_table(team_b, goals_b, goals_a, result_type="loss")
-                        self.store_records(team_a, team_b, goals_a, goals_b)
-                        self.update_team_db_stats(team_a, goals_a, goals_b, result_type="win")
-                        self.update_team_db_stats(team_b, goals_b, goals_a, result_type="loss")
-                    elif goals_a < goals_b:
-                        match["winner"] = team_b
-                        self.update_elo_for_match(team_b,team_a)
-                        self.update_table(team_b, goals_b, goals_a, result_type="win")
-                        self.update_table(team_a, goals_a, goals_b, result_type="loss")
-                        self.store_records(team_b, team_a, goals_b, goals_a)
-                        self.update_team_db_stats(team_a, goals_a, goals_b, result_type="loss")
-                        self.update_team_db_stats(team_b, goals_b, goals_a, result_type="win")
-                    else:
-                        match["winner"] = "Draw"
-                        self.update_table(team_a, goals_a, goals_b, result_type="draw")
-                        self.update_table(team_b, goals_b, goals_a, result_type="draw")
-                        self.store_records(team_a, team_b, goals_a, goals_b, result_type="draw")
-                        self.update_team_db_stats(team_a, goals_a, goals_b)
-                        self.update_team_db_stats(team_b, goals_b, goals_a)
-                    match['status'] ="complete"
+                    self.process_match(team_a,team_b,goals_a,goals_b,match)
         return self.match_data
     
-    def update_table(self, team, goals_scored, goals_conceded, result_type):
-        """Update the league table for a team based on match result."""
-        table = self.match_data["table"]
-        table[team]["goals_scored"] += goals_scored
-        table[team]["goals_conceded"] += goals_conceded
-        table[team]["goal_difference"] = (table[team]["goals_scored"] - table[team]["goals_conceded"])
-        table[team]["matches_played"] += 1
-
-        if result_type == "win":
-            table[team]["wins"] += 1
-            table[team]["points"] += 3
-        elif result_type == "draw":
-            table[team]["draws"] += 1
-            table[team]["points"] += 1
-        elif result_type == "loss":
-            table[team]["losses"] += 1
-        sorted_table = sorted(
-        table.items(),
-        key=lambda item: (
-            item[1]["points"], 
-            item[1]["goal_difference"], 
-            item[1]["wins"], 
-            item[1]["goals_scored"]
-        ), 
-        reverse=True  # Sort in descending order
-    )
-    
-    # Update the table with sorted teams
-        self.match_data["table"] = {team[0]: team[1] for team in sorted_table}
-        
+  
 # ============================================================================ #
 #                                   knockouts                                  #
 # ============================================================================ #
@@ -172,16 +134,28 @@ class TourManager:
             while len(teams) >= 2:
                 team_a = teams.pop(0)
                 team_b = teams.pop(0)
-                match = {
-                    "team_a": team_a,
-                    "team_b": team_b,
+                match1 = {
+            "team_a": team_a,
+            "team_b": team_b,
+            "team_a_goals": None,
+            "team_b_goals": None,
+            "winner": None,
+            "status": "pending"
+        }
+            round_matches.append(match1)
+
+            if getattr(self, "home_or_away", False):
+                # Second leg
+                match2 = {
+                    "team_a": team_b,
+                    "team_b": team_a,
                     "team_a_goals": None,
                     "team_b_goals": None,
                     "winner": None,
-                    "status":"pending"
+                    "status": "pending"
                 }
-                round_matches.append(match)
-            
+                round_matches.append(match2)
+              
             self.match_data["rounds"].append({
                 "round_number": round_number,
                 "matches": round_matches
@@ -202,7 +176,6 @@ class TourManager:
         
         next_round_players = []
         for result in match_results:
-            print("Match Results:", result)
             team_a = result["team_a"]
             team_b = result["team_b"]
             
@@ -214,51 +187,8 @@ class TourManager:
             if match['status'] !="complete":
                 match["team_a_goals"] = result["team_a_goals"]
                 match["team_b_goals"] = result["team_b_goals"]
-                if match["team_a_goals"] > match["team_b_goals"]:
-                    match["winner"] = match["team_a"]
-                    self.update_elo_for_match(match["team_a"],match["team_b"])
-                    self.store_records(team_a, team_b, match["team_a_goals"], match["team_b_goals"])
-                    self.update_team_db_stats(team_a,  match["team_a_goals"], match["team_b_goals"], result_type="win")
-                    self.update_team_db_stats(team_b,  match["team_b_goals"], match["team_a_goals"], result_type="loss")
-                elif match["team_a_goals"] < match["team_b_goals"]:
-                    match["winner"] = match["team_b"]
-                    self.update_elo_for_match(match["team_b"],match["team_a"])
-                    self.store_records(team_b, team_a, match["team_b_goals"], match["team_a_goals"])
-                    self.update_team_db_stats(team_a,  match["team_a_goals"], match["team_b_goals"], result_type="loss")
-                    self.update_team_db_stats(team_b,  match["team_b_goals"], match["team_a_goals"], result_type="win")
-                for team, scored, conceded in [
-                    (team_a, match["team_a_goals"], match["team_b_goals"]),
-                    (team_b, match["team_b_goals"], match["team_a_goals"]),
-                ]:
-                    if team not in self.match_data["table"]:
-                        self.match_data["table"][team] = {
-                            "goals_scored": 0,
-                            "goals_conceded": 0,
-                            "goal_difference": 0,
-                            "points": 0,
-                            "matches_played": 0,
-                            "wins": 0,
-                            "draws": 0,
-                            "losses": 0,
-                        }
-                    self.match_data["table"][team]["goals_scored"] += scored
-                    self.match_data["table"][team]["goals_conceded"] += conceded
-                    self.match_data["table"][team]["goal_difference"] = (
-                        self.match_data["table"][team]["goals_scored"] -
-                        self.match_data["table"][team]["goals_conceded"]
-                    )
-                    self.match_data["table"][team]["matches_played"] += 1
-
-                    if match["winner"] == team:
-                        self.match_data["table"][team]["wins"] += 1
-                        self.match_data["table"][team]["points"] += 3
-                    elif match["winner"] is None:
-                        self.match_data["table"][team]["draws"] += 1
-                        self.match_data["table"][team]["points"] += 1
-                    else:
-                        self.match_data["table"][team]["losses"] += 1
-
-                match['status'] = 'complete'
+                self.process_match(team_a,team_b,match["team_a_goals"],match["team_b_goals"],match)
+        
             # Check if all matches are complete
             all_matches_complete = all(match.get('status') == 'complete' for match in current_round['matches'])
 
@@ -271,6 +201,90 @@ class TourManager:
                     
         return self.match_data
 
+    """  def update_knockout(self, round_number, match_results):
+     
+        rounds = self.match_data.get("rounds", [])
+        current_round = next(
+            (r for r in rounds if r["round_number"] == round_number), None
+        )
+        if not current_round:
+            raise ValueError(f"Round {round_number} not found in knockout data.")
+        
+        next_round_players = []
+        for result in match_results:
+            team_a = result["team_a"]
+            team_b = result["team_b"]
+            
+            # Find the match using team names
+            match = next(
+                (m for m in current_round['matches'] if (m["team_a"] == team_a and m["team_b"] == team_b) or (m["team_a"] == team_b and m["team_b"] == team_a)),
+                None
+            )
+            if match['status'] !="complete":
+                match["team_a_goals"] = result["team_a_goals"]
+                match["team_b_goals"] = result["team_b_goals"]
+                match["status"] = "complete"
+                pairs = {}
+            for m in current_round['matches']:
+                pid = m.get("pair_id")
+                if not pid:
+                    continue
+                pairs.setdefault(pid, []).append(m)
+
+
+            for pair_id, matches in pairs.items():
+                if not all(m["status"] == "complete" for m in matches):
+                    continue
+
+                agg_a = 0
+                agg_b = 0
+                teams = None
+
+                for m in matches:
+                    if teams is None:
+                        teams = (m["team_a"], m["team_b"])
+                    agg_a += m["team_a_goals"]
+                    agg_b += m["team_b_goals"]
+
+                team_a, team_b = teams
+
+                # create an aggregate match object
+                aggregate_match = {
+                    "team_a": team_a,
+                    "team_b": team_b,
+                    "team_a_goals": agg_a,
+                    "team_b_goals": agg_b,
+                    "winner": None,
+                    "status": "complete"
+                }
+
+                # process the aggregate match
+                self.process_match(
+                    team_a,
+                    team_b,
+                    agg_a,
+                    agg_b,
+                    aggregate_match
+                )
+
+                # propagate winner back to all legs
+                for m in matches:
+                    m["winner"] = aggregate_match["winner"]
+
+                next_round_players.append(aggregate_match["winner"])
+
+            # Handle single-leg matches
+            for match in current_round['matches']:
+                if match.get("pair_id"):
+                    continue  # skip two-leg pairs
+                if match["status"] == "complete" and match["winner"]:
+                    next_round_players.append(match["winner"])
+
+        if next_round_players:
+            self.make_knockout(next_round_players)
+
+        return self.match_data
+    """
 #                                cup with groups                               #
 # ============================================================================ #
     def make_groups_knockout(self) -> Dict:
@@ -334,45 +348,25 @@ class TourManager:
                     if match['status'] != "complete":
                         match["team_a_goals"] = team_a_goals
                         match["team_b_goals"] = team_b_goals
-                        match["status"] = "complete"
-                        if team_a_goals > team_b_goals:
-                            match["winner"] = match["team_a"]
-                            self.update_elo_for_match(match["team_a"], match["team_b"])
-                            self.update_group_table(team_a, team_a_goals, team_b_goals, "win", group_data)
-                            self.update_group_table(team_b, team_b_goals, team_a_goals, "loss", group_data)
-                            self.store_records(team_a, team_b, team_a_goals, team_b_goals)
-                            self.update_team_db_stats(team_a, team_a_goals, team_b_goals, result_type="win")
-                            self.update_team_db_stats(team_b, team_b_goals, team_a_goals, result_type="loss")
-                        elif team_a_goals < team_b_goals:
-                            match["winner"] = match["team_b"]
-                            self.update_elo_for_match(match["team_b"], match["team_a"])
-                            self.update_group_table(team_a, team_a_goals, team_b_goals, "loss", group_data)
-                            self.update_group_table(team_b, team_b_goals, team_a_goals, "win", group_data)
-                            self.update_team_db_stats(team_a, team_a_goals, team_b_goals, result_type="loss")
-                            self.update_team_db_stats(team_b, team_b_goals, team_a_goals, result_type="win")
-                            
-                        else:
-                            match["winner"] = "Draw"
-                            self.update_group_table(team_a, team_a_goals, team_b_goals, "draw", group_data)
-                            self.update_group_table(team_b, team_b_goals, team_a_goals, "draw", group_data)
-                            self.store_records(team_b, team_a, team_b_goals, team_a_goals,result_type="draw")
-                            self.update_team_db_stats(team_a, team_a_goals, team_b_goals)
-                            self.update_team_db_stats(team_b, team_b_goals, team_a_goals)
+                        self.process_match(team_a,team_b,team_a_goals,team_b_goals,match,group_data=group_data)
         all_matches_complete = True
         for groups in self.match_data["group_stages"].values():
             for round in groups["fixtures"].values():
                 for match in round:
                     if match['status']!= 'complete':
+                        print("naa")
                         all_matches_complete = False
                         break
                 
 
         if all_matches_complete:
+            print("hi")
             teams_to_advance = self.teams_to_advance if self.teams_to_advance else 2
             for groups in self.match_data["group_stages"].values():
                 rankings = list(groups["table"].keys())
                 next_round_players.extend(rankings[:teams_to_advance])
             self.make_group_knockout(self.match_data,next_round_players) 
+            print(self.match_data)
         return self.match_data
     
     def update_group_table(self, team, goals_scored, goals_conceded, result_type,group_data):
@@ -402,7 +396,8 @@ class TourManager:
         group_data["table"] = {team[0]: team[1] for team in sorted_table}
 
     def make_group_knockout(self, data, teams):
-        """Creates a knockout structure for cups with bracket-style details."""       
+        """Creates a knockout structure for cups with bracket-style details.""" 
+        print("mk")
         if 'knock_outs' not in data:
             data["knock_outs"] = {"rounds":[],"table": {}}
             data["knock_outs"]["table"] = {team: {
@@ -441,6 +436,7 @@ class TourManager:
                 "matches": round_matches
             })
             round_number += 1
+        print(data)
         return data
                 
     def update_ko(self, round_number, match_results):
@@ -452,7 +448,7 @@ class TourManager:
         
         next_round_players = []
         for result in match_results:
-            print("Match Results:", result)
+            
             team_a = result["team_a"]
             team_b = result["team_b"]
             
@@ -464,18 +460,8 @@ class TourManager:
             if match['status'] !="complete":
                 match["team_a_goals"] = result["team_a_goals"]
                 match["team_b_goals"] = result["team_b_goals"]
-                if match["team_a_goals"] > match["team_b_goals"]:
-                    match["winner"] = match["team_a"]
-                    self.update_elo_for_match(match["team_a"],match["team_b"])
-                    self.store_records(team_a, team_b, match["team_a_goals"], match["team_b_goals"])
-                    self.update_team_db_stats(team_a,  match["team_a_goals"], match["team_b_goals"], result_type="win")
-                    self.update_team_db_stats(team_b,  match["team_b_goals"], match["team_a_goals"], result_type="loss")
-                elif match["team_a_goals"] < match["team_b_goals"]:
-                    match["winner"] = match["team_b"]
-                    self.update_elo_for_match(match["team_b"],match["team_a"])
-                    self.store_records(team_b, team_a, match["team_b_goals"], match["team_a_goals"])
-                    self.update_team_db_stats(team_a,  match["team_a_goals"], match["team_b_goals"], result_type="loss")
-                    self.update_team_db_stats(team_b,  match["team_b_goals"], match["team_a_goals"], result_type="win")
+                self.process_match(team_a,team_b,match["team_a_goals"],match["team_b_goals"],match)
+                
                 for team, scored, conceded in [
                     (team_a, match["team_a_goals"], match["team_b_goals"]),
                     (team_b, match["team_b_goals"], match["team_a_goals"]),
@@ -718,5 +704,88 @@ class TourManager:
             win_rate = ((user_stat.total_wins + user_stat.total_draws/2) / user_stat.games_played) * 100 if user_stat.games_played > 0 else 0
             user_stat.win_rate = round(win_rate,3)
             user_stat.save()
+
+    # Inside your class
+
+    def process_match(self, team_a, team_b, goals_a, goals_b, match,group_data=None):
+        if goals_a > goals_b:
+            winner, loser = team_a, team_b
+            winner_goals, loser_goals = goals_a, goals_b
+            self._handle_result(winner, loser, winner_goals, loser_goals,group_data)
+            match["winner"] = winner
+        elif goals_a < goals_b:
+            winner, loser = team_b, team_a
+            winner_goals, loser_goals = goals_b, goals_a
+            self._handle_result(winner, loser, winner_goals, loser_goals,group_data)
+            match["winner"] = winner
+        else:
+            self._handle_draw(team_a, team_b, goals_a, goals_b,group_data)
+            match["winner"] = "Draw"
+
+        match["status"] = "complete"
+        
+    def update_table(self, team, goals_scored, goals_conceded, result_type):
+        """Update the league table for a team based on match result."""
+        table = self.match_data.get("table")
+        if table:
+            if team not in table:
+                    table[team] = {
+                        "goals_scored": 0,
+                        "goals_conceded": 0,
+                        "goal_difference": 0,
+                        "points": 0,
+                        "matches_played": 0,
+                        "wins": 0,
+                        "draws": 0,
+                        "losses": 0,
+                    }
+            table[team]["goals_scored"] += goals_scored
+            table[team]["goals_conceded"] += goals_conceded
+            table[team]["goal_difference"] = (table[team]["goals_scored"] - table[team]["goals_conceded"])
+            table[team]["matches_played"] += 1
+
+            if result_type == "win":
+                table[team]["wins"] += 1
+                table[team]["points"] += 3
+            elif result_type == "draw":
+                table[team]["draws"] += 1
+                table[team]["points"] += 1
+            elif result_type == "loss":
+                table[team]["losses"] += 1
+            sorted_table = sorted(
+            table.items(),
+            key=lambda item: (
+                item[1]["points"], 
+                item[1]["goal_difference"], 
+                item[1]["wins"], 
+                item[1]["goals_scored"]
+            ), 
+            reverse=True  # Sort in descending order
+            )
+        
+
+            self.match_data["table"] = {team[0]: team[1] for team in sorted_table}
+        
+
+    def _handle_result(self, winner, loser, winner_goals, loser_goals,group_data=None):
+        self.update_elo_for_match(winner, loser)
+        self.update_table(winner, winner_goals, loser_goals, result_type="win")
+        self.update_table(loser, loser_goals, winner_goals, result_type="loss")
+        if group_data:
+            self.update_group_table(winner, winner_goals, loser_goals,group_data=group_data, result_type="win")
+            self.update_group_table(loser, loser_goals, winner_goals,group_data=group_data,result_type="loss")
+        self.store_records(winner, loser, winner_goals, loser_goals)
+        self.update_team_db_stats(winner, winner_goals, loser_goals, result_type="win")
+        self.update_team_db_stats(loser, loser_goals, winner_goals, result_type="loss")
+
+    def _handle_draw(self, team_a, team_b, goals_a, goals_b,group_data=None):
+        self.update_table(team_a, goals_a, goals_b, result_type="draw")
+        self.update_table(team_b, goals_b, goals_a, result_type="draw")
+        if group_data:
+            self.update_group_table(team_a, goals_a, goals_b,group_data=group_data, result_type="draw")
+            self.update_group_table(team_b, goals_b, goals_a,group_data=group_data, result_type="draw")
+        self.store_records(team_a, team_b, goals_a, goals_b, result_type="draw")
+        self.update_team_db_stats(team_a, goals_a, goals_b, result_type="draw")
+        self.update_team_db_stats(team_b, goals_b, goals_a, result_type="draw")
 
 

@@ -30,11 +30,12 @@ class IndiTournamentForm(forms.ModelForm):
 
     class Meta:
         model = IndiTournament
-        fields = ['name', 'description', 'players', 'tour_type','logo']
+        fields = ['name', 'description', 'players', 'tour_type','logo','home_or_away']
         widgets = {
             'name': forms.TextInput(attrs={'placeholder': 'Match Name'}),
             'description': forms.Textarea(attrs={'placeholder': 'Match Description'}),
             'tour_type': forms.Select(),
+            'home_or_away': forms.RadioSelect(choices=[(True, 'Yes'), (False, 'No')]),
             
         }
 
@@ -53,7 +54,8 @@ class IndiTournamentForm(forms.ModelForm):
                 follower_type=profile_type
             ).values_list('follower_id', flat=True)
 
-            self.fields['players'] = forms.ModelMultipleChoiceField(queryset=Profile.objects.filter(id__in=follower_ids), widget=forms.SelectMultiple(attrs={'class': 'select2'}))
+            self.fields['players'] = forms.ModelMultipleChoiceField(queryset=Profile.objects.all(), widget=forms.SelectMultiple(attrs={'class': 'select2'}))
+            #.filter(id__in=follower_ids)
         else:
             # Fallback: No followers, empty queryset for 'players'
             self.fields['players'] = forms.ModelMultipleChoiceField(queryset=Profile.objects.none(), widget=forms.SelectMultiple(attrs={'class': 'select2'}))
@@ -64,14 +66,14 @@ class ClanTournamentForm(forms.ModelForm):
     Form for creating or updating a clan tournament.
     """
     class Meta:
-        
         model = ClanTournament
-        fields = ['name', 'description', 'teams', 'tour_type','logo']
-
+        fields = ['name', 'description', 'teams', 'tour_type', 'logo', 'home_or_away']
         widgets = {
             'name': forms.TextInput(attrs={'placeholder': 'Match Name'}),
             'description': forms.Textarea(attrs={'placeholder': 'Match Description'}),
-            'tour_type': forms.Select(),}
+            'tour_type': forms.Select(),
+            'home_or_away': forms.RadioSelect(choices=[(True, 'Yes'), (False, 'No')]),
+        }
     def __init__(self, *args, current_profile=None, **kwargs):
         super().__init__(*args, **kwargs)
 

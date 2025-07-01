@@ -17,9 +17,13 @@ class ClanTournament(models.Model):
     created_by = models.ForeignKey(User, on_delete=models.CASCADE)
     teams = models.ManyToManyField(Clans, related_name="clans")
     player_mode = models.CharField(max_length=10,choices=PLAYER_MODE_CHOICES,default='dynamic',help_text="Whether clans can change players mid-tournament")
-    # Many-to-many relation with Clans
+    home_or_away = models.BooleanField(
+        verbose_name="Home or Away",
+        default=False,
+        help_text="Select if this tournament is played home/away format.",
+    )
     logo = models.ImageField(default="tours-defualt.jpg", upload_to='tour_logos')
-    tour_type = models.CharField(max_length=100, choices=TOUR_CHOICES, blank=True, null=True)
+    tour_type = models.CharField(max_length=100, choices=TOUR_CHOICES)
     
 
     
@@ -76,7 +80,7 @@ class ClanTournament(models.Model):
     def create_matches(self):
         team_names = self.get_team_names()
         match_data = self.load_match_data_from_file()
-        tour_manager = TourManager(match_data, team_names, self.tour_type,tour_name= self.name)
+        tour_manager = TourManager(json_data=match_data, teams_names=team_names, tournament_type=self.tour_type,home_or_away=self.home_or_away,tour_name= self.name)
         match_data = tour_manager.create_tournament()
         #RETURNS fix and watch this issues
         self.save_match_data_to_file(match_data)
@@ -98,7 +102,7 @@ class ClanTournament(models.Model):
         """
         team_names = self.get_team_names()
         match_data = self.load_match_data_from_file()
-        tour_manager = TourManager(match_data, team_names, self.tour_type,tour_name=self.name)
+        tour_manager = TourManager(json_data=match_data, teams_names=team_names, tournament_type=self.tour_type,home_or_away=self.home_or_away,tour_name= self.name)
         if self.tour_type == "league":
             match_data = tour_manager.update_league(round_number, match_results)
         elif self.tour_type == "cup":
@@ -146,7 +150,12 @@ class IndiTournament(models.Model):
     created_by = models.ForeignKey(User, on_delete=models.CASCADE)
     players = models.ManyToManyField(Profile, related_name="players")
     logo = models.ImageField(default="tours-defualt.jpg",upload_to='tour_logos')
-    tour_type = models.CharField(max_length=100, choices=TOUR_CHOICES, blank=True, null=True)
+    tour_type = models.CharField(max_length=100, choices=TOUR_CHOICES)
+    home_or_away = models.BooleanField(
+        verbose_name="Home or Away",
+        default=False,
+        help_text="Select if this tournament is played home/away format.",
+    )
     def __str__(self):
         return self.name
     
@@ -195,7 +204,7 @@ class IndiTournament(models.Model):
         """
         team_names = [team.user.username for team in self.players.all()]
         self.match_data = self.load_match_data_from_file()
-        tour_manager = TourManager(self.match_data, team_names, self.tour_type,tour_name=self.name)
+        tour_manager = TourManager(json_data=self.match_data, teams_names=team_names,home_or_away=self.home_or_away, tournament_type=self.tour_type,tour_name=self.name)
         matches = tour_manager.create_tournament()
         self.match_data =  matches  
         self.save_match_data_to_file()
@@ -238,7 +247,7 @@ class IndiTournament(models.Model):
         """
         team_names = self.get_team_names()
         self.match_data = self.load_match_data_from_file()
-        tour_manager = TourManager(self.match_data, team_names, self.tour_type,tour_name=self.name)
+        tour_manager =TourManager(json_data=self.match_data, teams_names=team_names,home_or_away=self.home_or_away, tournament_type=self.tour_type,tour_name=self.name)
         if self.tour_type == "league":
             updated_data = tour_manager.update_league(round_number, match_results)
         elif self.tour_type == "cup":
