@@ -1,4 +1,4 @@
-import random
+import random,string,secrets
 from django.utils import timezone
 from typing import Dict
 from django.shortcuts import get_object_or_404
@@ -91,15 +91,11 @@ class TourManager:
         for result in match_results:
             team_a = result["team_a"]
             team_b = result["team_b"]
+            goals_a = result["team_a_goals"]
+            goals_b = result["team_b_goals"]
             match = next((m for m in round_matches if m["team_a"] == team_a and m["team_b"] == team_b), None)
             if match['status'] !="complete":
                 if match:
-                    match["team_a_goals"] = result["team_a_goals"]
-                    match["team_b_goals"] = result["team_b_goals"]
-                    team_a = match["team_a"]
-                    team_b = match["team_b"]
-                    goals_a = result["team_a_goals"]
-                    goals_b = result["team_b_goals"]
                     self.process_match(team_a,team_b,goals_a,goals_b,match)
         return self.match_data
     
@@ -107,62 +103,109 @@ class TourManager:
 # ============================================================================ #
 #                                   knockouts                                  #
 # ============================================================================ #
-    def make_knockout(self,teams=None):
-        """Creates a knockout structure for cups with bracket-style details."""       
+   
+
+   
+
+    def make_knockout(self, teams=None):
+        """Creates a knockout structure for cups with bracket-style details (templates only)."""
+
         if not hasattr(self, 'match_data'):
             self.match_data = {}
 
         if teams is None or 'rounds' not in self.match_data:
             teams = self.teams if teams is None else teams
+            teams = list(teams)  # avoid mutating external list
             self.match_data["rounds"] = []
-            self.match_data["table"] = {team: {
-                "goals_scored": 0,
-                "goals_conceded": 0,
-                "goal_difference": 0,
-                "points": 0,
-                "matches_played": 0,
-                "wins": 0,
-                "draws": 0,
-                "losses": 0
-            } for team in self.teams}
+            self.match_data["table"] = {
+                team: {
+                    "goals_scored": 0,
+                    "goals_conceded": 0,
+                    "goal_difference": 0,
+                    "points": 0,
+                    "matches_played": 0,
+                    "wins": 0,
+                    "draws": 0,
+                    "losses": 0
+                }
+                for team in teams
+            }
             round_number = 1
         else:
             round_number = len(self.match_data["rounds"]) + 1
-        random.shuffle(teams)
-        while len(teams) > 1:
-            round_matches = []
-            while len(teams) >= 2:
-                team_a = teams.pop(0)
-                team_b = teams.pop(0)
-                match1 = {
-            "team_a": team_a,
-            "team_b": team_b,
-            "team_a_goals": None,
-            "team_b_goals": None,
-            "winner": None,
-            "status": "pending"
-        }
-            round_matches.append(match1)
 
-            if getattr(self, "home_or_away", False):
-                # Second leg
-                match2 = {
-                    "team_a": team_b,
-                    "team_b": team_a,
-                    "team_a_goals": None,
-                    "team_b_goals": None,
-                    "winner": None,
-                    "status": "pending"
-                }
-                round_matches.append(match2)
-              
+        current_participants = [{"name": team} for team in teams]
+        match_counter = 1
+
+        while len(current_participants) > 1:
+            random.shuffle(current_participants)
+            round_matches = []
+            next_round_participants = []
+
+            while len(current_participants) >= 2:
+                team_a = current_participants.pop(0)
+                team_b = current_participants.pop(0)
+                match_id = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(12))
+
+                if getattr(self, "home_or_away", False):
+                    # Create a single match object with two legs
+                    match_template = {
+                        "match_id": match_id,
+                        "legs": [
+                            {
+                                "leg_number": 1,
+                                "team_a": team_a,
+                                "team_b": team_b,
+                                "team_a_goals": None,
+                                "team_b_goals": None,
+                                "status": "pending"
+                            },
+                            {
+                                "leg_number": 2,
+                                "team_a": team_b,
+                                "team_b": team_a,
+                                "team_a_goals": None,
+                                "team_b_goals": None,
+                                "status": "pending"
+                            }
+                        ],
+                        "aggregate_team_a_goals": 0,
+                        "aggregate_team_b_goals": 0,
+                        "winner": None,
+                        "status": "pending"
+                    }
+                else:
+                    # single-leg match
+                    match_template = {
+                        "match_id": match_id,
+                        "team_a": team_a,
+                        "team_b": team_b,
+                        "team_a_goals": None,
+                        "team_b_goals": None,
+                        "winner": None,
+                        "status": "pending"
+                    }
+                round_matches.append(match_template)
+
+                next_round_participants.append({
+                    "source_match": match_id,
+                    "name": None
+                })
+
+            match_counter += 1   
+
+            if len(current_participants) == 1:
+                # odd team gets a bye
+                next_round_participants.append(current_participants.pop(0))
+
             self.match_data["rounds"].append({
                 "round_number": round_number,
                 "matches": round_matches
             })
+
+            current_participants = next_round_participants
             round_number += 1
-        
-        
+
         return self.match_data
 
     def update_knockout(self, round_number, match_results):
@@ -174,117 +217,98 @@ class TourManager:
         if not current_round:
             raise ValueError(f"Round {round_number} not found in knockout data.")
         
-        next_round_players = []
+   
         for result in match_results:
             team_a = result["team_a"]
             team_b = result["team_b"]
-            
+            goals_a = result["team_a_goals"]
+            goals_b = result["team_b_goals"]
             # Find the match using team names
-            match = next(
-                (m for m in current_round['matches'] if (m["team_a"] == team_a and m["team_b"] == team_b) or (m["team_a"] == team_b and m["team_b"] == team_a)),
-                None
-            )
-            if match['status'] !="complete":
-                match["team_a_goals"] = result["team_a_goals"]
-                match["team_b_goals"] = result["team_b_goals"]
-                self.process_match(team_a,team_b,match["team_a_goals"],match["team_b_goals"],match)
-        
-            # Check if all matches are complete
-            all_matches_complete = all(match.get('status') == 'complete' for match in current_round['matches'])
+            leg_number = result.get("leg_number")
+            match = None
+            for m in current_round["matches"]:
+                if "legs" in m:
+                    for leg in m["legs"]:
+                        name_a = leg.get("team_a", {}).get("name")
+                        name_b = leg.get("team_b", {}).get("name")
+                        if ((name_a == team_a and name_b == team_b) or
+                            (name_a == team_b and name_b == team_a)) and leg["leg_number"] == leg_number:
+                            match = m
+                            
+                            break
+                    if match:
+                        break
+                else:
+                    name_a = m.get("team_a", {}).get("name")
+                    name_b = m.get("team_b", {}).get("name")
+                    if ((name_a == team_a and name_b == team_b) or
+                        (name_a == team_b and name_b == team_a)):
+                        match = m
+                        break
 
-            if all_matches_complete:
-                for match in current_round['matches']:
-                    next_team = match["winner"]
-                    next_round_players.append(next_team)
-                if next_round_players:
-                    self.make_knockout(next_round_players)
-                    
-        return self.match_data
+            if not match:
+                continue
+                
+            if "legs" in match:
+            # multi-leg match
+                leg = next((l for l in match["legs"] if l["leg_number"] == leg_number),None)
+                if leg and leg["status"] != "complete":
+                    leg["team_a_goals"] = goals_a
+                    leg["team_b_goals"] = goals_b
+                    leg["status"] = "complete"
 
-    """  def update_knockout(self, round_number, match_results):
-     
-        rounds = self.match_data.get("rounds", [])
-        current_round = next(
-            (r for r in rounds if r["round_number"] == round_number), None
+                # Check if all legs are complete
+                if all(l["status"] == "complete" for l in match["legs"]):
+                    total_a = sum(l["team_a_goals"] for l in match["legs"])
+                    total_b = sum(l["team_b_goals"] for l in match["legs"])
+                    match["aggregate_team_a_goals"] = total_a
+                    match["aggregate_team_b_goals"] = total_b
+                    team_a_name = leg["team_a"]["name"]
+                    team_b_name = leg["team_b"]["name"]
+                    self.process_match(team_a_name, team_b_name,total_a,total_b,match)
+            else:
+                if match["status"] != "complete":
+                    self.process_match(team_a,team_b,goals_a,goals_b,match)
+
+        # Check if round is complete
+        all_matches_complete = all(
+            m.get("status") == "complete" for m in current_round["matches"]
         )
-        if not current_round:
-            raise ValueError(f"Round {round_number} not found in knockout data.")
-        
-        next_round_players = []
-        for result in match_results:
-            team_a = result["team_a"]
-            team_b = result["team_b"]
-            
-            # Find the match using team names
-            match = next(
-                (m for m in current_round['matches'] if (m["team_a"] == team_a and m["team_b"] == team_b) or (m["team_a"] == team_b and m["team_b"] == team_a)),
+
+        if all_matches_complete:
+            next_round = next(
+                (r for r in rounds if r["round_number"] == round_number + 1),
                 None
             )
-            if match['status'] !="complete":
-                match["team_a_goals"] = result["team_a_goals"]
-                match["team_b_goals"] = result["team_b_goals"]
-                match["status"] = "complete"
-                pairs = {}
-            for m in current_round['matches']:
-                pid = m.get("pair_id")
-                if not pid:
-                    continue
-                pairs.setdefault(pid, []).append(m)
-
-
-            for pair_id, matches in pairs.items():
-                if not all(m["status"] == "complete" for m in matches):
-                    continue
-
-                agg_a = 0
-                agg_b = 0
-                teams = None
-
-                for m in matches:
-                    if teams is None:
-                        teams = (m["team_a"], m["team_b"])
-                    agg_a += m["team_a_goals"]
-                    agg_b += m["team_b_goals"]
-
-                team_a, team_b = teams
-
-                # create an aggregate match object
-                aggregate_match = {
-                    "team_a": team_a,
-                    "team_b": team_b,
-                    "team_a_goals": agg_a,
-                    "team_b_goals": agg_b,
-                    "winner": None,
-                    "status": "complete"
-                }
-
-                # process the aggregate match
-                self.process_match(
-                    team_a,
-                    team_b,
-                    agg_a,
-                    agg_b,
-                    aggregate_match
-                )
-
-                # propagate winner back to all legs
-                for m in matches:
-                    m["winner"] = aggregate_match["winner"]
-
-                next_round_players.append(aggregate_match["winner"])
-
-            # Handle single-leg matches
-            for match in current_round['matches']:
-                if match.get("pair_id"):
-                    continue  # skip two-leg pairs
-                if match["status"] == "complete" and match["winner"]:
-                    next_round_players.append(match["winner"])
-
-        if next_round_players:
-            self.make_knockout(next_round_players)
-
+            if next_round:
+                for match in next_round["matches"]:
+                    if "legs" in match:
+                        for leg in match["legs"]:
+                            for side in ["team_a", "team_b"]:
+                                participant = leg[side]
+                                if isinstance(participant, dict) and participant.get("source_match"):
+                                    source_id = participant["source_match"]
+                                    source_match = next(
+                                        (m for m in current_round["matches"] if m["match_id"] == source_id),
+                                        None
+                                    )
+                                    if source_match:
+                                        participant["name"] = source_match["winner"]
+                    else:
+                        for side in ["team_a", "team_b"]:
+                            participant = match.get(side) 
+                            if isinstance(participant, dict) and participant.get("source_match"):
+                                source_id = participant["source_match"]
+                                source_match = next(
+                                    (m for m in current_round["matches"] if m["match_id"] == source_id),
+                                    None
+                                )
+                                if source_match:
+                                    participant["name"] = source_match["winner"]
         return self.match_data
-    """
+       
+
+    
 #                                cup with groups                               #
 # ============================================================================ #
     def make_groups_knockout(self) -> Dict:
@@ -708,6 +732,7 @@ class TourManager:
     # Inside your class
 
     def process_match(self, team_a, team_b, goals_a, goals_b, match,group_data=None):
+        
         if goals_a > goals_b:
             winner, loser = team_a, team_b
             winner_goals, loser_goals = goals_a, goals_b
@@ -721,7 +746,8 @@ class TourManager:
         else:
             self._handle_draw(team_a, team_b, goals_a, goals_b,group_data)
             match["winner"] = "Draw"
-
+        match["team_a_goals"] = goals_a
+        match["team_b_goals"] = goals_b
         match["status"] = "complete"
         
     def update_table(self, team, goals_scored, goals_conceded, result_type):

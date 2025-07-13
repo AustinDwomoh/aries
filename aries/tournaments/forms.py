@@ -86,12 +86,13 @@ class ClanTournamentForm(forms.ModelForm):
                 followed_id=current_profile.id,
                 follower_type=profile_type
             ).values_list('follower_id', flat=True)
-
+        
             self.fields['teams'] = forms.ModelMultipleChoiceField(queryset=Clans.objects.filter(id__in=follower_ids), widget=forms.SelectMultiple(attrs={'class': 'select2'}))
+            #Clans.objects.filter(id__in=follower_ids), widget=forms.SelectMultiple(attrs={'class': 'select2'})
         else:
             # Fallback: No followers, empty queryset for 'players'
-            self.fields['teams'] = forms.ModelMultipleChoiceField(queryset=Clans.objects.none(), widget=forms.SelectMultiple(attrs={'class': 'select2'}))
-    #teams = forms.ModelMultipleChoiceField(queryset=Clans.objects.all(), widget=forms.SelectMultiple(attrs={'class': 'select2'}))
+            self.fields['teams'] = forms.ModelMultipleChoiceField(queryset=Clans.objects.all(), widget=forms.SelectMultiple(attrs={'class': 'select2'}))
+
 
    
 

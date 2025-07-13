@@ -6,6 +6,27 @@
             "opponent": "matthewjones",
             "result": "loss",
             "score": "2:5"
+        },
+        {
+            "date": "2025-07-12 18:40:32",
+            "tour_name": "test 1",
+            "opponent": "marquezmary",
+            "result": "win",
+            "score": "2:1"
+        },
+        {
+            "date": "2025-07-12 18:40:53",
+            "tour_name": "test 1",
+            "opponent": "andrewschristopher",
+            "result": "win",
+            "score": "4:1"
+        },
+        {
+            "date": "2025-07-12 18:41:09",
+            "tour_name": "test 1",
+            "opponent": "matthewjones",
+            "result": "draw",
+            "score": "2:2"
         }
     ]
 }

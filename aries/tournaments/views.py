@@ -45,138 +45,42 @@ def tours(request):
     return render(request, 'tournaments/tours.html', context)
 
 def tours_cvc_view(request,tour_id):
-    """View function to display details of a specific Clan vs Clan tournament."""
     cvc_tournaments = get_object_or_404(ClanTournament, id=tour_id)
     match_data = cvc_tournaments.load_match_data_from_file()
-    tour_kind ='cvc'
-    rounds = []
-    
-    if cvc_tournaments.tour_type == "cup":
-        for round in match_data["rounds"]:
-            for match in round["matches"]:
-                team_a_user = get_object_or_404(Clans, clan_name=match["team_a"])
-                team_b_user = get_object_or_404(Clans, clan_name=match["team_b"])
-                # Assign profiles to match data
-                match["team_a_logo"] = team_a_user.clan_logo
-                match["team_b_logo"] = team_b_user.clan_logo
-    elif cvc_tournaments.tour_type == "league":
-        for round_key, round in match_data["fixtures"].items():
-            for match in round:
-                team_a_profile = get_object_or_404(Clans, clan_name=match["team_a"])
-                match["team_a_logo"] = team_a_profile.clan_logo 
-                if match["team_b"] != "Bye":
-                    team_b_profile = get_object_or_404(Clans, clan_name=match["team_b"])
-                    match["team_b_logo"] = team_b_profile.clan_logo 
-                else:
-                    match["team_b_logo"] = None
-        for team_name, team_stats in match_data["table"].items():
-            team_profile = get_object_or_404(Clans, clan_name=team_name)
-            team_stats["team_logo"] = team_profile.clan_logo
-    elif cvc_tournaments.tour_type == "groups_knockout":
-        for group_key, data in match_data["group_stages"].items():
-            for round_number, matches in data["fixtures"].items():
-                # Find the current round
-                current_round = next(
-                    (r for r in rounds if r["round_number"] == round_number), None)
-                if current_round:
-                    current_round["matches"].extend(matches)
-                else:
-                    rounds.append({
-                        "round_number": round_number,
-                        "matches": matches[:],  
-                    })
-                for match in matches:
-                    team_a_profile = get_object_or_404(Clans, clan_name=match["team_a"])
-                    match["team_a_logo"] = team_a_profile.clan_logo
-                    if match["team_b"] != "Bye":
-                        team_b_profile = get_object_or_404(Clans, clan_name=match["team_b"])
-                        match["team_b_logo"] = team_b_profile.clan_logo
-                    else:
-                        match["team_b_logo"] = None
-            for team_name, team_stats in data['table'].items():
-                team_profile = get_object_or_404(Clans, clan_name=team_name)
-                team_stats["team_logo"] = team_profile.clan_logo
-    
-            
-        if "knock_outs" in match_data and "rounds" in match_data["knock_outs"]:
-            for kround in match_data["knock_outs"]["rounds"]:
-                for match in kround["matches"]:
-                    team_a_user = get_object_or_404(Clans, clan_name=match["team_a"])
-                    team_b_user = get_object_or_404(Clans, clan_name=match["team_b"])
-                    match["team_a_logo"] = team_a_user.clan_logo
-                    match["team_b_logo"] = team_b_user.clan_logo
-                for team_name, team_stats in match_data["knock_outs"]['table'].items():
-                    team_profile = get_object_or_404(Clans, clan_name=team_name)
-                    team_stats["team_logo"] = team_profile.clan_logo
+    tour_kind = 'cvc'
 
-    return render(request,'tournaments/tours_veiw.html',{'tour':cvc_tournaments, 'match_data': match_data,'rounds':rounds,'tour_kind':tour_kind  })
+    match_data, rounds = process_tournament_data(
+        cvc_tournaments.tour_type,
+        match_data,
+        resolver=resolve_team_clan,
+        tournament=cvc_tournaments
+    )
+
+    return render(request, 'tournaments/tours_veiw.html', {
+        'tour': cvc_tournaments,
+        'match_data': match_data,
+        'rounds': rounds,
+        'tour_kind': tour_kind
+    })
 
 def tours_indi_view(request,tour_id):
-    """View function to display details of a indi tournament."""
     indi_tournaments = get_object_or_404(IndiTournament, id=tour_id)
     match_data = indi_tournaments.load_match_data_from_file()
-    tour_kind ='indi'
-    rounds = []
-    if indi_tournaments.tour_type == "cup":
-        for round in match_data["rounds"]:    
-            for match in round["matches"]: 
-                team_a_user = User.objects.get(username=match['team_a'])
-                team_b_user = User.objects.get(username=match['team_b'])
-                # Assign profiles to match data
-                match["team_a_logo"] = team_a_user.profile.profile_picture
-                match["team_b_logo"] = team_b_user.profile.profile_picture
-    elif indi_tournaments.tour_type == "league":
-        for round_key, round in match_data["fixtures"].items():
-            for match in round:
-                team_a_user = User.objects.get(username=match['team_a'])
-                match["team_a_logo"] = team_a_user.profile.profile_picture
-                if match["team_b"] != "Bye":
-                    team_b_user = User.objects.get(username=match['team_b'])
-                    match["team_b_logo"] = team_b_user.profile.profile_picture
-                else:
-                    match["team_b_logo"] = None
-        for team_name, team_stats in match_data["table"].items():
-            team_user = User.objects.get(username=team_name)  # Fetch the User by username
-            team_stats["team_logo"] = team_user.profile.profile_picture
-    elif indi_tournaments.tour_type == "groups_knockout":
-        for group_key, data in match_data["group_stages"].items():
-            for round_number, matches in data["fixtures"].items():
-                current_round = next(
-                    (r for r in rounds if r["round_number"] == round_number), None)
-                if current_round:
-                    current_round["matches"].extend(matches)
-                else:
-                    rounds.append({
-                        "round_number": round_number,
-                        "matches": matches[:],  
-                    })
-                for match in matches:
-                    if match["team_a"] != "Bye":
-                        team_a_user = User.objects.get(username=match['team_a'])
-                        match["team_a_logo"] = team_a_user.profile.profile_picture
-                    else:
-                        match["team_a_logo"] = None
-                    if match["team_b"] != "Bye":
-                        team_b_user = User.objects.get(username=match['team_b'])
-                        match["team_b_logo"] = team_b_user.profile.profile_picture
-                    else:
-                        match["team_b_logo"] = None
-            for team_name, team_stats in data['table'].items():
-                team_profile =  User.objects.get(username=team_name)
-                team_stats["team_logo"] = team_profile.profile.profile_picture
+    tour_kind = 'indi'
 
-        if "knock_outs" in match_data and "rounds" in match_data["knock_outs"]:
-            for kround in match_data["knock_outs"]["rounds"]:
-                for match in kround["matches"]:
-                    team_a_user = User.objects.get(username=match['team_a'])
-                    team_b_user = User.objects.get(username=match['team_b'])
-                    match["team_a_logo"] = team_a_user.profile.profile_picture
-                    match["team_b_logo"] = team_b_user.profile.profile_picture
-                for team_name, team_stats in match_data["knock_outs"]['table'].items():
-                    team_profile = User.objects.get(username=team_name)
-                    team_stats["team_logo"] = team_profile.profile.profile_picture
+    match_data, rounds = process_tournament_data(
+        indi_tournaments.tour_type,
+        match_data,
+        resolver=resolve_team_user,
+        tournament=indi_tournaments
+    )
 
-    return render(request,'tournaments/tours_veiw.html',{'tour':indi_tournaments, 'match_data': match_data,'rounds':rounds,'tour_kind':tour_kind    })
+    return render(request, 'tournaments/tours_veiw.html', {
+        'tour': indi_tournaments,
+        'match_data': match_data,
+        'rounds': rounds,
+        'tour_kind': tour_kind
+    })
 
 @login_required
 def create_clan_tournament(request):
@@ -237,9 +141,10 @@ def update_indi_tour(request, tour_id):
                     "team_b": team_b_name,
                     "team_a_goals": form.cleaned_data["team_a_goals"],
                     "team_b_goals": form.cleaned_data["team_b_goals"],
+                    "leg_number": int(request.GET.get('leg','0'))
                 }
             ]
-            
+            print(match_results)
             if request.GET.get('kround', None):
                 indi_tournaments.update_tour(round_num, match_results, KO=True)
             else:
@@ -503,7 +408,9 @@ def update_clan_tour(request, tour_id):
         "team_a_player_goals": team_a_total_goals,
         "team_b_goals": team_b_wins,
         "team_b_player_goals": team_b_total_goals,
+        "leg_number": int(request.GET.get('leg','0'))
         }]
+        print(final_match_results)
         team_a_clan_stat = ClanStats.objects.get(clan__clan_name=team_a_name)
         team_b_clan_stat = ClanStats.objects.get(clan__clan_name=team_b_name)
 
@@ -529,3 +436,98 @@ def update_clan_tour(request, tour_id):
         "round": round_num,
     })
 
+# ============================= Non veiw function ============================ #
+def resolve_team_clan(name):
+    """Resolve a clan name into display name and logo."""
+    if name == "Bye" or name is None:
+        return {"display_name": "TBD", "logo": None}
+    clan = get_object_or_404(Clans, clan_name=name)
+    return {"display_name": clan.clan_name, "logo": clan.clan_logo}
+
+def resolve_team_user(name):
+    """Resolve a username into display name and logo."""
+    if name == "Bye" or name is None:
+        return {"display_name": "TBD", "logo": None}
+    user = User.objects.get(username=name)
+    return {"display_name": user.username, "logo": user.profile.profile_picture}
+
+
+def process_tournament_data(tour_type, match_data, resolver, tournament):
+    """
+    Process tournament match data and attach display names/logos.
+    Returns:
+      - processed match_data (mutated in-place)
+      - rounds array for rendering
+    """
+    rounds = []
+
+    if tour_type == "cup":
+        for round_data in match_data["rounds"]:
+            for match in round_data["matches"]:
+                for side in ["team_a", "team_b"]:
+                    if side in match:
+                        team_name = (match[side].get("name") if isinstance(match[side], dict) else match[side])
+                        team_info = resolver(team_name)
+                        match[f"{side}_display_name"] = team_info["display_name"]
+                        match[f"{side}_logo"] = team_info["logo"] or tournament.logo
+
+
+                    if "legs" in match:
+                        for leg_match in match["legs"]:
+                            for side in ["team_a", "team_b"]:
+                                if side in leg_match:
+                                    team_name = ( leg_match[side].get("name") if isinstance(leg_match[side], dict) else leg_match[side])
+                                    team_info = resolver(team_name)
+                                    leg_match[f"{side}_display_name"] = team_info["display_name"]
+                                    leg_match[f"{side}_logo"] = team_info["logo"] or tournament.logo
+    elif tour_type == "league":
+        for round_key, matches in match_data["fixtures"].items():
+            for match in matches:
+                for side in ["team_a", "team_b"]:
+                    team_name = match.get(side)
+                    team_info = resolver(team_name)
+                    match[f"{side}_display_name"] = team_info["display_name"]
+                    match[f"{side}_logo"] = team_info["logo"] or tournament.logo
+        # Process table
+        for team_name, team_stats in match_data["table"].items():
+            team_info = resolver(team_name)
+            team_stats["team_logo"] = team_info["logo"] or tournament.logo
+
+    elif tour_type == "groups_knockout":
+        for group_key, group_data in match_data["group_stages"].items():
+            for round_number, matches in group_data["fixtures"].items():
+                current_round = next(
+                    (r for r in rounds if r["round_number"] == round_number), None)
+                if current_round:
+                    current_round["matches"].extend(matches)
+                else:
+                    rounds.append({
+                        "round_number": round_number,
+                        "matches": matches[:],
+                    })
+
+                for match in matches:
+                    for side in ["team_a", "team_b"]:
+                        team_name = match.get(side)
+                        team_info = resolver(team_name)
+                        match[f"{side}_display_name"] = team_info["display_name"]
+                        match[f"{side}_logo"] = team_info["logo"] or tournament.logo
+
+            for team_name, team_stats in group_data['table'].items():
+                team_info = resolver(team_name)
+                team_stats["team_logo"] = team_info["logo"] or tournament.logo
+
+        if "knock_outs" in match_data and "rounds" in match_data["knock_outs"]:
+            for kround in match_data["knock_outs"]["rounds"]:
+                for match in kround["matches"]:
+                    for side in ["team_a", "team_b"]:
+                        team_name = match.get(side)
+                        team_info = resolver(team_name)
+                        match[f"{side}_display_name"] = team_info["display_name"]
+                        match[f"{side}_logo"] = team_info["logo"] or tournament.logo
+
+            for team_name, team_stats in match_data["knock_outs"]["table"].items():
+                team_info = resolver(team_name)
+                team_stats["team_logo"] = team_info["logo"] or tournament.logo
+
+    return match_data, rounds

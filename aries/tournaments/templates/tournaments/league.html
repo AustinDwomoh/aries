@@ -244,13 +244,13 @@
                         <div class="card shadow-sm">
                             <div class="card-body">
                                 {% if user.username == tour.created_by.username %}
-                                <a href="{% if tour_kind == 'cvc' %}{% url 'update_clan_tournament' tour.id %}{% else %}{% url 'update_indi_tournament' tour.id %}{% endif %}?team_a={{ match.team_a }}&team_b={{ match.team_b }}&round={{ round|slice:'6:' }}">
+                                <a href="{% if tour_kind == 'cvc' %}{% url 'update_clan_tournament' tour.id %}{% else %}{% url 'update_indi_tournament' tour.id %}{% endif %}?team_a={{ match.team_a_display_name }}&team_b={{ match.team_b_display_name }}&round={{ round|slice:'6:' }}">
                                  {% endif %}
                                 <div class="d-flex justify-content-center align-items-center ">
                                     <!-- Team A -->
                                     <div class="text-center">
-                                        <img src="{{  match.team_a_logo.url }}" alt="{{ match.team_a }}"  class="img-fluid img-thumbnail mt-2 mb-1" style="width: 100px;height: 100px; z-index: 1" loading="lazy">
-                                        <p class="mb-2">{{ match.team_a }}</p>
+                                        <img src="{{  match.team_a_logo.url }}" alt="{{ match.team_a_display_name }}"  class="img-fluid img-thumbnail mt-2 mb-1" style="width: 100px;height: 100px; z-index: 1" loading="lazy">
+                                        <p class="mb-2">{{ match.team_a_display_name }}</p>
                                     </div>
                                     <div class="text-center fw-bold mx-4 d-flex flex-column align-items-center">
                                         {% if match.team_a_goals is not None and match.team_b_goals is not None %}
@@ -261,8 +261,8 @@
                                     </div>
                                     <!-- Team B -->
                                     <div class="text-center">
-                                        <img src="{{ match.team_b_logo.url }}" alt="{{ match.team_b }}"  class="img-fluid img-thumbnail mt-2 mb-1" style="width: 100px;height: 100px; z-index: 1" loading="lazy">
-                                        <p class="mb-2">{{ match.team_b }}</p>
+                                        <img src="{{ match.team_b_logo.url }}" alt="{{ match.team_b_display_name }}"  class="img-fluid img-thumbnail mt-2 mb-1" style="width: 100px;height: 100px; z-index: 1" loading="lazy">
+                                        <p class="mb-2">{{ match.team_b_display_name }}</p>
                                     </div>
                                 </div>
                             {% if user.username == tour.created_by.username %}

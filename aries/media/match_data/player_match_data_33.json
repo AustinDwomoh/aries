@@ -41,6 +41,104 @@
             "opponent": "mark50",
             "result": "win",
             "score": "7:2"
+        },
+        {
+            "date": "2025-07-12 18:54:17",
+            "tour_name": "test 1 clan-CvC",
+            "opponent": "barnesjesse",
+            "result": "draw",
+            "score": "4:4"
+        },
+        {
+            "date": "2025-07-12 21:22:21",
+            "tour_name": "indi test league",
+            "opponent": "lorraine16",
+            "result": "win",
+            "score": "4:3"
+        },
+        {
+            "date": "2025-07-12 21:50:28",
+            "tour_name": "indi test cup H/A",
+            "opponent": "lorraine16",
+            "result": "win",
+            "score": "2:1"
+        },
+        {
+            "date": "2025-07-12 22:36:26",
+            "tour_name": "indi test cup",
+            "opponent": "lorraine16",
+            "result": "loss",
+            "score": "1:2"
+        },
+        {
+            "date": "2025-07-12 22:47:25",
+            "tour_name": "indi test cup",
+            "opponent": "lorraine16",
+            "result": "loss",
+            "score": "1:2"
+        },
+        {
+            "date": "2025-07-12 23:38:11",
+            "tour_name": "indi cup ha",
+            "opponent": "chad12",
+            "result": "loss",
+            "score": "3:46"
+        },
+        {
+            "date": "2025-07-12 23:39:34",
+            "tour_name": "indi cup ha",
+            "opponent": "chad12",
+            "result": "loss",
+            "score": "3:46"
+        },
+        {
+            "date": "2025-07-12 23:48:39",
+            "tour_name": "indi cup ha",
+            "opponent": "chad12",
+            "result": "loss",
+            "score": "3:46"
+        },
+        {
+            "date": "2025-07-12 23:50:21",
+            "tour_name": "indi cup ha",
+            "opponent": "chad12",
+            "result": "win",
+            "score": "5:2"
+        },
+        {
+            "date": "2025-07-12 23:55:36",
+            "tour_name": "indi cup ha",
+            "opponent": "chad12",
+            "result": "win",
+            "score": "25:2"
+        },
+        {
+            "date": "2025-07-13 00:03:30",
+            "tour_name": "indi cup ha",
+            "opponent": "chad12",
+            "result": "loss",
+            "score": "3:34"
+        },
+        {
+            "date": "2025-07-13 00:13:44",
+            "tour_name": "indi cup ha",
+            "opponent": "chad12",
+            "result": "win",
+            "score": "9:2"
+        },
+        {
+            "date": "2025-07-13 00:14:09",
+            "tour_name": "indi cup ha",
+            "opponent": "lorraine16",
+            "result": "win",
+            "score": "5:2"
+        },
+        {
+            "date": "2025-07-13 00:43:49",
+            "tour_name": "Austin Dwomoh-CvC",
+            "opponent": "batessteven",
+            "result": "win",
+            "score": "6:1"
         }
     ]
 }

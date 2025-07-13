@@ -6,6 +6,27 @@
             "opponent": "avilawilliam",
             "result": "win",
             "score": "5:2"
+        },
+        {
+            "date": "2025-07-12 18:40:39",
+            "tour_name": "test 1",
+            "opponent": "andrewschristopher",
+            "result": "draw",
+            "score": "0:0"
+        },
+        {
+            "date": "2025-07-12 18:41:00",
+            "tour_name": "test 1",
+            "opponent": "marquezmary",
+            "result": "loss",
+            "score": "2:3"
+        },
+        {
+            "date": "2025-07-12 18:41:09",
+            "tour_name": "test 1",
+            "opponent": "avilawilliam",
+            "result": "draw",
+            "score": "2:2"
         }
     ]
 }

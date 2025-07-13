@@ -1,0 +1,88 @@
+{
+    "matches": [
+        {
+            "date": "2025-07-12 18:54:17",
+            "tour_name": "test 1 clan-CvC",
+            "opponent": "stacy66",
+            "result": "loss",
+            "score": "1:2"
+        },
+        {
+            "date": "2025-07-12 19:03:14",
+            "tour_name": "test 1 clan-CvC",
+            "opponent": "fraziercindy",
+            "result": "win",
+            "score": "2:1"
+        },
+        {
+            "date": "2025-07-12 19:04:52",
+            "tour_name": "test 1 clan-CvC",
+            "opponent": "geraldcross",
+            "result": "loss",
+            "score": "0:1"
+        },
+        {
+            "date": "2025-07-12 19:08:22",
+            "tour_name": "test 1 clan H/A-CvC",
+            "opponent": "stacy66",
+            "result": "loss",
+            "score": "1:3"
+        },
+        {
+            "date": "2025-07-12 19:08:59",
+            "tour_name": "test 1 clan H/A-CvC",
+            "opponent": "stacy66",
+            "result": "win",
+            "score": "4:1"
+        },
+        {
+            "date": "2025-07-12 21:12:00",
+            "tour_name": "test 2 clan-CvC",
+            "opponent": "geraldcross",
+            "result": "win",
+            "score": "2:1"
+        },
+        {
+            "date": "2025-07-13 00:33:56",
+            "tour_name": "test 3sqa-CvC",
+            "opponent": "geraldcross",
+            "result": "win",
+            "score": "3:1"
+        },
+        {
+            "date": "2025-07-13 00:38:24",
+            "tour_name": "ddds-CvC",
+            "opponent": "geraldcross",
+            "result": "loss",
+            "score": "1:3"
+        },
+        {
+            "date": "2025-07-13 00:38:34",
+            "tour_name": "ddds-CvC",
+            "opponent": "geraldcross",
+            "result": "loss",
+            "score": "2:3"
+        },
+        {
+            "date": "2025-07-13 00:38:58",
+            "tour_name": "ddds-CvC",
+            "opponent": "geraldcross",
+            "result": "loss",
+            "score": "2:6"
+        },
+        {
+            "date": "2025-07-13 00:43:24",
+            "tour_name": "Austin Dwomoh-CvC",
+            "opponent": "ohall",
+            "result": "loss",
+            "score": "1:55"
+        },
+        {
+            "date": "2025-07-13 00:43:49",
+            "tour_name": "Austin Dwomoh-CvC",
+            "opponent": "ohall",
+            "result": "win",
+            "score": "4:2"
+        }
+    ]
+}

@@ -13,6 +13,83 @@
             "opponent": "gordonreed",
             "result": "loss",
             "score": "1:2"
+        },
+        {
+            "date": "2025-07-12 18:54:17",
+            "tour_name": "test 1 clan-CvC",
+            "opponent": "fmalone",
+            "result": "win",
+            "score": "2:1"
+        },
+        {
+            "date": "2025-07-12 19:04:42",
+            "tour_name": "test 1 clan-CvC",
+            "opponent": "fraziercindy",
+            "result": "win",
+            "score": "2:1"
+        },
+        {
+            "date": "2025-07-12 19:08:22",
+            "tour_name": "test 1 clan H/A-CvC",
+            "opponent": "fmalone",
+            "result": "win",
+            "score": "3:1"
+        },
+        {
+            "date": "2025-07-12 19:08:59",
+            "tour_name": "test 1 clan H/A-CvC",
+            "opponent": "fmalone",
+            "result": "loss",
+            "score": "1:4"
+        },
+        {
+            "date": "2025-07-13 00:33:46",
+            "tour_name": "test 3sqa-CvC",
+            "opponent": "fraziercindy",
+            "result": "loss",
+            "score": "1:2"
+        },
+        {
+            "date": "2025-07-13 00:35:44",
+            "tour_name": "ddds-CvC",
+            "opponent": "fraziercindy",
+            "result": "win",
+            "score": "2:1"
+        },
+        {
+            "date": "2025-07-13 00:35:52",
+            "tour_name": "ddds-CvC",
+            "opponent": "fraziercindy",
+            "result": "win",
+            "score": "3:1"
+        },
+        {
+            "date": "2025-07-13 00:38:05",
+            "tour_name": "ddds-CvC",
+            "opponent": "fraziercindy",
+            "result": "win",
+            "score": "2:1"
+        },
+        {
+            "date": "2025-07-13 00:38:16",
+            "tour_name": "ddds-CvC",
+            "opponent": "fraziercindy",
+            "result": "win",
+            "score": "2:1"
+        },
+        {
+            "date": "2025-07-13 00:44:11",
+            "tour_name": "Austin Dwomoh-CvC",
+            "opponent": "fraziercindy",
+            "result": "win",
+            "score": "7:1"
+        },
+        {
+            "date": "2025-07-13 00:44:56",
+            "tour_name": "Austin Dwomoh-CvC",
+            "opponent": "fraziercindy",
+            "result": "loss",
+            "score": "1:4"
         }
     ]
 }
