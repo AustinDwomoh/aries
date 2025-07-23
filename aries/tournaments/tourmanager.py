@@ -107,35 +107,42 @@ class TourManager:
 
    
 
-    def make_knockout(self, teams=None):
-        """Creates a knockout structure for cups with bracket-style details (templates only)."""
+    def make_knockout(self, teams=None, target="knock_outs") -> Dict:
+        """
+        Creates a knockout structure for tournaments with optional home/away legs.
+        Can be used for full knockout brackets or knockout after group stages.
 
+        Args:
+            teams (list): List of team names. If None, uses self.teams.
+            target (str): Target key in self.match_data (e.g. "knock_outs" or "rounds").
+
+        Returns:
+            dict: Knockout match structure.
+        """
         if not hasattr(self, 'match_data'):
             self.match_data = {}
 
-        if teams is None or 'rounds' not in self.match_data:
-            teams = self.teams if teams is None else teams
-            teams = list(teams)  # avoid mutating external list
-            self.match_data["rounds"] = []
-            self.match_data["table"] = {
-                team: {
-                    "goals_scored": 0,
-                    "goals_conceded": 0,
-                    "goal_difference": 0,
-                    "points": 0,
-                    "matches_played": 0,
-                    "wins": 0,
-                    "draws": 0,
-                    "losses": 0
-                }
-                for team in teams
-            }
-            round_number = 1
-        else:
-            round_number = len(self.match_data["rounds"]) + 1
+        teams = list(teams or self.teams)
+        random.shuffle(teams)
 
+        if target not in self.match_data:
+            self.match_data[target] = {"rounds": [], "table": {}}
+
+        self.match_data[target]["table"] = {
+            team: {
+                "goals_scored": 0,
+                "goals_conceded": 0,
+                "goal_difference": 0,
+                "points": 0,
+                "matches_played": 0,
+                "wins": 0,
+                "draws": 0,
+                "losses": 0
+            } for team in teams
+        }
+
+        round_number = 1
         current_participants = [{"name": team} for team in teams]
-        match_counter = 1
 
         while len(current_participants) > 1:
             random.shuffle(current_participants)
@@ -145,11 +152,11 @@ class TourManager:
             while len(current_participants) >= 2:
                 team_a = current_participants.pop(0)
                 team_b = current_participants.pop(0)
+
                 match_id = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(12))
 
                 if getattr(self, "home_or_away", False):
-                    # Create a single match object with two legs
-                    match_template = {
+                    match = {
                         "match_id": match_id,
                         "legs": [
                             {
@@ -175,8 +182,7 @@ class TourManager:
                         "status": "pending"
                     }
                 else:
-                    # single-leg match
-                    match_template = {
+                    match = {
                         "match_id": match_id,
                         "team_a": team_a,
                         "team_b": team_b,
@@ -185,20 +191,15 @@ class TourManager:
                         "winner": None,
                         "status": "pending"
                     }
-                round_matches.append(match_template)
 
-                next_round_participants.append({
-                    "source_match": match_id,
-                    "name": None
-                })
+                round_matches.append(match)
+                next_round_participants.append({"source_match": match_id, "name": None})
 
-            match_counter += 1   
-
-            if len(current_participants) == 1:
-                # odd team gets a bye
+            # Handle bye (odd team)
+            if current_participants:
                 next_round_participants.append(current_participants.pop(0))
 
-            self.match_data["rounds"].append({
+            self.match_data[target]["rounds"].append({
                 "round_number": round_number,
                 "matches": round_matches
             })
@@ -206,7 +207,7 @@ class TourManager:
             current_participants = next_round_participants
             round_number += 1
 
-        return self.match_data
+        return self.match_data[target]
 
     def update_knockout(self, round_number, match_results):
         """Updates knockout matches with results and progresses to the next round."""
@@ -312,37 +313,47 @@ class TourManager:
 #                                cup with groups                               #
 # ============================================================================ #
     def make_groups_knockout(self) -> Dict:
-        """Creates a groups + knockout structure."""
-        if len(self.teams) !=0:
-            min_group_size = 4
+        """
+        Organizes teams into group stages and sets up initial fixtures for each group
+        in preparation for a knockout stage tournament structure.
 
-        # Calculate the number of groups. Each group should have at least 3 teams.
-            groups_count = len(self.teams) // min_group_size
-            if len(self.teams) % min_group_size != 0:
-                groups_count += 1 
-            groups = {}
-            group_matches = {}  # Initialize group matches
-            random.shuffle(self.teams)
-            group_size = len(self.teams) // groups_count
-            remainder = len(self.teams) % groups_count
+        Returns:
+            dict: The full match data including group fixtures.
+        """
+        if not self.teams:
+            return {}
 
-            # Distribute teams into groups
-            start_index = 0
-            for i in range(groups_count):
-                group_name = f"Group {chr(65 + i)}"  # Example: "Group A", "Group B"
-                end_index = start_index + group_size + (1 if remainder > 0 else 0)
-                groups[group_name] = self.teams[start_index:end_index]
-                start_index = end_index
-                if remainder > 0:
-                    remainder -= 1
+        MIN_GROUP_SIZE = 4
+        total_teams = len(self.teams)
 
-            # Create group matches
-            for group_name, group_teams in groups.items():
-                group_manager = TourManager(self.match_data, group_teams, "league")
-                group_matches[group_name] = group_manager.make_league()
-            self.match_data = {"group_stages":group_matches}
-            return  self.match_data
-     
+        groups_count = total_teams // MIN_GROUP_SIZE
+        if total_teams % MIN_GROUP_SIZE != 0:
+            groups_count += 1
+
+        random.shuffle(self.teams)
+        base_group_size = total_teams // groups_count
+        remainder = total_teams % groups_count
+
+        groups = {}
+        group_matches = {}
+        index = 0
+
+        for i in range(groups_count):
+            group_name = f"Group {chr(65 + i)}"
+            extra = 1 if remainder > 0 else 0
+            group_size = base_group_size + extra
+            groups[group_name] = self.teams[index: index + group_size]
+            index += group_size
+            remainder -= 1 if remainder > 0 else 0
+
+            group_manager = TourManager(self.match_data, groups[group_name], "league",self.home_or_away)
+            group_matches[group_name] = group_manager.make_league()
+
+        self.match_data = {
+            "group_stages": group_matches
+        }
+
+        return self.match_data
     def update_groups_knockout(self, round_number, match_results) -> None:
         """
         Updates match results for a specific round and group in the groups + knockout stage.
@@ -378,19 +389,16 @@ class TourManager:
             for round in groups["fixtures"].values():
                 for match in round:
                     if match['status']!= 'complete':
-                        print("naa")
                         all_matches_complete = False
                         break
                 
 
         if all_matches_complete:
-            print("hi")
             teams_to_advance = self.teams_to_advance if self.teams_to_advance else 2
             for groups in self.match_data["group_stages"].values():
                 rankings = list(groups["table"].keys())
                 next_round_players.extend(rankings[:teams_to_advance])
-            self.make_group_knockout(self.match_data,next_round_players) 
-            print(self.match_data)
+            self.make_knockout(next_round_players) 
         return self.match_data
     
     def update_group_table(self, team, goals_scored, goals_conceded, result_type,group_data):
@@ -419,50 +427,7 @@ class TourManager:
         reverse=True )
         group_data["table"] = {team[0]: team[1] for team in sorted_table}
 
-    def make_group_knockout(self, data, teams):
-        """Creates a knockout structure for cups with bracket-style details.""" 
-        print("mk")
-        if 'knock_outs' not in data:
-            data["knock_outs"] = {"rounds":[],"table": {}}
-            data["knock_outs"]["table"] = {team: {
-                "goals_scored": 0,
-                "goals_conceded": 0,
-                "goal_difference": 0,
-                "points": 0,
-                "matches_played": 0,
-                "wins": 0,
-                "draws": 0,
-                "losses": 0
-            } for team in teams}
-            round_number = 1
-        else:
-            round_number = len(data["knock_outs"]["rounds"]) + 1
-        random.shuffle(teams)
-
-        while len(teams) > 1:
-            round_matches = []
-            while len(teams) >= 2:
-                team_a = teams.pop(0)
-                team_b = teams.pop(0)
-                match = {
-                    "team_a": team_a,
-                    "team_b": team_b,
-                    "team_a_goals": None,
-                    "team_b_goals": None,
-                    "winner": None,
-                    "status": "pending"
-                }
-                round_matches.append(match)
             
-            # Append the round with its matches
-            data["knock_outs"]["rounds"].append({
-                "round_number": round_number,
-                "matches": round_matches
-            })
-            round_number += 1
-        print(data)
-        return data
-                
     def update_ko(self, round_number, match_results):
         """Updates knockout matches with results and progresses to the next round."""
         rounds = self.match_data["knock_outs"].get("rounds", [])
@@ -520,7 +485,7 @@ class TourManager:
 
                 match['status'] = 'complete'
             # Check if all matches are complete
-        all_matches_complete = all(match.get('status') == 'complete'  for groups in self.match_data["group_stages"].values() for round in groups["fixtures"].values() for match in round if print(match))
+        all_matches_complete = all(match.get('status') == 'complete'  for groups in self.match_data["group_stages"].values() for round in groups["fixtures"].values() for match in round )#if print(match)
         if all_matches_complete:
             teams_to_advance = self.teams_to_advance if self.teams_to_advance else 2
             for groups in self.match_data["group_stages"].values():

@@ -107,7 +107,7 @@ def create_indi_tournament(request):
     """View function to create a new indi Tournament."""
     if request.method == 'POST':
         form = IndiTournamentForm(request.POST, request.FILES,current_profile=request.user.profile)  # Handle files for logo
-        print(request.user.profile)
+
         if form.is_valid():
             tour = form.save(commit=False)
             tour.created_by = request.user  
@@ -120,7 +120,7 @@ def create_indi_tournament(request):
             return redirect(reverse("indi_details", kwargs={"tour_id": tour.id}))
     else:
         form = IndiTournamentForm(current_profile=request.user.profile)
-        print(request.user.profile)
+        
     return render(request, 'tournaments/create_indi_tour.html', {'form': form})
 
 @login_required
@@ -129,7 +129,7 @@ def update_indi_tour(request, tour_id):
     indi_tournaments = get_object_or_404(IndiTournament, id=tour_id)
     team_a_name = request.GET.get('team_a', '')
     team_b_name = request.GET.get('team_b', '')
-    
+   
     round_num = int(request.GET.get('round', 0) or request.GET.get('kround', 0))
     if request.method == "POST":
         form = MatchResultForm(request.POST)
@@ -144,7 +144,7 @@ def update_indi_tour(request, tour_id):
                     "leg_number": int(request.GET.get('leg','0'))
                 }
             ]
-            print(match_results)
+           
             if request.GET.get('kround', None):
                 indi_tournaments.update_tour(round_num, match_results, KO=True)
             else:
@@ -155,7 +155,6 @@ def update_indi_tour(request, tour_id):
 
     return render(request, "tournaments/update_indi_tour.html", {
         "form": form, 
-        #"team_names": team_names, 
         "team_a_name": team_a_name,
         "team_b_name": team_b_name,
         'round':round
@@ -410,7 +409,7 @@ def update_clan_tour(request, tour_id):
         "team_b_player_goals": team_b_total_goals,
         "leg_number": int(request.GET.get('leg','0'))
         }]
-        print(final_match_results)
+     
         team_a_clan_stat = ClanStats.objects.get(clan__clan_name=team_a_name)
         team_b_clan_stat = ClanStats.objects.get(clan__clan_name=team_b_name)
 
@@ -494,40 +493,43 @@ def process_tournament_data(tour_type, match_data, resolver, tournament):
             team_stats["team_logo"] = team_info["logo"] or tournament.logo
 
     elif tour_type == "groups_knockout":
-        for group_key, group_data in match_data["group_stages"].items():
-            for round_number, matches in group_data["fixtures"].items():
-                current_round = next(
-                    (r for r in rounds if r["round_number"] == round_number), None)
+        for group_key, group_data in match_data.get("group_stages", {}).items():
+            for round_number, matches in group_data.get("fixtures", {}).items():
+                # Insert or extend the appropriate round
+                current_round = next((r for r in rounds if r["round_number"] == round_number), None)
                 if current_round:
                     current_round["matches"].extend(matches)
                 else:
                     rounds.append({
                         "round_number": round_number,
-                        "matches": matches[:],
+                        "matches": matches[:],  # shallow copy
                     })
 
+                # Add display data to matches
                 for match in matches:
                     for side in ["team_a", "team_b"]:
                         team_name = match.get(side)
                         team_info = resolver(team_name)
-                        match[f"{side}_display_name"] = team_info["display_name"]
-                        match[f"{side}_logo"] = team_info["logo"] or tournament.logo
+                        match[f"{side}_display_name"] = team_info.get("display_name", team_name)
+                        match[f"{side}_logo"] = team_info.get("logo") or tournament.logo
 
-            for team_name, team_stats in group_data['table'].items():
+            # Enrich group table with team logos
+            for team_name, stats in group_data.get("table", {}).items():
                 team_info = resolver(team_name)
-                team_stats["team_logo"] = team_info["logo"] or tournament.logo
+                stats["team_logo"] = team_info.get("logo") or tournament.logo
 
-        if "knock_outs" in match_data and "rounds" in match_data["knock_outs"]:
-            for kround in match_data["knock_outs"]["rounds"]:
-                for match in kround["matches"]:
+        # Handle knockout stage if it exists
+        knockouts = match_data.get("knock_outs", {})
+        if knockouts:
+            for kround in knockouts.get("rounds", []):
+                for match in kround.get("matches", []):
                     for side in ["team_a", "team_b"]:
-                        team_name = match.get(side)
+                        team_name = match.get(side).get('name')
                         team_info = resolver(team_name)
-                        match[f"{side}_display_name"] = team_info["display_name"]
-                        match[f"{side}_logo"] = team_info["logo"] or tournament.logo
+                        match[f"{side}_display_name"] = team_info.get("display_name", team_name)
+                        match[f"{side}_logo"] = team_info.get("logo") or tournament.logo
 
-            for team_name, team_stats in match_data["knock_outs"]["table"].items():
+            for team_name, stats in knockouts.get("table", {}).items():
                 team_info = resolver(team_name)
-                team_stats["team_logo"] = team_info["logo"] or tournament.logo
-
+                stats["team_logo"] = team_info.get("logo") or tournament.logo
     return match_data, rounds

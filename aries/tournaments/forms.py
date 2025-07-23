@@ -54,8 +54,8 @@ class IndiTournamentForm(forms.ModelForm):
                 follower_type=profile_type
             ).values_list('follower_id', flat=True)
 
-            self.fields['players'] = forms.ModelMultipleChoiceField(queryset=Profile.objects.all(), widget=forms.SelectMultiple(attrs={'class': 'select2'}))
-            #.filter(id__in=follower_ids)
+            self.fields['players'] = forms.ModelMultipleChoiceField(queryset=Profile.objects.filter(id__in=follower_ids), widget=forms.SelectMultiple(attrs={'class': 'select2'}))
+            #
         else:
             # Fallback: No followers, empty queryset for 'players'
             self.fields['players'] = forms.ModelMultipleChoiceField(queryset=Profile.objects.none(), widget=forms.SelectMultiple(attrs={'class': 'select2'}))
