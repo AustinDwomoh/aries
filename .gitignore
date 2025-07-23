@@ -7,4 +7,6 @@ __pycache__/
 aries_venv/
 lapworld/
 webguild/
+server_venv/
+aries/media/
 
