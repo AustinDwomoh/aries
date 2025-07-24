@@ -390,7 +390,7 @@
     let messageBox = section.querySelector('.follow-message');
     let action = button.innerText.trim() === "Follow" ? "follow" : "unfollow";
     console.log(button.innerText)
-    fetch(`/clubs/${action}/${followedModel}/${followedId}/`)
+    fetch(`/clans/${action}/${followedModel}/${followedId}/`)
         .then(response => response.json())
         .then(data => {
           button.innerText = action === "follow" ? "Unfollow" : "Follow";
