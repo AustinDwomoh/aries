@@ -387,7 +387,7 @@ function change_desc() {
               .catch(error => console.error("Error:", error));
           });}
       document.addEventListener("DOMContentLoaded", function() {
-          submitForm("add-player-form", "{% url 'update_list' %}");
+          submitForm("add-player-form", "{% url 'players_manage' %}");
       });
   </script>
     
@@ -436,7 +436,7 @@ function change_desc() {
               formData.append("manage_request", action);
   
               // Send the request using Fetch API
-              fetch("{% url 'update_player_list' %}", {  // URL to handle the request
+              fetch("{% url 'players_approve_reject' %}", {  // URL to handle the request
                   method: "POST",  // POST method for form submission
                   body: formData,  // Send form data
                   headers: {
