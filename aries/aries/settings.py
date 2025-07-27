@@ -28,7 +28,13 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+#for produciton
+SITE_DOMAIN = "www.ariesproject.xyz"
+SITE_PROTOCOL = "https"
 
+# For development
+SITE_DOMAIN = "localhost:8000"
+SITE_PROTOCOL = "http"
 # Application definition
 
 INSTALLED_APPS = [
@@ -57,8 +63,8 @@ MIDDLEWARE = [
 ]
 
 AUTHENTICATION_BACKENDS = [
-    'django.contrib.auth.backends.ModelBackend',  # Default user login
-    #'yourapp.auth_backends.ClanAuthBackend',  # Clan login
+    'django.contrib.auth.backends.ModelBackend',  # Default user 
+    'users.verify.MultiFieldAuthBackend',
 ]
 
 ROOT_URLCONF = 'aries.urls'
@@ -149,3 +155,8 @@ LOGOUT_REDIRECT_URL = 'Home'
 LOGIN_URL ='login'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR,'media')
+SESSION_COOKIE_AGE = 60 * 60 * 24 * 7  
+SESSION_SAVE_EVERY_REQUEST = False  
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False  
+SESSION_COOKIE_SECURE = True  
+CSRF_COOKIE_SECURE = True

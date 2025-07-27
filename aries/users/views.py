@@ -2,16 +2,20 @@ from django.shortcuts import render,redirect,get_object_or_404
 from django.contrib import messages
 from itertools import chain
 from django.db.models import Q
-from django.contrib.auth import logout
+from django.contrib.auth import logout,login,authenticate
 from django.contrib.auth.decorators import login_required
-from .forms import UserRegisterForm,UserUpdateForm,ProfileUpdateForm, SocialLinkFormSet
+from .forms import UserRegisterForm,UserUpdateForm,ProfileUpdateForm, SocialLinkFormSet,CustomLoginForm
 from tournaments.models import ClanTournament, IndiTournament,ClanTournamentPlayer
 from django.contrib.auth.models import User
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.contrib.contenttypes.models import ContentType
 from Home.models import Follow
 from clans.models import Clans
 from django.contrib.auth.views import LoginView
+from django.utils.http import urlsafe_base64_decode
+from django.contrib.auth.tokens import default_token_generator
+from django.core.cache import cache
+from users import verify
 
 
 # Create your views here.
@@ -21,7 +25,9 @@ def register(request):
         form = UserRegisterForm(request.POST)
         if form.is_valid():
             form.save()
-
+            user = form.save()
+            verify.send_verification(user)
+                
             messages.success(request,f"Your account has been created! You can login")
             return redirect('login')
     else:
@@ -253,14 +259,53 @@ def follow_unfollow(request, action, followed_model, followed_id):
 
 
 class CustomLoginView(LoginView):
+    form_class = CustomLoginForm
+    template_name = 'users/login.html' 
+
     def form_valid(self, form):
+        identifier = form.cleaned_data.get('identifier')
+        password = form.cleaned_data.get('password')
         remember = self.request.POST.get('remember_me')
-        # Call the original form_valid to log the user in
-        response = super().form_valid(form)
 
-        if remember:
-            self.request.session.set_expiry(60 * 60 * 24 * 7) 
+        user = authenticate(self.request, username=identifier, password=password)
+
+        if user is not None:
+            login(self.request, user)
+            verify.send_verification(user)#custom
+            if remember:
+                self.request.session.set_expiry(60 * 60 * 24 * 7)  
+            else:
+                self.request.session.set_expiry(0)  # Until browser is closed
+
+            return redirect(self.get_success_url())
         else:
-            self.request.session.set_expiry(0)  
+            form.add_error(None, "Invalid credentials")
+            return self.form_invalid(form)
 
-        return response
+def verify_phone(request):
+    if request.method == "POST":
+        otp = request.POST.get("otp")
+        user = request.user  
+        stored = cache.get(f"phone_otp_{user.pk}")
+
+        if stored == otp:
+            user.profile.is_verified = True  
+            user.profile.save()
+            cache.delete(f"phone_otp_{user.pk}")
+            return redirect('login')  
+        else:
+            return HttpResponse("Invalid OTP")
+
+def verify_email(request, uidb64, token):
+    try:
+        uid = urlsafe_base64_decode(uidb64).decode()
+        user = User.objects.get(pk=uid)
+    except Exception:
+        user = None
+
+    if user and default_token_generator.check_token(user, token):
+        user.profile.is_verified = True
+        user.profile.save()
+        return redirect('login')
+    else:
+        return HttpResponse("Invalid or expired link.")
