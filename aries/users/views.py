@@ -2,12 +2,12 @@ from django.shortcuts import render,redirect,get_object_or_404
 from django.contrib import messages
 from itertools import chain
 from django.db.models import Q
-from django.contrib.auth import logout,login,authenticate
+from django.contrib.auth import logout,login
 from django.contrib.auth.decorators import login_required
 from .forms import UserRegisterForm,UserUpdateForm,ProfileUpdateForm, SocialLinkFormSet,CustomLoginForm
 from tournaments.models import ClanTournament, IndiTournament,ClanTournamentPlayer
 from django.contrib.auth.models import User
-from django.http import HttpResponse, JsonResponse
+from django.http import  JsonResponse
 from django.contrib.contenttypes.models import ContentType
 from Home.models import Follow
 from clans.models import Clans
@@ -27,9 +27,8 @@ def register(request):
             form.save()
             user = form.save()
             verify.send_verification(user)
-                
-            messages.success(request,f"Your account has been created! You can login")
-            return redirect('login')
+            messages.info(request, "We've sent you a verification email.")
+            return redirect('verification_pending')
     else:
         form = UserRegisterForm()
     return render(request, 'users/register.html', {'form':form})
@@ -266,35 +265,47 @@ class CustomLoginView(LoginView):
         identifier = form.cleaned_data.get('identifier')
         password = form.cleaned_data.get('password')
         remember = self.request.POST.get('remember_me')
+        auth_backend = verify.MultiFieldAuthBackend()
+        user,reason = auth_backend.authenticate(request=self.request, username=identifier, password=password)
 
-        user = authenticate(self.request, username=identifier, password=password)
 
-        if user is not None:
+        if reason == 'unverified':
+        # Resend verification
+            user_obj = User.objects.filter(
+                Q(username=identifier) | Q(email=identifier) | Q(profile__phone=identifier)
+            ).first()
+            verify.send_verification(user_obj)
+            self.request.session['pending_verification'] = identifier
+            return redirect('verification_pending')
+
+        elif user is not None:
             login(self.request, user)
-            verify.send_verification(user)#custom
             if remember:
                 self.request.session.set_expiry(60 * 60 * 24 * 7)  
             else:
-                self.request.session.set_expiry(0)  # Until browser is closed
-
+                self.request.session.set_expiry(0)  
             return redirect(self.get_success_url())
+
         else:
             form.add_error(None, "Invalid credentials")
             return self.form_invalid(form)
 
+
 def verify_phone(request):
     if request.method == "POST":
-        otp = request.POST.get("otp")
-        user = request.user  
-        stored = cache.get(f"phone_otp_{user.pk}")
+        otp = request.POST.get("otp", "").strip()
+        identifier = request.session.get('pending_verification')
+        user =User.objects.filter(Q(username__iexact=identifier) | Q(email__iexact=identifier) |Q(profile__phone__iexact=identifier)).first()
 
-        if stored == otp:
+        stored = cache.get(f"phone_otp_{user.pk}")
+        if stored and otp == stored:
             user.profile.is_verified = True  
             user.profile.save()
             cache.delete(f"phone_otp_{user.pk}")
             return redirect('login')  
         else:
-            return HttpResponse("Invalid OTP")
+            messages.error(request, "Invalid OTP")  
+            return redirect('verification_pending')
 
 def verify_email(request, uidb64, token):
     try:
@@ -306,6 +317,45 @@ def verify_email(request, uidb64, token):
     if user and default_token_generator.check_token(user, token):
         user.profile.is_verified = True
         user.profile.save()
-        return redirect('login')
+        return render(request, "users/verification_success.html")
     else:
-        return HttpResponse("Invalid or expired link.")
+        if user:
+            user.delete()
+        return render(request, "users/verification_failed.html")
+  
+def verification_pending(request):
+    identifier = request.session.get('pending_verification')
+    if not identifier:
+        return redirect('login')  # fallback
+
+    user = User.objects.filter(
+        Q(username__iexact=identifier) | 
+        Q(email__iexact=identifier) |
+        Q(profile__phone__iexact=identifier)
+    ).first()
+
+    if not user:
+        return redirect('login')
+
+    return render(request, 'users/verification_pending.html', {'user': user})
+
+  
+#@csrf_exempt  # only if CSRF causes issues in dev; remove this in production
+def resend_verification(request):
+    if request.method == 'POST':
+        method = request.POST.get('method')
+        identifier = request.session.get('pending_verification')
+
+        user = User.objects.filter(
+            Q(username__iexact=identifier) |
+            Q(email__iexact=identifier) |
+            Q(profile__phone__iexact=identifier)
+        ).first()
+
+        if not user:
+            return redirect('login')
+        verify.send_verification(user,type=method)
+        messages.success(request, f"Verification sent via {method}.")
+        return redirect('verification_pending')
+
+    return redirect('login')

@@ -31,6 +31,12 @@ urlpatterns = [
     path('logout/',user_veiws.logout_view,name='logout'),
     path('users/', include('users.urls')),#url that links to user, gamers
     path('tournaments/',include('tournaments.urls')),#url that links to tours,
+    path("verify/<uidb64>/<token>/", user_veiws.verify_email, name="verify_email"),
+    path("verify-phone/", user_veiws.verify_phone, name="verify_phone"),
+    path('verify/pending/', user_veiws.verification_pending, name='verification_pending'),
+    path('verify/resend/', user_veiws.resend_verification, name='resend_verification'),
+
+
 ] 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL,document_root=settings.MEDIA_ROOT)#to allow the media files to be saved and accesed

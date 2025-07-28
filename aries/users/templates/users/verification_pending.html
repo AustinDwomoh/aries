@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+{% block title %}Verify Your Account{% endblock title %}
+
+{% block content %}
+<style>
+        body { font-family: 'Segoe UI', sans-serif; background-color: #f5f7fa; text-align: center;}
+        .card { background: white; padding: 30px; border-radius: 10px; max-width: 500px; margin: auto; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        h2 { color: #333; }
+        form { margin-top: 20px;box-shadow: unset; }
+        label { display: block; margin: 10px 0; }
+        input[type="radio"] { margin-right: 10px; }
+        button { margin-top: 20px; padding: 10px 20px; background-color: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; }
+        .messages { color: green; margin-top: 10px; }
+        .button-group {display: flex;justify-content: center;gap: 10px;margin-top: 20px;}
+        .button-group button {flex: 1;max-width: 150px;}
+        .otp-card {background: white;padding: 30px 40px;border-radius: 12px;max-width: 400px;width: 100%;text-align: center;}
+        .resend, .back-link {margin-top: 15px;text-align: center;}
+        .link-button{ background: noneborder: none;padding: 0;margin: 0;font: inherit;color: #007bff;cursor: pointer;text-decoration: underline;}
+        .resend a, .back-link a {color: #007bff;text-decoration: none;}
+        .resend a:hover, .back-link a:hover {text-decoration: underline;}
+</style>
+    <div class="card">
+        <div class="container">
+            <h2>Verify Your Account</h2>
+            <p>Please check your <strong>Email</strong> for a verification code or link.</p>
+            <p>Didn't receive it? You can resend below.</p>
+            <div class="otp-card">
+                <h2>Enter OTP</h2>
+                <form method="post" action="{% url 'verify_phone' %}">
+                    {% csrf_token %}
+                    <input type="text" name="otp" maxlength="6" placeholder="------" required />
+                    <button type="submit">Verify</button>
+                </form>
+            </div>
+            <form method="post" action="{% url 'resend_verification' %}">
+                {% csrf_token %}
+                <div class="button-group">
+                    <button type="submit" name="method" value="email">Resend Email</button>
+                    <button type="submit" name="method" value="phone">Resend to phone</button>
+                </div>
+            </form>
+        </div>
+        <p><a href="{% url 'login' %}">Back to Login</a></p>
+    </div>
+
+{% endblock content %}

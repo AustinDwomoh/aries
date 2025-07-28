@@ -1,5 +1,4 @@
-# Ignore Python bytecode
-# Byte-compiled / optimized / DLL files
+# Python bytecode
 __pycache__/
 *.py[cod]
 *$py.class
@@ -10,25 +9,27 @@ server_venv/
 lapworld/
 webguild/
 
-# Django media uploads
+
 aries/media/
 
-# Distribution / packaging
+
+aries/staticfiles/
+
+# Local settings, envs
+.env
+
+# SQLite and other local DBs
+aries/db.sqlite3
+*.log
+
+# Packaging
 *.egg
 *.egg-info/
 dist/
 build/
 .eggs/
 
-# Logs and local databases
-*.log
-*.sqlite3
-
-# IDEs and editors
+# VSCode and IDE stuff (optional)
 .vscode/
 .idea/
-*.swp
 
-# OS files
-.DS_Store
-Thumbs.db
