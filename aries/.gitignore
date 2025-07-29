@@ -1,0 +1,33 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+aries_venv/
+server_venv/
+lapworld/
+webguild/
+# Runtime generated stuff inside aries/
+aries/aries/staticfiles/
+aries/aries/media/
+
+
+# Local settings, envs
+.env
+
+# SQLite and other local DBs
+*.sqlite3
+*.log
+
+# Packaging
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# VSCode and IDE stuff (optional)
+.vscode/
+.idea/
+
