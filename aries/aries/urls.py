@@ -15,7 +15,6 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.contrib.auth import views as auth_views
 from django.urls import path,include
 from users import views as user_veiws
 from django.conf import settings
@@ -32,7 +31,7 @@ urlpatterns = [
     path('users/', include('users.urls')),#url that links to user, gamers
     path('tournaments/',include('tournaments.urls')),#url that links to tours,
     path("verify/<uidb64>/<token>/", user_veiws.verify_email, name="verify_email"),
-    path("verify-phone/", user_veiws.verify_phone, name="verify_phone"),
+    path("verify-otp/", user_veiws.verify_otp, name="verify_otp"),
     path('verify/pending/', user_veiws.verification_pending, name='verification_pending'),
     path('verify/resend/', user_veiws.resend_verification, name='resend_verification'),
 

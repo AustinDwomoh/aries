@@ -291,7 +291,7 @@ class CustomLoginView(LoginView):
             return self.form_invalid(form)
 
 
-def verify_phone(request):
+def verify_otp(request):
     if request.method == "POST":
         otp = request.POST.get("otp", "").strip()
         identifier = request.session.get('pending_verification')

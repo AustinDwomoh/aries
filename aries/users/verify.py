@@ -32,10 +32,10 @@ def generate_otp():
 
 
 def send_sms(to_number, message):
-    # ⚠️ Placeholder — integrate Twilio or something later
+    #logic for sms but gave up
     print(f"Sending SMS to {to_number}: {message}")
     
-def send_verification(user,type):
+def send_verification(user,type='email'):
     """generate verification 
 
     Args:
@@ -66,8 +66,8 @@ def send_verification(user,type):
 
         email.attach_alternative(html_content, "text/html")
         email.send(fail_silently=False)
-    else:
+    """ else:
         if user.profile.phone:
               # 5 minutes
-            send_sms(user.profile.phone, f"Your verification code is: {otp}")
+            send_sms(user.profile.phone, f"Your verification code is: {otp}") """
     user.profile.save() 

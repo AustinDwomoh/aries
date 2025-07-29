@@ -18,7 +18,7 @@ class Profile(models.Model):
     profile_picture = models.ImageField(default="default.jpg",upload_to='profile_pics')
     role = models.CharField(max_length=100,choices=ROLE_CHOICES, blank=True, null=True)
     is_organizer =  models.BooleanField(default=False)
-    phone = models.CharField(max_length=15, blank=True, null=True)
+    phone = models.CharField(max_length=15, blank=True, null=True,unique=True)
     is_verified = models.BooleanField(default=False)
     
     
