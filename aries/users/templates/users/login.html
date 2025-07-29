@@ -1,24 +1,27 @@
 {% extends "base.html" %}
-{% block title %}Login{% endblock title %}
 {% load crispy_forms_tags %}
+{% block title %}Login{% endblock title %}
+
 {% block content %}
 <div class="container-fluid">
-    <form method="POST"  class="form">
+    <form method="POST" class="form">
         {% csrf_token %}
         <fieldset class="form-group">
-            <legend class="mb-3 center">Login</legend>
+            <legend class="mb-3 text-center">Login</legend>
             {{ form|crispy }}
+            <div class="form-check mb-3">
+            <input type="checkbox" class="form-check-input" id="remember_me" name="remember_me">
+            <label class="form-check-label" for="remember_me">Remember Me</label>
+        </div>
         </fieldset>
-        <label>
-            <input type="checkbox" name="remember_me">
-            Remember Me
-        </label>
-        <div class="form-group ">
+
+        <div class="form-group text-center">
             <button class="btn btn-primary button1" type="submit">Login</button>
         </div>
+
         <div class="text-center pt-3">
-            <small class="text-muted ">
-                Need An account? <a class="ml-2" href="{% url "register" %}">Sign Up</a>
+            <small class="text-muted">
+                Need an account? <a class="ml-2" href="{% url 'register' %}">Sign Up</a>
             </small>
         </div>
     </form>

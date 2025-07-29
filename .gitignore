@@ -9,10 +9,9 @@ server_venv/
 lapworld/
 webguild/
 
-# Django media uploads (user-generated content)
-aries/media/
-
 # Django staticfiles (collected output)
+
+aries/media/
 aries/staticfiles/
 
 # Local settings, envs

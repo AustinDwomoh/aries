@@ -15,7 +15,6 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.contrib.auth import views as auth_views
 from django.urls import path,include
 from users import views as user_veiws
 from django.conf import settings
@@ -27,10 +26,16 @@ urlpatterns = [
     path('', include('Home.urls') ),#index url
     path('clans/', include('clans.urls')),#url that links to club link
     path('register/',user_veiws.register,name='register'),#url to create account
-    path('login/',user_veiws.CustomLoginView.as_view(template_name='users/login.html'),name='login'),#url to login to user account
+    path('login/',user_veiws.CustomLoginView.as_view(),name='login'),
     path('logout/',user_veiws.logout_view,name='logout'),
     path('users/', include('users.urls')),#url that links to user, gamers
     path('tournaments/',include('tournaments.urls')),#url that links to tours,
+    path("verify/<uidb64>/<token>/", user_veiws.verify_email, name="verify_email"),
+    path("verify-otp/", user_veiws.verify_otp, name="verify_otp"),
+    path('verify/pending/', user_veiws.verification_pending, name='verification_pending'),
+    path('verify/resend/', user_veiws.resend_verification, name='resend_verification'),
+
+
 ] 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL,document_root=settings.MEDIA_ROOT)#to allow the media files to be saved and accesed
