@@ -1,6 +1,7 @@
 from django import forms
 from .models import Clans
 from django.contrib.auth.models import User
+from aries.settings import ErrorHandler
 
 class ClanRegistrationForm(forms.ModelForm):
     """Form for clan registration"""

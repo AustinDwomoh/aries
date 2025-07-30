@@ -15,7 +15,7 @@ from django.contrib.auth.views import LoginView
 from django.utils.http import urlsafe_base64_decode
 from django.contrib.auth.tokens import default_token_generator
 from django.core.cache import cache
-from users import verify
+from . import verify
 
 
 # Create your views here.
@@ -274,6 +274,7 @@ class CustomLoginView(LoginView):
             user_obj = User.objects.filter(
                 Q(username=identifier) | Q(email=identifier) | Q(profile__phone=identifier)
             ).first()
+            messages.info(self.request,'Account not verified check mail')
             verify.send_verification(user_obj)
             self.request.session['pending_verification'] = identifier
             return redirect('verification_pending')

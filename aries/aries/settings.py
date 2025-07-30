@@ -11,22 +11,54 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from pathlib import Path
-import os
-
+import os,environ,logging
+import traceback
+from django.core.mail import send_mail
+from django.conf import settings
+from datetime import datetime
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+env = environ.Env(
+    DEBUG=(bool, False),
+    ENV=(str, 'production')
+)
+environ.Env.read_env(os.path.join(BASE_DIR, ".env.testing"))
+# ============================================================================ #
+#                                    SECRETS                                   #
+# ============================================================================ #
+SECRET_KEY = env("SECRET_KEY")
+DEBUG = env("DEBUG")
+ENV = env("ENV")
 
+ALLOWED_HOSTS = env.list("ALLOWED_HOSTS")
+
+SITE_DOMAIN = env("SITE_DOMAIN")
+SITE_PROTOCOL = env("SITE_PROTOCOL")
+
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL")
+EMAIL_BACKEND = env("EMAIL_BACKEND")
+EMAIL_HOST = env("EMAIL_HOST")
+EMAIL_PORT = env.int("EMAIL_PORT")
+EMAIL_USE_SSL = env.bool("EMAIL_USE_SSL")
+EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=False)
+EMAIL_HOST_USER = env("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD")
+
+SESSION_COOKIE_SECURE = env.bool("SESSION_COOKIE_SECURE")
+CSRF_COOKIE_SECURE = env.bool("CSRF_COOKIE_SECURE")
+SESSION_COOKIE_AGE = env.int("SESSION_COOKIE_AGE")
+SESSION_SAVE_EVERY_REQUEST = env.bool("SESSION_SAVE_EVERY_REQUEST")
+SESSION_EXPIRE_AT_BROWSER_CLOSE = env.bool("SESSION_EXPIRE_AT_BROWSER_CLOSE")
+# ============================================================================ #
+#                                    SECRETS                                   #
+# ============================================================================ #
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-6n98v6sh*-l%&ef_l55bni%!_mdt9v=kt1jg9uj0cf*4&kghuj'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-ALLOWED_HOSTS = ['ariesproject.xyz', 'www.ariesproject.xyz']
-
 
 INSTALLED_APPS = [
     'Home.apps.HomeConfig',
@@ -125,9 +157,14 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
-
+LOGIN_REDIRECT_URL = 'Home'
+LOGOUT_REDIRECT_URL = 'Home'
+LOGIN_URL = 'login'
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 STATIC_URL = '/static/'
-
+CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
+CRISPY_TEMPLATE_PACK = "bootstrap5"
 STATICFILES_DIRS = [
     BASE_DIR / 'static',
       # Path to your static files folder
@@ -138,33 +175,48 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
-CRISPY_TEMPLATE_PACK = "bootstrap5"
 
-LOGIN_REDIRECT_URL = 'Home'
-LOGOUT_REDIRECT_URL = 'Home'
-LOGIN_URL = 'login'
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+class ErrorHandler:
+    LOG_BASE_DIR = 'error_logs'
+    NOTIFY_EMAIL = 'dwomohaustin14@example.com'
 
-SITE_DOMAIN = "www.ariesproject.xyz"
-SITE_PROTOCOL = "https"
+    def __init__(self, notify=True):
+        self.notify = notify
+        os.makedirs(self.LOG_BASE_DIR, exist_ok=True)  # Base directory
 
-ENV = "production"
+    def handle(self, error, context=""):
+        now = datetime.now()
+        day_folder = now.strftime("%Y-%m-%d")
+        time_stamp = now.strftime("%H-%M-%S")
 
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
+        folder_path = os.path.join(self.LOG_BASE_DIR, day_folder)
+        os.makedirs(folder_path, exist_ok=True)  # Make daily folder
 
-DEFAULT_FROM_EMAIL = "noreply@ariesproject.xyz"
-EMAIL_HOST = "mail.privateemail.com"
-EMAIL_PORT = 465
-EMAIL_USE_SSL = True
-EMAIL_HOST_USER = "noreply@ariesproject.xyz"
-EMAIL_HOST_PASSWORD = "@Inphinithy17"
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+        file_path = os.path.join(folder_path, f"error_{time_stamp}.log")
 
-SESSION_COOKIE_AGE = 60 * 60 * 24 * 7  # 1 week in seconds
-SESSION_SAVE_EVERY_REQUEST = True
-SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+        error_message = (
+            f"Timestamp: {now}\n"
+            f"Context: {context}\n"
+            f"Exception: {str(error)}\n\n"
+            f"Traceback:\n{traceback.format_exc()}\n"
+        )
 
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.write(error_message)
 
+        if self.notify:
+            self.notify_admin(error_message)
+
+    def notify_admin(self, message):
+        try:
+            send_mail(
+                subject='[ALERT] Server Error Notification',
+                message=message,
+                from_email=DEFAULT_FROM_EMAIL,
+                recipient_list=[self.NOTIFY_EMAIL],
+                fail_silently=True
+            )
+        except Exception as e:
+            fallback_path = os.path.join(self.LOG_BASE_DIR, "notify_failures.txt")
+            with open(fallback_path, "a", encoding="utf-8") as f:
+                f.write(f"{datetime.now()} - Failed to notify admin: {e}\n")

@@ -11,24 +11,16 @@ webguild/
 
 # Django staticfiles (collected output)
 
-aries/media/
+aries/media/clan_logos/
+aries/media/clan_profile/
+aries/media/match_data/
+aries/media/tournament_data/
 aries/staticfiles/
 
 # Local settings, envs
-.env
-
+.env.testing
+.env.production
 # SQLite and other local DBs
-*.sqlite3
-*.log
-
-# Packaging
-*.egg
-*.egg-info/
-dist/
-build/
-.eggs/
-
-# VSCode and IDE stuff (optional)
-.vscode/
-.idea/
+aries/db.sqlite3
+.txt
 

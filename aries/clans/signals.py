@@ -15,6 +15,5 @@ def create_profile(sender, instance, created, **kwargs):
         **kwargs: Additional keyword arguments passed by the signal.
     """
     if created:
-        # Create a new ClanStats instance linked to the newly created Clans instance
         clanStats = ClanStats.objects.create(clan=instance)
-        clanStats.save()  # Save the ClanStats instance to the database
+        clanStats.save() 
