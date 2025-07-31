@@ -16,6 +16,7 @@ from django.utils.http import urlsafe_base64_decode
 from django.contrib.auth.tokens import default_token_generator
 from django.core.cache import cache
 from . import verify
+from aries.settings import ErrorHandler
 
 
 # Create your views here.
@@ -24,11 +25,17 @@ def register(request):
     if request.method == 'POST':
         form = UserRegisterForm(request.POST)
         if form.is_valid():
-            form.save()
             user = form.save()
-            verify.send_verification(user)
-            messages.info(request, "We've sent you a verification email.")
+            try:
+                verify.send_verification(user)
+                messages.info(request, "We've sent you a verification email.")
+            except Exception as e:
+                # Log or handle error here; don't break registration flow
+                messages.error(request, "Verification email failed to send. Contact support.")
+                # Optionally log error
             return redirect('verification_pending')
+        else:
+            messages.error(request, "Please correct the errors below.")
     else:
         form = UserRegisterForm()
     return render(request, 'users/register.html', {'form':form})
@@ -262,35 +269,39 @@ class CustomLoginView(LoginView):
     template_name = 'users/login.html' 
 
     def form_valid(self, form):
-        identifier = form.cleaned_data.get('identifier')
-        password = form.cleaned_data.get('password')
-        remember = self.request.POST.get('remember_me')
-        auth_backend = verify.MultiFieldAuthBackend()
-        user,reason = auth_backend.authenticate(request=self.request, username=identifier, password=password)
+        try:
+            identifier = form.cleaned_data.get('identifier')
+            password = form.cleaned_data.get('password')
+            remember = self.request.POST.get('remember_me')
+            auth_backend = verify.MultiFieldAuthBackend()
+            user,reason = auth_backend.authenticate(request=self.request, username=identifier, password=password)
 
 
-        if reason == 'unverified':
-        # Resend verification
-            user_obj = User.objects.filter(
-                Q(username=identifier) | Q(email=identifier) | Q(profile__phone=identifier)
-            ).first()
-            messages.info(self.request,'Account not verified check mail')
-            verify.send_verification(user_obj)
-            self.request.session['pending_verification'] = identifier
-            return redirect('verification_pending')
+            if reason == 'unverified':
+            # Resend verification
+                user_obj = User.objects.filter(
+                    Q(username=identifier) | Q(email=identifier) | Q(profile__phone=identifier)
+                ).first()
+                messages.info(self.request,'Account not verified check mail')
+                verify.send_verification(user_obj)
+                self.request.session['pending_verification'] = identifier
+                return redirect('verification_pending')
 
-        elif user is not None:
-            login(self.request, user)
-            if remember:
-                self.request.session.set_expiry(60 * 60 * 24 * 7)  
+            elif user is not None:
+                login(self.request, user)
+                if remember:
+                    self.request.session.set_expiry(60 * 60 * 24 * 7)  
+                else:
+                    self.request.session.set_expiry(0)  
+                return redirect(self.get_success_url())
+
             else:
-                self.request.session.set_expiry(0)  
-            return redirect(self.get_success_url())
-
-        else:
-            form.add_error(None, "Invalid credentials")
+                form.add_error(None, "Invalid credentials")
+                return self.form_invalid(form)
+        except Exception as e:
+            ErrorHandler().handle(e, context="Error during login form validation")
+            messages.error(self.request, "An unexpected error occurred. Please try again.")
             return self.form_invalid(form)
-
 
 def verify_otp(request):
     if request.method == "POST":

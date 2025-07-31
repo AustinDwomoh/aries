@@ -10,8 +10,6 @@ from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
 from aries.settings import SITE_DOMAIN,SITE_PROTOCOL,DEFAULT_FROM_EMAIL,ErrorHandler
-
-error_handler = ErrorHandler()
 # Set up logging to a txt file
 
 UserModel = get_user_model()
@@ -29,7 +27,7 @@ class MultiFieldAuthBackend(ModelBackend):
                 user.backend = 'users.verify.MultiFieldAuthBackend'
                 return user, None
         except Exception as e:
-            error_handler.handle(e, context="Error Authenticate process")
+            ErrorHandler().handle(e, context="Error Authenticate process")
         return None, 'invalid'
  
 
@@ -75,7 +73,7 @@ def send_verification(user,type='email'):
         try:
             email.send(fail_silently=False)
         except (BadHeaderError, SMTPException, Exception) as e:
-            error_handler.handle(e, context="Error Sending Verification process")
+            ErrorHandler().handle(e, context="Error Sending Verification process")
     """ else:
         if user.profile.phone:
               # 5 minutes
