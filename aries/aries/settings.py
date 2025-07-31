@@ -11,10 +11,10 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from pathlib import Path
-import os,environ,logging
+import os,environ
 import traceback
-from django.core.mail import send_mail
-from django.conf import settings
+from django.core.mail import EmailMessage
+
 from datetime import datetime
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -199,7 +199,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 class ErrorHandler:
     LOG_BASE_DIR = 'error_logs'
-    NOTIFY_EMAIL = 'dwomohaustin14@example.com'
+    NOTIFY_EMAIL = 'dwomohaustin14@gmail.com'
 
     def __init__(self, notify=True):
         self.notify = notify
@@ -226,17 +226,18 @@ class ErrorHandler:
             f.write(error_message)
 
         if self.notify:
-            self.notify_admin(error_message)
+            self.notify_admin(file_path)
 
-    def notify_admin(self, message):
+    def notify_admin(self, file_path):
         try:
-            send_mail(
+            email = EmailMessage(
                 subject='[ALERT] Server Error Notification',
-                message=message,
-                from_email=DEFAULT_FROM_EMAIL,
-                recipient_list=[self.NOTIFY_EMAIL],
-                fail_silently=True
+                body='An error occurred. Please see the attached log file.',
+                from_email=f"Aries Project <{DEFAULT_FROM_EMAIL}>",
+                to=[self.NOTIFY_EMAIL]
             )
+            email.attach_file(file_path)
+            email.send()
         except Exception as e:
             fallback_path = os.path.join(self.LOG_BASE_DIR, "notify_failures.txt")
             with open(fallback_path, "a", encoding="utf-8") as f:
