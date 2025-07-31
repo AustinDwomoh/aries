@@ -22,7 +22,7 @@ env = environ.Env(
     DEBUG=(bool, False),
     ENV=(str, 'production')
 )
-environ.Env.read_env(os.path.join(BASE_DIR, ".env.testing"))
+environ.Env.read_env(os.path.join(BASE_DIR, ".env.production"))
 # ============================================================================ #
 #                                    SECRETS                                   #
 # ============================================================================ #
@@ -84,7 +84,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
-LOGGING = {
+""" LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'handlers': {
@@ -104,7 +104,7 @@ LOGGING = {
             'propagate': True,
         },
     },
-}
+} """
 
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',  # Default user 

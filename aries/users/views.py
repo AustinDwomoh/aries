@@ -30,9 +30,9 @@ def register(request):
                 verify.send_verification(user)
                 messages.info(request, "We've sent you a verification email.")
             except Exception as e:
-                # Log or handle error here; don't break registration flow
+                
                 messages.error(request, "Verification email failed to send. Contact support.")
-                # Optionally log error
+                ErrorHandler().handle(e,'Register')
             return redirect('verification_pending')
         else:
             messages.error(request, "Please correct the errors below.")

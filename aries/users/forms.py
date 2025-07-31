@@ -30,7 +30,7 @@ class UserRegisterForm(UserCreationForm):
         if phone:
             Profile.objects.update_or_create(user=user, defaults={'phone': phone, 'is_verified': False})
         else:
-            Profile.objects.create(user=user, defaults={'is_verified': False})
+            Profile.objects.create(user=user,is_verified = False)
 
         return user
 
