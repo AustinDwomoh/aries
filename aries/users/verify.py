@@ -16,6 +16,8 @@ UserModel = get_user_model()
 
 class MultiFieldAuthBackend(ModelBackend):
     def authenticate(self, request, username=None, password=None, **kwargs):
+        if request and request.path.startswith('/admin/login/'):
+            return None
         try:
             user = UserModel.objects.filter(
                 Q(username=username) | Q(email=username) | Q(profile__phone=username)

@@ -42,4 +42,12 @@ def about(request):
     return render(request, 'Home/about.html')
 
 
+def trigger_error_view(request):
+    handler = ErrorHandler()
 
+    try:
+        # Intentional error
+        1 / 0
+    except Exception as e:
+        handler.handle(e, context="Trigger error test view")
+        return HttpResponse("Error has been logged and admin notified.", status=500)

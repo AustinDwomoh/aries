@@ -28,8 +28,10 @@ class UserRegisterForm(UserCreationForm):
     def save(self, commit=True):
         user = super().save(commit)
         phone = self.cleaned_data.get('phone')
-        if phone:
-            user.profile.phone = phone
+        if commit:
+            user.refresh_from_db()  # Makes sure profile is available
+            if phone:
+                user.profile.phone = phone
             user.profile.is_verified = False
             user.profile.save()
 

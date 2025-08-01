@@ -17,7 +17,7 @@ from django.contrib.auth.tokens import default_token_generator
 from django.core.cache import cache
 from . import verify
 from aries.settings import ErrorHandler
-
+from django.db import transaction
 
 # Create your views here.
 def register(request):
@@ -26,13 +26,19 @@ def register(request):
         form = UserRegisterForm(request.POST)
         if form.is_valid():
             try:
-                user = form.save()
-                verify.send_verification(user)
-                messages.info(request, "We've sent you a verification email.")
+                with transaction.atomic():
+                    user = form.save()
+                    request.session['pending_verification'] = user.email or user.username
+                    verify.send_verification(user)
+                    messages.info(request, "We've sent you a verification email.")
+                    return redirect('verification_pending')
             except Exception as e:
-                messages.error(request, "Verification email failed to send. Contact support.")
-                ErrorHandler().handle(e,'Registration failure')
-            return redirect('verification_pending')
+                # Roll back and clean up if necessary
+                if user.pk:
+                    user.delete()
+                ErrorHandler().handle(e, 'Registration failure')
+                messages.error(request, "Something went wrong. Please try again or contact support.")
+                return redirect('register')
         else:
             messages.error(request, "Please correct the errors below.")
     else:

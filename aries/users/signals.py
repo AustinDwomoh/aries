@@ -9,7 +9,7 @@ def create_profile(sender, instance, created, **kwargs):
     This function is triggered after a User instance is saved.
     It creates a Profile associated with the newly created User.
     """
-    if created:  
+    if created and not hasattr(instance, 'profile'):  
         profile = Profile.objects.create(user=instance)  
         profile.save()  
 
