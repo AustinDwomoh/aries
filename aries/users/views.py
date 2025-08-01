@@ -34,9 +34,6 @@ def register(request):
                     return redirect('verification_pending')
                 
             except Exception as e:
-                # Roll back and clean up if necessary
-                if user.pk:
-                    user.delete()
                 ErrorHandler().handle(e, 'Registration failure')
                 messages.error(request, "Something went wrong. Please try again or contact support.")
                 return redirect('register')
