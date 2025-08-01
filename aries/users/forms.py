@@ -19,6 +19,7 @@ class UserRegisterForm(UserCreationForm):
         if User.objects.filter(email=email).exists():
             raise ValidationError("This email is already in use.")
         return email
+    
     def clean_phone(self):
         phone = self.cleaned_data.get('phone')
         if phone and Profile.objects.filter(phone=phone).exists():
@@ -28,9 +29,9 @@ class UserRegisterForm(UserCreationForm):
         user = super().save(commit)
         phone = self.cleaned_data.get('phone')
         if phone:
-            Profile.objects.update_or_create(user=user, defaults={'phone': phone, 'is_verified': False})
-        else:
-            Profile.objects.create(user=user,is_verified = False)
+            user.profile.phone = phone
+            user.profile.is_verified = False
+            user.profile.save()
 
         return user
 

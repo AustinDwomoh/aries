@@ -31,7 +31,7 @@ def register(request):
                 messages.info(request, "We've sent you a verification email.")
             except Exception as e:
                 messages.error(request, "Verification email failed to send. Contact support.")
-                ErrorHandler().handle(e,'Register')
+                ErrorHandler().handle(e,'Registration failure')
             return redirect('verification_pending')
         else:
             messages.error(request, "Please correct the errors below.")
