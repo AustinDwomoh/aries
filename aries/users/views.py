@@ -18,16 +18,14 @@ from django.core.cache import cache
 from . import verify
 from aries.settings import ErrorHandler
 from django.db import transaction
-import traceback
-from django.http import HttpResponse
-from django.db import transaction
+
 # Create your views here.
 def register(request):
     """Registration view to create a new user account"""
     if request.method == 'POST':
         form = UserRegisterForm(request.POST)
         if form.is_valid():
-            """ try:
+            try:
                 with transaction.atomic():
                     user = form.save()
                     request.session['pending_verification'] = user.email or user.username
@@ -41,17 +39,7 @@ def register(request):
                     user.delete()
                 ErrorHandler().handle(e, 'Registration failure')
                 messages.error(request, "Something went wrong. Please try again or contact support.")
-                return redirect('register') """
-            try:
-                with transaction.atomic():
-                    user = form.save()
-                    request.session['pending_verification'] = user.email or user.username
-                    verify.send_verification(user)
-                    messages.info(request, "We've sent you a verification email.")
-                    return redirect('verification_pending')
-            except Exception:
-                # Temporary debug: show the traceback
-                return HttpResponse(f"<pre>{traceback.format_exc()}</pre>")
+                return redirect('register')
         else:
             messages.error(request, "Please correct the errors below.")
     else:
