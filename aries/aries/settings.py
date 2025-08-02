@@ -11,11 +11,12 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from pathlib import Path
-import os,environ
-import traceback
-from django.core.mail import EmailMessage
+import os,environ,logging,traceback
 
+from django.core.mail import EmailMessage
+from threading import Thread
 from datetime import datetime
+logger = logging.getLogger(__name__)
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 env = environ.Env(
@@ -43,7 +44,8 @@ EMAIL_USE_SSL = env.bool("EMAIL_USE_SSL")
 EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=False)
 EMAIL_HOST_USER = env("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD")
-
+SECURE_HSTS_SECONDS = 31536000
+SECURE_HSTS_PRELOAD = True
 SESSION_COOKIE_SECURE = env.bool("SESSION_COOKIE_SECURE")
 CSRF_COOKIE_SECURE = env.bool("CSRF_COOKIE_SECURE")
 SESSION_COOKIE_AGE = env.int("SESSION_COOKIE_AGE")
@@ -229,16 +231,23 @@ class ErrorHandler:
             self.notify_admin(file_path)
 
     def notify_admin(self, file_path):
+        email = EmailMessage(
+            subject='[ALERT] Server Error Notification',
+            body='An error occurred. Please see the attached log file.',
+            from_email=f"Aries Project <{DEFAULT_FROM_EMAIL}>",
+            to=[self.NOTIFY_EMAIL]
+        )
+        fallback_path = os.path.join(self.LOG_BASE_DIR, "notify_failures.txt")
+
+        # Run sending in a thread to avoid blocking
+        Thread(target=self.send_admin_notification, args=(email, file_path, fallback_path)).start()
+    def send_admin_notification(email_instance, file_path, fallback_path):
         try:
-            email = EmailMessage(
-                subject='[ALERT] Server Error Notification',
-                body='An error occurred. Please see the attached log file.',
-                from_email=f"Aries Project <{DEFAULT_FROM_EMAIL}>",
-                to=[self.NOTIFY_EMAIL]
-            )
-            email.attach_file(file_path)
-            email.send()
+            email_instance.attach_file(file_path)
+            email_instance.send()
         except Exception as e:
-            fallback_path = os.path.join(self.LOG_BASE_DIR, "notify_failures.txt")
-            with open(fallback_path, "a", encoding="utf-8") as f:
-                f.write(f"{datetime.now()} - Failed to notify admin: {e}\n")
+            try:
+                with open(fallback_path, "a", encoding="utf-8") as f:
+                    f.write(f"{datetime.now()} - Failed to notify admin: {e}\n")
+            except Exception as fallback_err:
+                logger.critical(f"Failed to write fallback notify log: {fallback_err}")

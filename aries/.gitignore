@@ -11,7 +11,7 @@ webguild/
 # Runtime generated stuff inside aries/
 aries/aries/staticfiles/
 aries/aries/media/
-
+aries/error_logs/
 
 # Local settings, envs
 .env

@@ -19,6 +19,7 @@ from django.urls import path,include
 from users import views as user_views
 from django.conf import settings
 from django.conf.urls.static import static
+from Home.views import trigger_error_view
 
 
 urlpatterns = [
@@ -34,7 +35,7 @@ urlpatterns = [
     path("verify-otp/", user_views.verify_otp, name="verify_otp"),
     path('verify/pending/', user_views.verification_pending, name='verification_pending'),
     path('verify/resend/', user_views.resend_verification, name='resend_verification'),
-
+       path('err/', trigger_error_view)
 
 ] 
 if settings.DEBUG:

@@ -37,6 +37,11 @@ class MultiFieldAuthBackend(ModelBackend):
 def generate_otp():
     return str(random.randint(100000, 999999))
 
+def async_verify(user,method='email'):
+    send_verification(user,method)
+  
+        
+
 
 def send_sms(to_number, message):
     #logic for sms but gave up

@@ -18,7 +18,7 @@ from django.core.cache import cache
 from . import verify
 from aries.settings import ErrorHandler
 from django.db import transaction
-
+from threading import Thread
 # Create your views here.
 def register(request):
     """Registration view to create a new user account"""
@@ -29,7 +29,8 @@ def register(request):
                 with transaction.atomic():
                     user = form.save()
                     request.session['pending_verification'] = user.email or user.username
-                    verify.send_verification(user)
+                    Thread(target=verify.async_verify, args=(user,)).start()
+
                     messages.info(request, "We've sent you a verification email.")
                     return redirect('verification_pending')
                 
@@ -323,7 +324,7 @@ class CustomLoginView(LoginView):
                     Q(username=identifier) | Q(email=identifier) | Q(profile__phone=identifier)
                 ).first()
                 messages.info(self.request,'Account not verified check mail')
-                verify.send_verification(user_obj)
+                Thread(target=verify.async_verify, args=(user_obj,)).start()
                 self.request.session['pending_verification'] = identifier
                 return redirect('verification_pending')
 
@@ -441,7 +442,8 @@ def resend_verification(request):
             return redirect('login')
 
         try:
-            verify.send_verification(user, type=method)  # Your utility
+            Thread(target=verify.async_verify, args=(user,method)).start()
+
             messages.success(request, f"Verification sent via {method}.")
         except Exception as e:
             ErrorHandler().handle(e, context=f"Resend verification failed for {user.username}")
