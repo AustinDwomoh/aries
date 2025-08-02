@@ -9,7 +9,7 @@ urlpatterns = [
      # About page 
     path('about/',views.about, name ='About'),
    
-   path('2200/', views.trigger_error_view)
+
 
 ]
 

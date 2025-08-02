@@ -29,7 +29,7 @@ def register(request):
                 with transaction.atomic():
                     user = form.save()
                     request.session['pending_verification'] = user.email or user.username
-                    Thread(target=verify.async_verify, args=(user,)).start()
+                    Thread(target=verify.send_verification, args=(user,)).start()
 
                     messages.info(request, "We've sent you a verification email.")
                     return redirect('verification_pending')
@@ -324,7 +324,7 @@ class CustomLoginView(LoginView):
                     Q(username=identifier) | Q(email=identifier) | Q(profile__phone=identifier)
                 ).first()
                 messages.info(self.request,'Account not verified check mail')
-                Thread(target=verify.async_verify, args=(user_obj,)).start()
+                Thread(target=verify.send_verification, args=(user_obj,)).start()
                 self.request.session['pending_verification'] = identifier
                 return redirect('verification_pending')
 
@@ -442,7 +442,7 @@ def resend_verification(request):
             return redirect('login')
 
         try:
-            Thread(target=verify.async_verify, args=(user,method)).start()
+            Thread(target=verify.send_verification, args=(user,method)).start()
 
             messages.success(request, f"Verification sent via {method}.")
         except Exception as e:

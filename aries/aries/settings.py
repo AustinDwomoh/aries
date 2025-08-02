@@ -10,10 +10,11 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
+import base64
 from pathlib import Path
 import os,environ,logging,traceback
-
-from django.core.mail import EmailMessage
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail, Attachment, FileContent, FileName, FileType, Disposition
 from threading import Thread
 from datetime import datetime
 logger = logging.getLogger(__name__)
@@ -35,9 +36,12 @@ ALLOWED_HOSTS = env.list("ALLOWED_HOSTS")
 
 SITE_DOMAIN = env("SITE_DOMAIN")
 SITE_PROTOCOL = env("SITE_PROTOCOL")
+#EMAIL_BACKEND = "anymail.backends.sendgrid.EmailBackend"
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
+#ANYMAIL = {"SENDGRID_API_KEY": "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",}
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL")
-EMAIL_BACKEND = env("EMAIL_BACKEND")
+SENDGRID_API_KEY = env('SENDGRID_API_KEY')
 EMAIL_HOST = env("EMAIL_HOST")
 EMAIL_PORT = env.int("EMAIL_PORT")
 EMAIL_USE_SSL = env.bool("EMAIL_USE_SSL")
@@ -74,7 +78,7 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'django.contrib.staticfiles',
+    'django.contrib.staticfiles',#'anymail'
 ]
 
 MIDDLEWARE = [
@@ -86,27 +90,19 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
-""" LOGGING = {
+LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'handlers': {
-        'file': {
-            'level': 'ERROR',
-            'class': 'logging.FileHandler',
-            'filename': '/var/log/django/error.log',  # make sure Django user can write here
-        },
         'console': {
             'class': 'logging.StreamHandler',
         },
     },
-    'loggers': {
-        'django': {
-            'handlers': ['file', 'console'],
-            'level': 'ERROR',
-            'propagate': True,
-        },
+    'root': {
+        'handlers': ['console'],
+        'level': 'DEBUG',
     },
-} """
+}
 
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',  # Default user 
@@ -231,23 +227,39 @@ class ErrorHandler:
             self.notify_admin(file_path)
 
     def notify_admin(self, file_path):
-        email = EmailMessage(
-            subject='[ALERT] Server Error Notification',
-            body='An error occurred. Please see the attached log file.',
-            from_email=f"Aries Project <{DEFAULT_FROM_EMAIL}>",
-            to=[self.NOTIFY_EMAIL]
-        )
-        fallback_path = os.path.join(self.LOG_BASE_DIR, "notify_failures.txt")
+        subject = '[ALERT] Server Error Notification'
+        body = 'An error occurred. Please see the attached log file.'
+        from_email = f"Aries Project <{DEFAULT_FROM_EMAIL}>"
+        to_email = self.NOTIFY_EMAIL
 
-        # Run sending in a thread to avoid blocking
-        Thread(target=self.send_admin_notification, args=(email, file_path, fallback_path)).start()
-    def send_admin_notification(email_instance, file_path, fallback_path):
+        Thread(target=self.send_admin_notification, args=(from_email, to_email, subject, body, file_path)).start()
+    def send_admin_notification(self, from_email, to_email, subject, body, file_path):
+        fallback_path = os.path.join(self.LOG_BASE_DIR, "notify_failures.txt")
         try:
-            email_instance.attach_file(file_path)
-            email_instance.send()
+            # Read and encode the log file
+            with open(file_path, 'rb') as f:
+                file_data = f.read()
+                encoded_file = base64.b64encode(file_data).decode()
+
+            attachment = Attachment()
+            attachment.file_content = FileContent(encoded_file)
+            attachment.file_type = FileType("text/plain")
+            attachment.file_name = FileName(os.path.basename(file_path))
+            attachment.disposition = Disposition("attachment")
+
+            message = Mail(
+                from_email=from_email,
+                to_emails=to_email,
+                subject=subject,
+                html_content=f"<p>{body}</p>"
+            )
+            message.attachment = attachment
+
+            sg = SendGridAPIClient(SENDGRID_API_KEY)
+            response = sg.send(message)
         except Exception as e:
             try:
                 with open(fallback_path, "a", encoding="utf-8") as f:
-                    f.write(f"{datetime.now()} - Failed to notify admin: {e}\n")
+                    f.write(f"{datetime.now()} - Failed to notify admin: {str(e)}\n")
             except Exception as fallback_err:
                 logger.critical(f"Failed to write fallback notify log: {fallback_err}")

@@ -1,15 +1,15 @@
 from django.core.cache import cache
-from smtplib import SMTPException
-from django.core.mail import EmailMultiAlternatives, BadHeaderError
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail, Content, Email, To, HtmlContent, PlainTextContent
 from django.template.loader import render_to_string
-import random
+import random,threading
 from django.contrib.auth.backends import ModelBackend
 from django.db.models import Q
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
-from aries.settings import SITE_DOMAIN,SITE_PROTOCOL,DEFAULT_FROM_EMAIL,ErrorHandler
+from aries.settings import SITE_DOMAIN,SITE_PROTOCOL,DEFAULT_FROM_EMAIL,ErrorHandler,SENDGRID_API_KEY
 # Set up logging to a txt file
 
 UserModel = get_user_model()
@@ -37,52 +37,45 @@ class MultiFieldAuthBackend(ModelBackend):
 def generate_otp():
     return str(random.randint(100000, 999999))
 
-def async_verify(user,method='email'):
-    send_verification(user,method)
-  
-        
-
-
+      
 def send_sms(to_number, message):
     #logic for sms but gave up
     print(f"Sending SMS to {to_number}: {message}")
-    
-def send_verification(user,type='email'):
-    """generate verification 
+def _send_sendgrid_email(message):
+    try:
+        sg = SendGridAPIClient(SENDGRID_API_KEY)
+        response = sg.send(message)
+        if response.status_code not in range(200, 300):
+            ErrorHandler().handle(
+                Exception(f"SendGrid responded with status {response.status_code}"),
+                context="SendGrid Email Sending"
+            )
+    except Exception as e:
+        ErrorHandler().handle(e, context="SendGrid Email Sending")
 
-    Args:
-        user (_type_): _description_
-    """
+def send_verification(user, method='email'):
     otp = str(generate_otp())
     cache.set(f"phone_otp_{user.pk}", otp, timeout=300)
-    
-    if type == 'email':
+
+    if method == 'email':
         uid = urlsafe_base64_encode(force_bytes(user.pk))
         token = default_token_generator.make_token(user)
         email_link = f"{SITE_PROTOCOL}://{SITE_DOMAIN}/verify/{uid}/{token}/"
+
         html_content = render_to_string("users/verify_email.html", {
             "user": user,
             "email_link": email_link,
-            "otp":otp
+            "otp": otp
         })
+        plain_text = f"Hi {user.username},\n\nYour code is {otp}\n\nClick the link to verify your email: {email_link}"
 
-        # Fallback plain text version
-        text_content = f"Hi {user.username},\n\nYour code is {otp} \n\nClick the link to verify your email: {email_link}"
-
-        email = EmailMultiAlternatives(
+        message = Mail(
+            from_email= f"Aries Project <{DEFAULT_FROM_EMAIL}>",
+            to_emails=user.email,
             subject="Verify your email",
-            body=text_content,
-            from_email=DEFAULT_FROM_EMAIL,
-            to=[user.email],
+            plain_text_content=plain_text,
+            html_content=html_content
         )
 
-        email.attach_alternative(html_content, "text/html")
-        try:
-            email.send(fail_silently=False)
-        except (BadHeaderError, SMTPException, Exception) as e:
-            ErrorHandler().handle(e, context="Error Sending Verification process")
-    """ else:
-        if user.profile.phone:
-              # 5 minutes
-            send_sms(user.profile.phone, f"Your verification code is: {otp}") """
-    
+        # Send email asynchronously to avoid blocking request
+        threading.Thread(target=_send_sendgrid_email, args=(message,)).start()
