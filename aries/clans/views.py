@@ -1,19 +1,20 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from .models import Clans, ClanStats,ClanJoinRequest
-from django.db.models import Q
 from django.utils.safestring import mark_safe
 import markdown
 from tournaments.models import ClanTournament
 from django.contrib.auth.models import User
 from users.models import Profile
+from scripts.follow import *
+from scripts import verify
 from django.contrib.auth.decorators import login_required
-from .forms import ClanRegistrationForm, ClanLoginForm,AddPlayerToClanForm
+from .forms import ClanRegistrationForm,AddPlayerToClanForm
 from django.http import JsonResponse
-from django.contrib.contenttypes.models import ContentType
-from django.db.models import Count,Q
-from Home.models import Follow
+from django.db.models import Q
 from aries.settings import ErrorHandler
 from django.contrib import messages
+from django.db import transaction
+from threading import Thread
 @login_required
 def clans(request):
     """
@@ -45,6 +46,7 @@ def clans(request):
         'no_results': no_results
     })
 
+
 @login_required
 def request_to_join_clan(request, clan_id):
     """Allows a player to request to join a clan."""
@@ -71,7 +73,7 @@ def leave_clan(request,clan_id):
     except Exception as e:
         ErrorHandler().handle(e, context='Leaving Clan')
         messages.error(request, 'An error occurred while trying to leave the clan.')
-    return redirect("clans_home")
+    return redirect("clan_home")
 
 def change_recruitment_state(request,clan_id):
     try:
@@ -113,26 +115,12 @@ def clan_view(request, clan_id):
         clan_stats = get_object_or_404(ClanStats, id=clan_id)
         match_data = clan_stats.load_match_data_from_file()
         clan.clan_description = mark_safe(markdown.markdown(clan.clan_description))
-
-        followed_type = ContentType.objects.get_for_model(Clans)
-        follow_data = Follow.objects.filter(
-            followed_type=followed_type, followed_id=clan_id
-        ).aggregate(
-            followers=Count('id'),
-            following=Count('id', filter=Q(follower_id=clan_id))
-        )
-
-        followers = follow_data['followers']
-        following = follow_data['following']
-        is_following = Follow.objects.filter(
-            followed_type=followed_type,
-            followed_id=clan_id,
-            follower_id=request.user.id
-        ).exists()
+        followers = count_followers(clan)
+        following = count_following(clan)
+        is_following = is_follower(get_logged_in_entity(request),clan)
 
         tournaments = ClanTournament.objects.filter(teams=clan).order_by('-id')[:5]
 
-        # Match Result Parsing
         match_results = []
         if match_data and "matches" in match_data:
             last_5_matches = match_data["matches"][-5:]
@@ -165,7 +153,7 @@ def clan_view(request, clan_id):
             'is_following': is_following
         }
 
-        return render(request, 'clans/clan_veiw.html', context)
+        return render(request, 'clans/clan_view.html', context)
 
     except Exception as e:
         ErrorHandler().handle(e, context='clan_view')
@@ -182,11 +170,19 @@ def clan_register(request):
         form = ClanRegistrationForm(request.POST,request.FILES)  
         if form.is_valid():
             try:
-                clan = form.save(commit=False)
-                clan.created_by = request.user
-                clan.set_password(form.cleaned_data['password'])
-                clan.save()
-                return redirect('clan_login')
+                with transaction.atomic():
+                    clan = form.save(commit=False)
+                    clan.created_by = request.user
+                    request.user.profile.clan = clan
+                    clan.set_password(form.cleaned_data['password'])
+                    clan.save()
+                    profile = request.user.profile
+                    profile.clan = clan
+                    profile.save()
+                    Thread(target=verify.send_verification, args=(clan,)).start()
+
+                    messages.info(request, "We've sent you a verification email.")
+                    return redirect('login')
             except Exception as e:
                 ErrorHandler().handle(e, context='clan_register')
                 form.add_error(None, "Something went wrong during registration.")  
@@ -194,44 +190,13 @@ def clan_register(request):
         form = ClanRegistrationForm()  
     return render(request, 'clans/create_clan.html', {'form': form})
 
-@login_required #ensures only users with accounts can create clubs
-def clan_login(request):
-    """
-    Handles clan login. Validates the form and logs in the clan if the credentials are correct.
-    """
-    if request.method == 'POST':
-        form = ClanLoginForm(request.POST)  
-        if form.is_valid():
-            email = form.cleaned_data['email']
-            password = form.cleaned_data['password']
-            try:
-                clan = Clans.objects.get(email=email)  
-                request.session['clan_id'] = clan.id 
-                return redirect('clan_dashboard')  
-            except Clans.DoesNotExist:
-                form.add_error('email', 'Clan not found.')
-            except Exception as e:
-                ErrorHandler().handle(e, context='clan_login')
-                form.add_error(None, "Something went wrong during login.")  
-    else:
-        form = ClanLoginForm()  
-
-    return render(request, 'clans/clan_login.html', {'form': form})
-
-def clan_logout(request):
-    """
-    Handles clan logout by clearing the session data and redirecting to the login page.
-    """
-    request.session.flush()  # Clear all session data
-    return redirect('clans/clan_login')  # Redirect to the login page
-
 def clan_login_required(view_func):
     """
     Custom decorator to ensure that only logged-in clans can access certain views.
     """
     def wrapper(request, *args, **kwargs):
         if 'clan_id' not in request.session:  
-            return redirect('clans/clan_login')  
+            return redirect('login')  
         return view_func(request, *args, **kwargs)
     return wrapper
 
@@ -244,7 +209,7 @@ def clan_dashboard(request):
         clan_id = request.session.get('clan_id')
         if not clan_id:
             messages.error(request, "Clan session missing.")
-            return redirect("some_fallback_view")
+            return redirect("login")
         clan = get_object_or_404(Clans, id=clan_id)
         clan_stats = get_object_or_404(ClanStats, id=clan_id)
         try:
@@ -257,17 +222,8 @@ def clan_dashboard(request):
         members =User.objects.filter(profile__clan=clan)
         tournaments = ClanTournament.objects.filter(teams=clan)
         join_requests = ClanJoinRequest.objects.filter(clan=clan, status="pending")
-        followed_type = ContentType.objects.get_for_model(Clans)
-        follow_data = Follow.objects.filter(
-            followed_type=followed_type,
-            followed_id=clan_id
-        ).aggregate(
-            followers=Count('id'),
-            following=Count('id', filter=Q(follower_id=clan_id))
-        )
-   
-        followers = follow_data.get('followers', 0)
-        following = follow_data.get('following', 0)
+        followers = count_followers(clan)
+        following = count_following(clan)
     # ============================ get last 5 matches ============================ #
     # Match results
         match_results = []
@@ -288,10 +244,7 @@ def clan_dashboard(request):
                 m for m in match_data["matches"]
                 if any(query in str(m.get(field, '')).lower()
                        for field in ['date', 'tour_name', 'opponent', 'result', 'score'])
-            ]
-
-        
-        
+            ] 
         context = {
             "clan": clan,
             "stats": clan_stats,
@@ -310,7 +263,7 @@ def clan_dashboard(request):
     except Exception as e:
         ErrorHandler().handle(e, context="Clan dashboard view failure")
         messages.error(request, "Something went wrong while loading your dashboard.")
-        return redirect("clan_login")
+        return redirect("login")
 
 def approve_reject(request):
     """
@@ -327,8 +280,6 @@ def approve_reject(request):
         join_request = get_object_or_404(ClanJoinRequest, id=request_id)
         
         clan = join_request.clan
-        if not request.user.profile.clan == clan or  request.user != clan.created_by:
-            return JsonResponse({"error": "You are not authorized to manage this request."}, status=403)
 
         if action == "approve":
             join_request.approve()
@@ -345,8 +296,6 @@ def approve_reject(request):
 def add_remove_players(request):
     try:
         clan = get_object_or_404(Clans, id=request.session['clan_id'])
-
-        # Authorization: Only clan creator can modify membership
         if request.user != clan.created_by:
             return JsonResponse({"error": "You are not authorized to modify this clan."}, status=403)
 
@@ -381,44 +330,21 @@ def clan_follow_unfollow(request, action, followed_model, followed_id):
     :param followed_id: ID of the entity being followed or unfollowed
     """
     try:
-        # Check if the user is authenticated
         if not request.user.is_authenticated:
-            return JsonResponse({"error": "You need to be logged in to follow or unfollow."}, status=401)
-        # Determine follower type
-        if isinstance(request.user, User):
-            follower_type = ContentType.objects.get_for_model(User)
-            follower_id = request.user.id
-        else:
-            follower_type = ContentType.objects.get_for_model(Clans)
-            follower_id = request.clan.id 
-
-    
-        # Get the followed entity
-        if followed_model != "clan":
-            return JsonResponse({"error": "Invalid model type."}, status=400)
-
-        followed_obj = get_object_or_404(Clans, id=followed_id)
-        followed_type = ContentType.objects.get_for_model(followed_obj)
+            return JsonResponse({"error": "Login required"}, status=401)
+        follower_instance = get_logged_in_entity(request)
+        followed_instance = get_followed_instance(followed_model, followed_id)
         if action == "follow":
-            follow, created = Follow.objects.get_or_create(
-                follower_type=follower_type,
-                follower_id=follower_id,
-                followed_type=followed_type,
-                followed_id=followed_obj.id
-            )
-            msg = f"You are now following {followed_obj.clan_name}" if created else f"Already following {followed_obj.clan_name}"
+            try:
+                follow(follower_instance, followed_instance)
+                msg = f"You are now following"
+            except ValueError:
+                msg = "You cannot follow yourself."
             return JsonResponse({"context": {"message": msg}})
-        
+
         elif action == "unfollow":
-            deleted, _ = Follow.objects.filter(
-                follower_type=follower_type,
-                follower_id=follower_id,
-                followed_type=followed_type,
-                followed_id=followed_obj.id
-            ).delete()
-            msg = f"You have unfollowed {followed_obj.clan_name}" if deleted else "You weren't following this account"
-            return JsonResponse({"context": {"message": msg}})
-        return JsonResponse({"error": "Invalid action"}, status=400)
+            unfollow(follower_instance, followed_instance)
+            return JsonResponse({"context": {"message": "Unfollowed successfully"}})
     except Exception as e:
         ErrorHandler().handle(e, context='Clan Follow/Unfollow')
         return JsonResponse({"error": "Unexpected error occurred."}, status=500)

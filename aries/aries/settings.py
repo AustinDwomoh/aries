@@ -24,7 +24,7 @@ env = environ.Env(
     DEBUG=(bool, False),
     ENV=(str, 'production')
 )
-environ.Env.read_env(os.path.join(BASE_DIR, ".env.production"))
+environ.Env.read_env(os.path.join(BASE_DIR, ".env.testing"))
 # ============================================================================ #
 #                                    SECRETS                                   #
 # ============================================================================ #
@@ -106,7 +106,8 @@ LOGGING = {
 
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',  # Default user 
-    'users.verify.MultiFieldAuthBackend',
+    'scripts.verify.MultiFieldAuthBackend',
+    'scripts.verify.ClanBackend'
 ]
 
 ROOT_URLCONF = 'aries.urls'
@@ -123,7 +124,7 @@ TEMPLATES = [
                 'django.template.context_processors.debug',
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+                'django.contrib.messages.context_processors.messages','scripts.context.profile_picture_context',
             ],
         },
     },
@@ -201,7 +202,7 @@ class ErrorHandler:
 
     def __init__(self, notify=True):
         self.notify = notify
-        os.makedirs(self.LOG_BASE_DIR, exist_ok=True)  # Base directory
+        os.makedirs(self.LOG_BASE_DIR, exist_ok=True)  
 
     def handle(self, error, context=""):
         now = datetime.now()
@@ -209,8 +210,7 @@ class ErrorHandler:
         time_stamp = now.strftime("%H-%M-%S")
 
         folder_path = os.path.join(self.LOG_BASE_DIR, day_folder)
-        os.makedirs(folder_path, exist_ok=True)  # Make daily folder
-
+        os.makedirs(folder_path, exist_ok=True)  
         file_path = os.path.join(folder_path, f"error_{time_stamp}.log")
 
         error_message = (
@@ -236,7 +236,6 @@ class ErrorHandler:
     def send_admin_notification(self, from_email, to_email, subject, body, file_path):
         fallback_path = os.path.join(self.LOG_BASE_DIR, "notify_failures.txt")
         try:
-            # Read and encode the log file
             with open(file_path, 'rb') as f:
                 file_data = f.read()
                 encoded_file = base64.b64encode(file_data).decode()

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}
-{{ clan.clan_name }}
+{{ clan.name }}
 {% endblock %}
 {% block content %}
 <!-- Section for small screens (up to md) -->
@@ -12,7 +12,7 @@
       <!-- Clan Logo -->
      <div class="mt-5 mx-auto mx-md-4 position-relative" style="width: 150px;">
       <img src="{{ clan.clan_logo.url }}" 
-           alt="{{ clan.clan_name }}"  
+           alt="{{ clan.name }}"  
            class="img-fluid img-thumbnail border-3 border-white shadow-lg rounded-circle" 
            style="width: 150px; height: 160px; object-fit: cover;" 
            loading="lazy">
@@ -22,7 +22,7 @@
     <div class="d-flex justify-content-evenly justify-content-md-between align-items-center py-2 px-3 text-body bg-light rounded shadow-sm" style="width: 100%;">
       <div class="text-center text-md-start">
         <h4 class="mb-1 text-dark fw-bold">
-          {{ clan.clan_name }} <span class="text-muted">[{{ clan.clan_tag }}]</span>  
+          {{ clan.name }} <span class="text-muted">[{{ clan.clan_tag }}]</span>  
         </h4>
         <p class="small text-muted">Ranking: <strong>{{ stats.ranking }}</strong></p>
         {% if match_results %}
@@ -57,7 +57,7 @@
         
           <!--Second section- button-->
           <div class="col-md-5 d-flex justify-content-evenly mb-2 align-items-center gap-4">
-            {% if not request.user.profile.clan and clan.is_recruiting %}
+            {% if request.session.is_user and not request.user.profile.clan and clan.is_recruiting %}
             <div>
                 <a href="#" 
                 onclick="event.preventDefault(); joinClub('section-sm');" 
@@ -102,7 +102,7 @@
      <!-- Clan Logo -->
      <div class="mt-5 mx-auto mx-md-4 position-relative" style="width: 150px;">
        <img src="{{ clan.clan_logo.url }}" 
-            alt="{{ clan.clan_name }}"  
+            alt="{{ clan.name }}"  
             class="img-fluid img-thumbnail border-3 border-white shadow-lg rounded-circle" 
             style="width: 150px; height: 160px; object-fit: cover;" 
             loading="lazy">
@@ -113,7 +113,7 @@
   <div class="d-flex justify-content-between align-items-center py-3 px-4 bg-light rounded shadow-sm">
      <div>
        <h4 class="mb-1 text-dark fw-bold">
-         {{ clan.clan_name }} <span class="text-muted">[{{ clan.clan_tag }}]</span>  
+         {{ clan.name }} <span class="text-muted">[{{ clan.clan_tag }}]</span>  
        </h4>
        <p class="small text-muted">Ranking: <strong>{{ stats.ranking }}</strong></p>
        
@@ -142,7 +142,7 @@
 
      <!-- Buttons Section -->
      <div class="d-flex gap-3" >
-       {% if not request.user.profile.clan and clan.is_recruiting %}
+       {% if request.session.is_user and not request.user.profile.clan and clan.is_recruiting%}
        <a href="#" onclick="event.preventDefault(); joinClub('section-md');" class="btn btn-success btn-sm">
          Request to Join
        </a>
@@ -179,19 +179,19 @@
     <div class="row">
       <h2 class="mt-3">Members</h2>
         {% for player in players %}
-        {% if player.profile.clan.clan_name == clan.clan_name %}
+        {% if player.profile.clan.name == clan.name %}
         <div class="col-md-4">
             <!-- Player Card -->
             <div class="card my-3">
                 <div class="card-body text-center" style="background-image: url('{{ player.profile.clan.clan_profile_pic.url }}');background-size: cover; background-position: center;text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);color:white">
                     <!-- Avatar -->
                     {% if player.profile.profile_picture %}
-                    <img src="{{ player.profile.profile_picture.url }}" alt="{{ player.username }}'s avatar" class="img-fluid rounded-circle mb-3" style="width: 100px; height: 100px;" loading="lazy">
+                    <img src="{{ player.profile.profile_picture.url }}" alt="{{ player.name }}'s avatar" class="img-fluid rounded-circle mb-3" style="width: 100px; height: 100px;" loading="lazy">
                     {% endif %}
 
                     <!-- Player Name -->
-                    <h5 class="card-title">{{ player.username }}</h5>
-                    <p>{{ player.profile.clan.clan_name }} </p>
+                    <h5 class="card-title">{{ player.name }}</h5>
+                    <p>{{ player.profile.clan.name }} </p>
                       
                     <p class="card-text">
                         <div class="d-flex justify-content-between text-center ">

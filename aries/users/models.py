@@ -33,8 +33,7 @@ class Profile(models.Model):
         if img.height > 300 or img.width > 300:
             output_size = (300,300)
             img.thumbnail(output_size)
-        img.save(self.profile_picture.path)
-   
+        img.save(self.profile_picture.path)  
 
 class PlayerStats(models.Model):
     """ PlayerStats model to extend Django's built-in User model."""
@@ -107,7 +106,6 @@ class PlayerStats(models.Model):
         if os.path.exists(file_path):
             os.remove(file_path)
         super().delete(*args, **kwargs)
-
 
 class SocialLink(models.Model):
     SOCIAL_CHOICES = [

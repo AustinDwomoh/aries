@@ -12,7 +12,8 @@ webguild/
 aries/aries/staticfiles/
 aries/aries/media/
 aries/error_logs/
-
+media/clan_logos/
+media/profile_pics/
 # Local settings, envs
 .env
 

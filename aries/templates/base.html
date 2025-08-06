@@ -51,25 +51,29 @@
           <li class="nav-item"><a class="nav-link mx-2" href="{% url 'tournament-home' %}">Tournament</a></li>
           <li class="nav-item"><a class="nav-link mx-2" href="{% url 'About' %}">About</a></li>
 
-          {% if user.is_authenticated %}
-          <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown"
-              aria-expanded="false">
-              <img src="{{ user.profile.profile_picture.url }}" alt="Profile" class="rounded-circle"
-                style="width: 30px; height: 30px;">
-            </a>
-            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-              <li><a class="dropdown-item" href="{% url 'user-home' %}">Profile</a></li>
-              <li><a class="dropdown-item" href="{% url 'edit_profile' %}">Edit profile</a></li>
-              <li><a class="dropdown-item" href="{% url 'clan_login' %}">Manage Clan</a></li>
-              <li><a class="dropdown-item" href="{% url 'logout' %}" id="logout-link">Log Out</a></li>
-            </ul>
-          </li>
+          {% if is_user_authenticated or is_clan_authenticated %}
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown"
+                aria-expanded="false">
+                  <img src="{{ profile_pic_url }}" alt="Profile Pic" class="rounded-circle"
+                  style="width: 30px; height: 30px;">
+              </a>
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+                  {% if is_user_authenticated %}
+                    <li><a class="dropdown-item" href="{% url 'user-home' %}">User Profile</a></li>
+                    <li><a class="dropdown-item" href="{% url 'edit_profile' %}">Edit Profile</a></li>
+                  {% elif is_clan_authenticated %}
+                    <li><a class="dropdown-item" href="{% url 'clan_dashboard' %}">Clan Dashboard</a></li>
+                    {% comment %} <li><a class="dropdown-item" href="{% url 'edit_clan' %}">Edit Clan</a></li> {% endcomment %}
+                  {% endif %}
+                  <li><a class="dropdown-item" href="{% url 'logout' %}" id="logout-link">Log Out</a></li>
+                </ul>
+            </li>
           {% else %}
-          <li class="nav-item">
-            <a class="nav-link d-inline" href="{% url 'register' %}">Sign Up</a>
-            <a class="nav-link d-inline" href="{% url 'login' %}">Log In</a>
-          </li>
+            <li class="nav-item">
+              <a class="nav-link d-inline" href="{% url 'register' %}">Sign Up</a>
+              <a class="nav-link d-inline" href="{% url 'login' %}">Log In</a>
+            </li>
           {% endif %}
         </ul>
       </div>

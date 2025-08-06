@@ -16,3 +16,7 @@ class Follow(models.Model):
 
     class Meta:
         unique_together = ('follower_type', 'follower_id', 'followed_type', 'followed_id')  # Prevent duplicates
+        indexes = [
+            models.Index(fields=['follower_type', 'follower_id']),
+            models.Index(fields=['followed_type', 'followed_id']),
+        ]

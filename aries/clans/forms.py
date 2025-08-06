@@ -1,8 +1,8 @@
 from django import forms
 from .models import Clans
 from django.contrib.auth.models import User
-from aries.settings import ErrorHandler
-
+from users.models import Profile
+from django.core.exceptions import ValidationError
 class ClanRegistrationForm(forms.ModelForm):
     """Form for clan registration"""
     password = forms.CharField(widget=forms.PasswordInput)
@@ -11,7 +11,8 @@ class ClanRegistrationForm(forms.ModelForm):
     class Meta:
         model = Clans
         fields = ['clan_name', 
-                  'email', 
+                  'email',
+                  'phone',
                   'password',
                   'clan_tag',
                   'clan_description',
@@ -22,7 +23,18 @@ class ClanRegistrationForm(forms.ModelForm):
                   'other_games',
                   'country'
                   ]
-
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        if User.objects.filter(email=email).exists() or Clans.objects.filter(email=email).exists():
+            raise forms.ValidationError("This email is already in use.")
+        return email
+    
+    def clean_phone(self):
+        phone = self.cleaned_data.get('phone')
+        if phone and Profile.objects.filter(phone=phone).exists() or Clans.objects.filter(phone=phone).exists():
+            raise ValidationError("This phone number is already in use.")
+        return phone
+    
     def clean(self):
         """Cleans and hashes the password and checks for confirmatio"""
         cleaned_data = super().clean()
@@ -31,12 +43,6 @@ class ClanRegistrationForm(forms.ModelForm):
         if password != confirm_password:
             raise forms.ValidationError("Passwords do not match.")
         return cleaned_data
-
-class ClanLoginForm(forms.Form):
-    """Form for clan login"""
-    email = forms.EmailField()
-    password = forms.CharField(widget=forms.PasswordInput)
-
 
 class AddPlayerToClanForm(forms.Form):
     """
@@ -51,3 +57,8 @@ class AddPlayerToClanForm(forms.Form):
                 widget=forms.Select(attrs={'class': 'select2', 'style': 'width: 100%;'}),
                 empty_label="Select a user"
             )
+        # ============================================================================ #
+        #                                 Future Ideas                                 #
+        # ============================================================================ #
+        #make it an invite system when you implement the PWA
+        #so you invite and when they accpet you get it

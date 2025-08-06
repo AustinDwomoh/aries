@@ -17,7 +17,7 @@ Copy
 Edit
 class Clans(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    clan_name = models.CharField(max_length=255)
+    name = models.CharField(max_length=255)
 Then you can use Django's built-in auth and login for them.
 
 ✅ 5. Track Organizers Without New Model

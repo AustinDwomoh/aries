@@ -1,6 +1,4 @@
-import os
-import django
-import requests
+import os,time,random,django,requests
 from io import BytesIO
 from faker import Faker
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'aries.settings')
@@ -15,22 +13,37 @@ TOTAL_USERS = NUM_CLANS * CLAN_MEMBERS
 fake = Faker()
 def create_unique_user():
     while True:
-        username = fake.user_name()
-        if not User.objects.filter(username=username).exists():
-            user = create_user_with_image(username)
+        name = fake.user_name()
+        if not User.objects.filter(name=name).exists():
+            user = create_user_with_image(name)
             return user
-def download_image(url):
-    response = requests.get(url)
-    response.raise_for_status()
-    return BytesIO(response.content)
+def download_image(url, retries=3, delay=2):
+    for attempt in range(retries):
+        try:
+            response = requests.get(url, timeout=10)
+            response.raise_for_status()
+            return BytesIO(response.content)
+        except requests.exceptions.RequestException as e:
+            print(f"[WARN] Failed to download image (attempt {attempt + 1}/{retries}): {e}")
+            if attempt < retries - 1:
+                sleep_time = delay + random.uniform(0, 1)  # jitter
+                print(f"[INFO] Retrying in {sleep_time:.2f}s...")
+                time.sleep(sleep_time)
+            else:
+                print("[ERROR] Max retries reached. Skipping image.")
+                return BytesIO()  # return an empty image buffer or handle default
 
-def create_user_with_image(username):
-    user = User.objects.create_user(username=username, password='pass1234', email=f'{username}@example.com')
+def create_user_with_image(name):
+    user = User.objects.create_user(name=name, password='pass1234', email=f'{name}@example.com')
     profile = user.profile
-    
+    profile.is_verified = True
     img_temp = download_image('https://picsum.photos/300/300')
-    profile.profile_picture.save(f'{username}.jpg', File(img_temp), save=True)
-    print(f"Created user {user.username} with profile picture.")
+    if img_temp.getbuffer().nbytes > 0:
+        profile.profile_picture.save(f'{name}.jpg', File(img_temp), save=True)
+    else:
+        print(f"[WARN] No image saved for user {name}")
+    
+    print(f"Created user {user.name} with profile picture.")
     
 
     return user
@@ -54,7 +67,7 @@ def create_clan_with_image(name, created_by):
     clan_profile_img = download_image('https://picsum.photos/300/300')
 
     clan = Clans(
-        clan_name=name,
+        name=name,
         clan_tag=clan_tag,
         email=email,
         password=password,
@@ -75,7 +88,7 @@ def create_clan_with_image(name, created_by):
     clan.clan_logo.save(f'{name}_logo.jpg', File(clan_logo_img), save=True)
     clan.clan_profile_pic.save(f'{name}_profile.jpg', File(clan_profile_img), save=True)
 
-    print(f"Created clan {clan.clan_name} by {created_by.username}")
+    print(f"Created clan {clan.name} by {created_by.name}")
     return clan
 
 def seed():
@@ -86,8 +99,8 @@ def seed():
 
     clans = []
     for i in range(NUM_CLANS):
-        clan_name = f'Clan_{fake.unique.user_name()}'
-        clan = create_clan_with_image(clan_name, users[i])
+        name = f'Clan_{fake.unique.user_name()}'
+        clan = create_clan_with_image(name, users[i])
         clans.append(clan)
 
     # Assign 10 users per clan
@@ -97,6 +110,7 @@ def seed():
             profile = user.profile
             profile.clan = clan
             profile.role = 'member'  # Or randomly assign roles if you want
+            profile.is_verified = True
             profile.save()
 
 if __name__ == '__main__':
