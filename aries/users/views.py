@@ -26,7 +26,7 @@ def register(request):
             try:
                 with transaction.atomic():
                     user = form.save()
-                    request.session['pending_verification'] = user.email or user.name
+                    request.session['pending_verification'] = user.email or user.username
                     Thread(target=verify.send_verification, args=(user,)).start()
 
                     messages.info(request, "We've sent you a verification email.")
@@ -84,7 +84,7 @@ def profile(request):
    
     except Exception as e:
         messages.error(request,'There has been an error loading your profile')
-        ErrorHandler().handle(e,context=f"Profile loading for {request.user.name}")
+        ErrorHandler().handle(e,context=f"Profile loading for {request.user.username}")
     
     context ={
         "match_data":match_data,
@@ -112,11 +112,14 @@ def all_gamers(request):
 
     try:
         players_qs = User.objects.select_related('profile__stats').all()
-
+        if request.session.get("is_user"):
+            user_id = request.session.get("user_id")
+            if user_id:
+                players_qs = players_qs.exclude(id=user_id)
         if query:
             players_qs = players_qs.filter(
-                Q(name__icontains=query) | 
-                Q(profile__clan__name__icontains=query) |
+                Q(username__icontains=query) | 
+                Q(profile__clan__clan_name__icontains=query) |
                 Q(profile__stats__rank__icontains=query)
             )
         
@@ -227,7 +230,7 @@ def edit_profile(request):
             social_formset = SocialLinkFormSet(instance=profile)
     except Exception as e:
         messages.error(request, "There was an error updating your profile.")
-        ErrorHandler().handle(e, context=f"edit_profile view for user {request.user.name}")
+        ErrorHandler().handle(e, context=f"edit_profile view for user {request.user.username}")
 
         # Provide empty forms to avoid breaking the template
         u_form = UserUpdateForm(instance=request.user)
@@ -265,11 +268,10 @@ class CustomLoginView(LoginView):
         # Try authenticating user first
         try:
             auth_backend = verify.MultiFieldAuthBackend()
-            user, reason = auth_backend.authenticate(request=self.request, name=identifier, password=password)
-
+            user, reason = auth_backend.authenticate(request=self.request, username=identifier, password=password)
             if reason == 'unverified':
                 user_obj = User.objects.filter(
-                    Q(name=identifier) | Q(email=identifier) | Q(profile__phone=identifier)
+                    Q(username=identifier) | Q(email=identifier) | Q(profile__phone=identifier)
                 ).first()
                 messages.info(self.request, 'Account not verified. Check your email.')
                 Thread(target=verify.send_verification, args=(user_obj,)).start()
@@ -289,11 +291,10 @@ class CustomLoginView(LoginView):
         # Try authenticating as clan
         try:
             clan_backend = verify.ClanBackend()
-            clan,reason = clan_backend.authenticate(self.request, name=identifier, password=password)
-
+            clan,reason = clan_backend.authenticate(self.request, username=identifier, password=password)
             if reason == 'unverified':
                 clan_obj = Clans.objects.filter(
-                    Q(name=identifier) | Q(email=identifier) | Q(phone=identifier)
+                    Q(clan_name=identifier) | Q(email=identifier) | Q(phone=identifier)
                 ).first()
                 messages.info(self.request, 'Account not verified. Check your email.')
                 Thread(target=verify.send_verification, args=(clan_obj,)).start()
@@ -323,7 +324,7 @@ def verify_otp(request):
                 return redirect('verification_pending')
 
             user = User.objects.filter(
-                Q(name__iexact=identifier) |
+                Q(username__iexact=identifier) |
                 Q(email__iexact=identifier) |
                 Q(profile__phone__iexact=identifier)
             ).first()
@@ -391,7 +392,7 @@ def verification_pending(request):
         return redirect('login')  # fallback
 
     user = User.objects.filter(
-        Q(name__iexact=identifier) | 
+        Q(username__iexact=identifier) | 
         Q(email__iexact=identifier) |
         Q(profile__phone__iexact=identifier)
     ).first()
@@ -406,7 +407,6 @@ def verification_pending(request):
       # Use whichever exists
 
     if not account:
-        print('here')
         messages.error(request, "No account found for verification.")
         return redirect('login')
     if is_verified:
@@ -427,7 +427,7 @@ def resend_verification(request):
             return redirect('login')
 
         user = User.objects.filter(
-            Q(name__iexact=identifier) |
+            Q(username__iexact=identifier) |
             Q(email__iexact=identifier) |
             Q(profile__phone__iexact=identifier)
         ).first()

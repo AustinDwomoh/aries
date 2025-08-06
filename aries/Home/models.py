@@ -10,12 +10,12 @@ class Follow(models.Model):
 
     followed_type = models.ForeignKey(ContentType, on_delete=models.CASCADE, related_name="followed_type")
     followed_id = models.PositiveIntegerField()
-    followed = GenericForeignKey('followed_type', 'followed_id')  # Who is being followed?
+    followed = GenericForeignKey('followed_type', 'followed_id')  
 
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ('follower_type', 'follower_id', 'followed_type', 'followed_id')  # Prevent duplicates
+        unique_together = ('follower_type', 'follower_id', 'followed_type', 'followed_id')  
         indexes = [
             models.Index(fields=['follower_type', 'follower_id']),
             models.Index(fields=['followed_type', 'followed_id']),

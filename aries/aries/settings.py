@@ -12,9 +12,8 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 import base64
 from pathlib import Path
-import os,environ,logging,traceback
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail, Attachment, FileContent, FileName, FileType, Disposition
+import os,environ,logging,traceback,base64
+from scripts import email_handle
 from threading import Thread
 from datetime import datetime
 logger = logging.getLogger(__name__)
@@ -24,7 +23,7 @@ env = environ.Env(
     DEBUG=(bool, False),
     ENV=(str, 'production')
 )
-environ.Env.read_env(os.path.join(BASE_DIR, ".env.production"))
+environ.Env.read_env(os.path.join(BASE_DIR, ".env.testing"))
 # ============================================================================ #
 #                                    SECRETS                                   #
 # ============================================================================ #
@@ -33,21 +32,12 @@ DEBUG = env("DEBUG")
 ENV = env("ENV")
 
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS")
+GMAIL_USER = env("GMAIL_USER")
+GMAIL_PASSWORD = env("GMAIL_PASSWORD")
 
 SITE_DOMAIN = env("SITE_DOMAIN")
 SITE_PROTOCOL = env("SITE_PROTOCOL")
-#EMAIL_BACKEND = "anymail.backends.sendgrid.EmailBackend"
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-
-#ANYMAIL = {"SENDGRID_API_KEY": "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",}
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL")
-SENDGRID_API_KEY = env('SENDGRID_API_KEY')
-EMAIL_HOST = env("EMAIL_HOST")
-EMAIL_PORT = env.int("EMAIL_PORT")
-EMAIL_USE_SSL = env.bool("EMAIL_USE_SSL")
-EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=False)
-EMAIL_HOST_USER = env("EMAIL_HOST_USER")
-EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD")
 SECURE_HSTS_SECONDS = 31536000
 SECURE_HSTS_PRELOAD = True
 SESSION_COOKIE_SECURE = env.bool("SESSION_COOKIE_SECURE")
@@ -195,7 +185,7 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-
+LOG_BASE_DIR = 'error_logs'
 class ErrorHandler:
     LOG_BASE_DIR = 'error_logs'
     NOTIFY_EMAIL = 'dwomohaustin14@gmail.com'
@@ -211,7 +201,7 @@ class ErrorHandler:
 
         folder_path = os.path.join(self.LOG_BASE_DIR, day_folder)
         os.makedirs(folder_path, exist_ok=True)  
-        file_path = os.path.join(folder_path, f"error_{time_stamp}.log")
+        file_path = os.path.join(folder_path, f"error_{time_stamp}.txt")
 
         error_message = (
             f"Timestamp: {now}\n"
@@ -229,36 +219,14 @@ class ErrorHandler:
     def notify_admin(self, file_path):
         subject = '[ALERT] Server Error Notification'
         body = 'An error occurred. Please see the attached log file.'
-        from_email = f"Aries Project <{DEFAULT_FROM_EMAIL}>"
+        
         to_email = self.NOTIFY_EMAIL
 
-        Thread(target=self.send_admin_notification, args=(from_email, to_email, subject, body, file_path)).start()
-    def send_admin_notification(self, from_email, to_email, subject, body, file_path):
-        fallback_path = os.path.join(self.LOG_BASE_DIR, "notify_failures.txt")
-        try:
-            with open(file_path, 'rb') as f:
-                file_data = f.read()
-                encoded_file = base64.b64encode(file_data).decode()
-
-            attachment = Attachment()
-            attachment.file_content = FileContent(encoded_file)
-            attachment.file_type = FileType("text/plain")
-            attachment.file_name = FileName(os.path.basename(file_path))
-            attachment.disposition = Disposition("attachment")
-
-            message = Mail(
-                from_email=from_email,
-                to_emails=to_email,
-                subject=subject,
-                html_content=f"<p>{body}</p>"
-            )
-            message.attachment = attachment
-
-            sg = SendGridAPIClient(SENDGRID_API_KEY)
-            response = sg.send(message)
-        except Exception as e:
-            try:
-                with open(fallback_path, "a", encoding="utf-8") as f:
-                    f.write(f"{datetime.now()} - Failed to notify admin: {str(e)}\n")
-            except Exception as fallback_err:
-                logger.critical(f"Failed to write fallback notify log: {fallback_err}")
+        Thread(target=email_handle.send_email_with_attachment, kwargs={
+        "subject": subject,
+        "body": body,
+        "to_email": to_email,
+        "file_path": file_path,
+    }).start()
+        
+    

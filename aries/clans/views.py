@@ -25,8 +25,13 @@ def clans(request):
     no_results = True
 
     try:
-        clans = Clans.objects.select_related('stat').order_by('-stat__elo_rating')
-
+        clans = Clans.objects.filter(is_verified=True)
+        #to avoid users cuasing any potential follow issues
+        print(clans)
+        if request.session.get('is_clan'):
+            clan_id = request.session.get('clan_id')
+            if clan_id:
+                clans = clans.exclude(id=clan_id)
         if query:
             clans = clans.filter(
                 Q(clan_name__icontains=query) |
@@ -63,6 +68,7 @@ def request_to_join_clan(request, clan_id):
         ErrorHandler().handle(e, context='Joining clan request')
         return JsonResponse({"message": "An error occurred while processing your request."}, status=500)
 
+@login_required
 def leave_clan(request,clan_id):
     """Allow players to leave clans"""
     try:
@@ -161,7 +167,7 @@ def clan_view(request, clan_id):
             'error': "Something went wrong while loading the clan view."
         })
 
-@login_required#ensures only users with accounts can create clubs
+@login_required#ensures only users with accounts can create clubs needed for .created_by
 def clan_register(request):
     """
     Handles clan registration. Validates the form and creates a new clan if the form is valid.
@@ -182,7 +188,7 @@ def clan_register(request):
                     Thread(target=verify.send_verification, args=(clan,)).start()
 
                     messages.info(request, "We've sent you a verification email.")
-                    return redirect('login')
+                    return redirect('verification_pending')
             except Exception as e:
                 ErrorHandler().handle(e, context='clan_register')
                 form.add_error(None, "Something went wrong during registration.")  
