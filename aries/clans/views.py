@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from .models import Clans, ClanStats,ClanJoinRequest
 from django.utils.safestring import mark_safe
 import markdown
+from users.views import follow_toggle_view
 from tournaments.models import ClanTournament
 from django.contrib.auth.models import User
 from users.models import Profile
@@ -27,7 +28,6 @@ def clans(request):
     try:
         clans = Clans.objects.filter(is_verified=True)
         #to avoid users cuasing any potential follow issues
-        print(clans)
         if request.session.get('is_clan'):
             clan_id = request.session.get('clan_id')
             if clan_id:
@@ -39,7 +39,7 @@ def clans(request):
                 Q(country__icontains=query) |
                 Q(primary_game__icontains=query)
             ).distinct()
-
+        
         no_results = not clans.exists()
 
     except Exception as e:
@@ -217,6 +217,7 @@ def clan_dashboard(request):
             messages.error(request, "Clan session missing.")
             return redirect("login")
         clan = get_object_or_404(Clans, id=clan_id)
+        
         clan_stats = get_object_or_404(ClanStats, id=clan_id)
         try:
             match_data = clan_stats.load_match_data_from_file()
@@ -329,30 +330,6 @@ def add_remove_players(request):
         ErrorHandler().handle(e, context='Add/Remove Player in Clan')
         return JsonResponse({"error": "Something went wrong while managing the clan members."}, status=500)
 
-def clan_follow_unfollow(request, action, followed_model, followed_id):
-    """
-    Allows a user or a club to follow or unfollow another user or club dynamically.
-    :param action: "follow" or "unfollow"
-    :param followed_id: ID of the entity being followed or unfollowed
-    """
-    try:
-        if not request.user.is_authenticated:
-            return JsonResponse({"error": "Login required"}, status=401)
-        follower_instance = get_logged_in_entity(request)
-        followed_instance = get_followed_instance(followed_model, followed_id)
-        if action == "follow":
-            try:
-                follow(follower_instance, followed_instance)
-                msg = f"You are now following"
-            except ValueError:
-                msg = "You cannot follow yourself."
-            return JsonResponse({"context": {"message": msg}})
 
-        elif action == "unfollow":
-            unfollow(follower_instance, followed_instance)
-            return JsonResponse({"context": {"message": "Unfollowed successfully"}})
-    except Exception as e:
-        ErrorHandler().handle(e, context='Clan Follow/Unfollow')
-        return JsonResponse({"error": "Unexpected error occurred."}, status=500)
  
 

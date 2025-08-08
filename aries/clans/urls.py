@@ -14,7 +14,6 @@ urlpatterns = [
 
     # Clan detail and actions
     path('<int:clan_id>/', views.clan_view, name='clan_details'),
-    path('<str:action>/<str:followed_model>/<int:followed_id>/', views.clan_follow_unfollow, name='clan_follow_unfollow'),
     path('<int:clan_id>/join/', views.request_to_join_clan, name='request_to_join_clan'),
     path('<int:clan_id>/leave/', views.leave_clan, name='leave_clan'),
     path('<int:clan_id>/recruitment/toggle/', views.change_recruitment_state, name='change_recruitment_state'),

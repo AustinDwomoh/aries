@@ -1,0 +1,31 @@
+{% load follow_tags %}
+
+
+ <div class="container">
+  <div class="row text-center mb-3">
+    <!-- Followers and Following side-by-side on md+, stacked on sm and below -->
+    <div class="col-6 col-md-3">
+      <a href="{% url 'follow-list' model=model_name profile_id=profile_id ftype='followers' %}">
+        <p class="mb-1 h6 text-primary">{{ followers }}</p>
+      </a>
+      <p class="small text-muted mb-0">Followers</p>
+    </div>
+    <div class="col-6 col-md-3">
+      <a href="{% url 'follow-list' model=model_name profile_id=profile_id ftype='following' %}">
+        <p class="mb-1 h6 text-success">{{ following }}</p>
+      </a>
+      <p class="small text-muted mb-0">Following</p>
+    </div>
+
+    <!-- Rank: full width on small, centered under -->
+    <div class="col-12 col-md-3 my-3 my-md-0">
+      <p class="mb-1 h5 text-success"><strong>{{ rank }}</strong></p>
+      <p class="small text-muted mb-0">Rank</p>
+    </div>
+
+    <!-- Follow button: full width on small, right aligned on md+ -->
+    <div class="col-12 col-md-3 d-flex justify-content-center justify-content-md-start align-items-center">
+      {% render_follow_button target model_name %}
+    </div>
+  </div>
+</div>

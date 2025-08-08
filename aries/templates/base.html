@@ -223,6 +223,26 @@
 </script>
 
 </footer>
+<script>
+  document.addEventListener('click', function (e) {
+    if (!e.target.classList.contains('follow-btn')) return;
+
+    const button = e.target;
+    const followedId = button.dataset.id;
+    const followedModel = button.dataset.model;
+    const action = button.innerText.trim().toLowerCase() === "follow" ? "follow" : "unfollow";
+
+    fetch(`/follow/${action}/${followedModel}/${followedId}/`)
+      .then(response => response.json())
+      .then(data => {
+        button.innerText = action === "follow" ? "Unfollow" : "Follow";
+        const messageBox = button.nextElementSibling;
+        messageBox.innerText = data.context.message;
+        messageBox.style.display = "block";
+        location.reload();  
+      });
+  });
+</script>
 </body>
 
 </html>

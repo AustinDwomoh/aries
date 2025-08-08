@@ -12,7 +12,6 @@ def profile_picture_context(request):
             user = User.objects.get(id=request.session.get('user_id'))
             if user.profile.profile_picture:
                 profile_pic_url = user.profile.profile_picture.url
-                print(profile_pic_url)
             is_user_authenticated = True
 
         elif request.session.get('is_clan'):

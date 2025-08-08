@@ -8,7 +8,7 @@ urlpatterns = [
 
      # About page 
     path('about/',views.about, name ='About'),
-   
+    path("<str:model>/<int:profile_id>/<str:ftype>/", views.follow_list_view, name="follow-list"),
 
 
 ]

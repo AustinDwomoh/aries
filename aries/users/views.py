@@ -194,7 +194,6 @@ def gamer_view(request,player_id):
             query.lower() in match['result'].lower() or
             query.lower() in match['score'].lower())
         ]
-   #bad i know but this is the best way i could think of slicing it
     context ={
         'player':player,
         "match_results":match_results,
@@ -202,7 +201,11 @@ def gamer_view(request,player_id):
         'query':query,
         'followers':followers,
         'following':following,
-        'is_following': is_following
+        'is_following': is_following,
+        'followed': player,     
+        'model_name': 'user',
+        "show_button": request.user != player,
+        "follow_type": "user"
         }
   
  
@@ -244,18 +247,24 @@ def edit_profile(request):
     })
 
 @login_required
-def follow_unfollow(request, action, followed_model, followed_id):
-    """
-    Allows a user or a club to follow or unfollow another user or club dynamically.
-    :param action: "follow" or "unfollow"
-    :param followed_id: ID of the entity being followed or unfollowed
-    """
+def follow_toggle_view(request, action, model, obj_id):
     try:
-       from clans.views import clan_follow_unfollow
-       return clan_follow_unfollow(request, action, followed_model, followed_id)
+        current_entity = follow.get_logged_in_entity(request)
+        target = follow.get_followed_instance(model, obj_id)
+
+        if action == "follow":
+            follow_obj, created = follow.follow(current_entity, target)
+            message = f"You followed {target}"
+        elif action == "unfollow":
+            follow.unfollow(current_entity, target)
+            message = f"You unfollowed {target}"
+        else:
+            return JsonResponse({"context": {"message": "Invalid action"}}, status=400)
+        return JsonResponse({"context": {"message": message}})
     except Exception as e:
-        ErrorHandler().handle(e, context=f"Follow/unfollow failure by user ")
-        return JsonResponse({"error": "An unexpected error occurred while processing your request."}, status=500)
+        ErrorHandler().handle(e, context='User Follow/Unfollow')
+        return JsonResponse({"error": "Unexpected error occurred."}, status=500)
+ 
 
 class CustomLoginView(LoginView):
     form_class = CustomLoginForm

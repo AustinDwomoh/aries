@@ -2,6 +2,7 @@
 {% load static %}
 {% block title %}{{ user.username }} {% endblock title %}
 {% load crispy_forms_tags %}
+{% load follow_tags %}
 {% block content %}
 <STYle>
   body{
@@ -49,27 +50,10 @@
             {% endfor %}
         </p>
         {% endif %}
-        <div class="row justify-content-evenly  text-center">
-          <!-- First Section: Followers & Following -->
-          <div class="col-md-5 d-flex justify-content-evenly mb-2 align-items-center gap-4">
-            <div>
-              <p class="mb-1 h6 text-primary">{{ followers }}</p>
-              <p class="small text-muted mb-0">Followers</p>
-            </div>
-            <div>
-              <p class="mb-1 h6 text-success">{{ following }}</p>
-              <p class="small text-muted mb-0">Following</p>
-            </div>
+        <div >
+            {% render_follow_summary player followers following %}
+            {% comment %} Check the template tags folder it renders them so i can use accross view {% endcomment %}
           </div>
-      
-          <!--second section- button-->
-          <div class="col-md-5 d-flex justify-content-evenly mb-2 align-items-center gap-4">
-            <div>
-              <button id="follow-btn" class="btn btn-primary"  onclick="toggleFollow({{ player.profile.id }}, 'user')">
-                {% if is_following %} Unfollow {% else %} Follow {% endif %}
-              </button>
-              <div id="follow-message" style="display: none; color: green;"></div>
-            </div>
             
           </div>
         </div> 
@@ -120,32 +104,11 @@
         {% endif %}
       </div>
         <!-- Followers & Following -->
-      <div class="d-flex gap-4">
-        <div class="text-center">
-          <p class="mb-1 h5 text-primary">{{ followers }}</p>
-          <p class="small text-muted mb-0">Followers</p>
-        </div>
-        <div class="text-center">
-          <p class="mb-1 h5 text-success">{{ following }}</p>
-          <p class="small text-muted mb-0">Following</p>
-        </div>
-        <div class="text-center">
-          <p class="mb-1 h5 text-success"><strong>{{ player.profile.stats.rank }}</strong></p>
-          <p class="small text-muted mb-0">Rank</p>
-        </div>
-        
+      <div>
+        {% render_follow_summary player followers following %}
+        {% comment %} Check the template tags folder it renders them so i can use accross view {% endcomment %}
       </div>
-      
-      <!--second section- button-->
-      <div class="d-flex gap-3" >
-        <div>
-          <button id="follow-btn" class="btn btn-primary"  onclick="toggleFollow({{ player.profile.id }}, 'user')">
-            {% if is_following %} Unfollow {% else %} Follow {% endif %}
-          </button>
-          <div id="follow-message" style="display: none; color: green;"></div>
-        </div>
-      </div>
-    </div> 
+     
 
 </section>
 
@@ -256,21 +219,4 @@
   {% endif %}
 </section>
 
-<script>
-  const toggleFollow = (followedId, followedModel)=> {
-    let button = document.getElementById("follow-btn");
-    let messageBox = document.getElementById("follow-message");
-    
-    let action = button.innerText.trim() === "Follow" ? "follow" : "unfollow";
-
-    fetch(`/users/${action}/${followedModel}/${followedId}/`)
-        .then(response => response.json())
-        .then(data => {
-          document.getElementById("follow-btn").innerText = action === "follow" ? "Unfollow" : "Follow";
-          document.getElementById("follow-message").innerText = data.context.message;
-          document.getElementById("follow-message").style.display = "block";
-          location.reload();
-      });
-}
-</script>
 {% endblock content %}

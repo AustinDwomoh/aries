@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block content %}
+{% load follow_tags %}
+  <div class="container my-4">
+    <h2>
+      {% if view_type == "followers" %}
+        Followers
+      {% else %}
+        Following
+      {% endif %}
+    </h2>
+
+    {% if users or clans %}
+  <ul class="list-group">
+    <!-- USERS -->
+    {% for user in users %}
+      <li class="list-group-item d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center">
+          <img src="{{ user.profile.profile_picture.url }}" 
+               alt="{{ user.username }}" 
+               class="rounded-circle me-3" 
+               style="width:40px; height:40px; object-fit:cover;">
+
+          <div>
+            <a href="{% url 'player_details' user.id %}" class="fw-bold text-decoration-none">
+              {{ user.username }}
+            </a>
+            {% if user.profile.clan %}
+              <p class="mb-0 text-muted small">Clan: {{ user.profile.clan.clan_name }}</p>
+            {% else %}
+              <p class="mb-0 text-muted small">No clan</p>
+            {% endif %}
+          </div>
+        </div>
+        {%if request.user != user %}
+        <div>
+          {% render_follow_button user "user" %}
+        </div>
+        {% endif%}
+      </li>
+    {% endfor %}
+
+    <!-- CLANS -->
+    {% for clan in clans %}
+      <li class="list-group-item d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center">
+          <img src="{{ clan.clan_logo.url }}" 
+               alt="{{ clan.clan_name }}" 
+               class="rounded-circle me-3" 
+               style="width:40px; height:40px; object-fit:cover;">
+
+          <div>
+            <a href="{% url 'clan_details' clan.id %}" class="fw-bold text-decoration-none">
+              {{ clan.clan_name }}
+            </a>
+            <p class="mb-0 text-muted small">
+              Founded by: {{ clan.created_by }}
+            </p>
+          </div>
+        </div>
+        {% if request.user != clan%}
+        <div>
+          {% render_follow_button clan "clan" %}
+        </div>
+        {%endif%}
+      </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <p>No {{ view_type }} found.</p>
+{% endif %}
+
+  </div>
+{% endblock %}

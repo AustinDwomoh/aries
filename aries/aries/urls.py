@@ -35,7 +35,8 @@ urlpatterns = [
     path("verify-otp/", user_views.verify_otp, name="verify_otp"),
     path('verify/pending/', user_views.verification_pending, name='verification_pending'),
     path('verify/resend/', user_views.resend_verification, name='resend_verification'),
-       path('err/', trigger_error_view)
+    path('err/', trigger_error_view),
+    path('follow/<str:action>/<str:model>/<int:obj_id>/', user_views.follow_toggle_view, name="follow-toggle"),
 
 ] 
 if settings.DEBUG:

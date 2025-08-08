@@ -3,6 +3,7 @@
 {{ clan.clan_name }}
 {% endblock %}
 {% load static %} 
+{% load follow_tags %}
 {% block content %}
 <style>
   textarea {
@@ -33,7 +34,7 @@
         <h4 class="mb-1 text-dark fw-bold">
           {{ clan.clan_name }} <span class="text-muted">[{{ clan.clan_tag }}]</span>  
         </h4>
-        <p class="small text-muted">Ranking: <strong>{{ stats.ranking }}</strong></p>
+        {% comment %} <p class="small text-muted">Ranking: <strong>{{ stats.ranking }}</strong></p> {% endcomment %}
         {% if match_results %}
           <p>
             {% for result in match_results %}
@@ -51,21 +52,10 @@
         {% endif %}
 
 
-        <div class="row justify-content-evenly  text-center">
+        <div>
           <!-- First Section: Followers & Following -->
-          <div class="col-md-5 d-flex justify-content-evenly mb-2 align-items-center gap-4">
-            <div>
-              <p class="mb-1 h6 text-primary">{{ followers }}</p>
-              <p class="small text-muted mb-0">Followers</p>
-            </div>
-            <div>
-              <p class="mb-1 h6 text-success">{{ following }}</p>
-              <p class="small text-muted mb-0">Following</p>
-            </div>
-          </div>
-        </div> 
-        
-      </div>
+          {% render_follow_summary clan followers following %}
+        </div>
     </div>
 </section>
 
@@ -94,7 +84,7 @@
        <h4 class="mb-1 text-dark fw-bold">
          {{ clan.clan_name }} <span class="text-muted">[{{ clan.clan_tag }}]</span>  
        </h4>
-       <p class="small text-muted">Ranking: <strong>{{ stats.ranking }}</strong></p>
+       
        
        {% if match_results %}
        <p>
@@ -108,15 +98,9 @@
      </div>
 
      <!-- Followers & Following -->
-     <div class="d-flex gap-4">
-       <div class="text-center">
-         <p class="mb-1 h5 text-primary">{{ followers }}</p>
-         <p class="small text-muted mb-0">Followers</p>
-       </div>
-       <div class="text-center">
-         <p class="mb-1 h5 text-success">{{ following }}</p>
-         <p class="small text-muted mb-0">Following</p>
-       </div>
+     <div>
+          <!-- First Section: Followers & Following -->
+          {% render_follow_summary clan followers following %}
      </div>
 
      
