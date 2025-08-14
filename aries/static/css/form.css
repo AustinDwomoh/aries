@@ -1,0 +1,28 @@
+form{
+    width: 340px;
+    margin: 0 auto;
+    margin-bottom: 20px;
+    padding: 20px;
+        background-color: #fff;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+form > .button1{
+    display: block;
+    border: none;
+    background-color: #007bff;
+    color: #fff;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+form > .button1:hover {
+    background-color: #0056b3;
+}
+
+
+
+
+
+

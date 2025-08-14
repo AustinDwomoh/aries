@@ -76,5 +76,5 @@ def follow_list_view(request, ftype, model, profile_id):
     }
     return render(request, "Home/follow_list.html", context)
 
-def ads_txt(request):
-    return HttpResponse("google.com, pub-6095628428301944, DIRECT, f08c47fec0942fa0", content_type="text/plain")
+
+    

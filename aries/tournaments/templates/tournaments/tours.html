@@ -54,7 +54,7 @@ Tournaments
             <form method="GET" action="{% url 'tournament-home' %}" class="mb-4 d-flex justify-content-center">
                 <input type="text" name="q" class="form-control w-50" placeholder="Search for a Tournament..." value="{{ query }}">
                 <button type="submit" class="btn btn-primary mx-2">Search</button>
-                <button><a href="{%url 'create_clan_tournament' %}" >Create</a></button>
+                <a href="{%url 'create_clan_tournament' %}" class="btn btn-primary">Create</a>
             </form>
             </div>
         </div>
@@ -107,7 +107,7 @@ Tournaments
                 <form method="GET" action="{% url 'tournament-home' %}" class="mb-4 d-flex justify-content-center">
                     <input type="text" name="q" class="form-control w-50" placeholder="Search for a Tournament..." value="{{ query }}">
                     <button type="submit" class="btn btn-primary mx-2">Search</button>
-                    <button><a href="{%url 'create_indi_tournament' %}" class="btn">Create</a></button>
+                    <a href="{%url 'create_indi_tournament' %}" class="btn btn-primary">Create</a>
                 </form>
                 </div>
             </div>

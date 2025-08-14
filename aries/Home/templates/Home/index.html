@@ -11,15 +11,13 @@
        
         <div class="col-md-5 d-flex justify-content-evenly mb-2 align-items-center gap-4">
           <div>
-            <button><a href="{% url 'register' %}">Sign Up</a></button>
-            
+            <a class="btn btn-primary "href="{% url 'register' %}">Sign Up</a>
           </div>
           <div>
             <a class="btn btn-success" href="{% url 'tournament-home'%}">Create Tournament</a>
           </div>
           <div>
-            <button><a  href="{% url 'clan_home' %}">Join A Clan</a></button>
-            
+            <a class="btn btn-primary" href="{% url 'clan_home' %}">Join A Clan</a>
           </div>
         </div>
       </div>
@@ -187,13 +185,11 @@
       <p class="lead">We have tournaments, Caln pages, user pages and we keep track of all your games for you</p>
       <div class="col-md-5 d-flex justify-content-evenly mb-2 align-items-center gap-4">
         <div>
-          <button><a href="{% url 'gamers'%}" >Users</a></button>
-          
+          <a href="{% url 'gamers'%}" class="btn btn-primary">Users</a>
         </div>
         <div>
-          <button><a href="{% url 'clan_home'%}" >Clans</a>
-        </div></button>
-          
+          <a href="{% url 'clan_home'%}" class="btn btn-primary">Clans</a>
+        </div>
       </div>
     </div>
   </div>
