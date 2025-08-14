@@ -307,6 +307,7 @@ def clan_register(request):
                     clan.created_by = request.user
                     request.user.profile.clan = clan
                     clan.set_password(form.cleaned_data['password'])
+                    request.session['pending_verification'] = clan.email or clan.clan_name
                     clan.save()
                      # Link user's profile to this clan
                     profile = request.user.profile
@@ -314,8 +315,8 @@ def clan_register(request):
                     profile.save()
                     Thread(target=verify.send_verification, args=(clan,)).start()
 
-                    messages.info(request, "We've sent you a verification email.")
-                    return redirect('verification_pending')
+                messages.info(request, "We've sent you a verification email.")
+                return redirect('verification_pending')
             except Exception as e:
                 ErrorHandler().handle(e, context='clan_register')
                 form.add_error(None, "Something went wrong during registration.")  
