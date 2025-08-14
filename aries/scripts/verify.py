@@ -92,7 +92,7 @@ def send_sms(to_number, message):
     print(f"Sending SMS to {to_number}: {message}")
 
 
-def send_verification(user, method='email'):
+def send_verification(account, model_type, method='email'):
     """
     Sends verification OTP via email.
     Caches OTP for 5 minutes keyed by user ID.
@@ -101,27 +101,33 @@ def send_verification(user, method='email'):
     """
     try:
         otp = str(generate_otp())
-        cache.set(f"phone_otp_{user.pk}", otp, timeout=300)
-
+        cache.set(f"{model_type}_otp_{account.pk}", otp, timeout=300)
         if method == 'email':
-            uid = urlsafe_base64_encode(force_bytes(user.pk))
-            token = default_token_generator.make_token(user)
-            email_link = f"{settings.SITE_PROTOCOL}://{settings.SITE_DOMAIN}/verify/{uid}/{token}/"
-            name = user.username if isinstance(user, UserModel) else user.clan_name
+            uid = urlsafe_base64_encode(force_bytes(account.pk))
+            token = default_token_generator.make_token(account)
+            name = getattr(account, "username", getattr(account, "clan_name", ""))
+            email_link = f"{settings.SITE_PROTOCOL}://{settings.SITE_DOMAIN}/verify/{model_type}/{uid}/{token}/"
+
+           
+            email = getattr(account, "email", None)
+
             html_content = render_to_string("users/verify_email.html", {
-                "name":name,
+                "name": name,
                 "email_link": email_link,
                 "otp": otp
             })
-            plain_text = f"Hi {name},\n\nYour code is {otp}\n\nClick the link to verify your email: {email_link}"
+            plain_text = f"Hi {name},\n\nYour code is {otp}\n\nClick the link to verify your account: {email_link}"
 
-           
-            threading.Thread(target=email_handle.send_email_with_attachment,kwargs={
-                "subject": "Verify Email",
-                "body": plain_text,
-                "to_email": user.email,
-                "file_path": None,
-                "from_email": None,
-                "html_content": html_content}).start()
+            threading.Thread(
+                target=email_handle.send_email_with_attachment,
+                kwargs={
+                    "subject": "Verify Your Account",
+                    "body": plain_text,
+                    "to_email": email,
+                    "file_path": None,
+                    "from_email": None,
+                    "html_content": html_content
+                }
+            ).start()
     except Exception as e:
         ErrorHandler().handle(e,context='Coundltn send verification')
