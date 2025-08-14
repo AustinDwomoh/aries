@@ -20,7 +20,7 @@ env = environ.Env(
     DEBUG=(bool, False),
     ENV=(str, 'production')
 )
-environ.Env.read_env(os.path.join(BASE_DIR, ".env.production"))
+environ.Env.read_env(os.path.join(BASE_DIR, ".env.testing"))
 # ============================================================================ #
 #                                    SECRETS                                   #
 # ============================================================================ #
