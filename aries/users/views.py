@@ -327,7 +327,7 @@ class CustomLoginView(LoginView):
                     Q(clan_name=identifier) | Q(email=identifier) | Q(phone=identifier)
                 ).first()
                 messages.info(self.request, 'Account not verified. Check your email.')
-                Thread(target=verify.send_verification, kwargs={"account": clan, "model_type": 'clan', "method": 'email'}).start()
+                Thread(target=verify.send_verification, kwargs={"account": clan_obj, "model_type": 'clan', "method": 'email'}).start()
                 self.request.session['pending_verification'] = identifier
                 self.request.session['pending_model'] = 'clan'  # Store model type for verification
                 return redirect('verification_pending')

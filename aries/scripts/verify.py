@@ -130,4 +130,4 @@ def send_verification(account, model_type, method='email'):
                 }
             ).start()
     except Exception as e:
-        ErrorHandler().handle(e,context='Coundltn send verification')
+        ErrorHandler().handle(e,context=f'Coundltn send verification for {model_type}')
