@@ -218,8 +218,7 @@
   </div>
   
 </section>
-
-
+ {% include "templates/btn.html" %}
 <!-- Tournaments Section -->
 <section>
   <div class="container-fluid my-4">
@@ -229,7 +228,7 @@
               <h2 class="text-center">Tournaments</h2>
               <form method="GET" action="{% url 'tournament-home' %}" class="mb-4 d-flex justify-content-center">
                   <input type="text" name="r" class="form-control w-50" placeholder="Search for a Tournament..." value="{{ query }}">
-                  <button type="submit" class="btn btn-primary mx-2">Search</button>
+                  <button type="submit" class="btn btn-custom  mx-2">Search</button>
                   <a href="{%url 'create_clan_tournament' %}" class="btn btn-primary">Create</a>
               </form>
             </div>

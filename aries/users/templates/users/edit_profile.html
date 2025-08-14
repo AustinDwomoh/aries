@@ -30,10 +30,11 @@
       <!-- Account Tab -->
       <div class="tab-pane fade show active" id="account" role="tabpanel">
           <div class="container mt-3">
-            <form method="post" enctype="multipart/form-data" id="account-form">
+            <form method="post" enctype="multipart/form-data" id="account-form" style="width: auto;">
+
                 {% csrf_token %}
                 {{ u_form|crispy }}
-                <button type="submit" class="btn btn-primary mt-3">Save Account</button>
+                <button type="submit" class="btn  mt-3">Save Account</button>
             </form>
           </div>
       </div>
@@ -44,7 +45,7 @@
           <form method="post" enctype="multipart/form-data" id="profile-form">
               {% csrf_token %}
               {{ p_form|crispy }}
-              <button type="submit" class="btn btn-primary mt-3">Save Profile</button>
+              <button type="submit" class="btn  mt-3">Save Profile</button>
           </form>
           </div>
       </div>
@@ -75,7 +76,7 @@
                   {% endfor %}
               </div>
               <button type="button" class="btn btn-outline-primary mt-2" id="add-social-form">+ Add Social Link</button>
-              <button type="submit" class="btn btn-primary mt-3">Save Social Links</button>
+              <button type="submit" class="btn  mt-3">Save Social Links</button>
           </form>
         </div>
       </div>
@@ -86,7 +87,7 @@
           <form method="post" id="password-form">
               {% csrf_token %}
               {{ pass_form|crispy }}
-              <button type="submit" class="btn btn-primary mt-3">Change Password</button>
+              <button type="submit" class="btn  mt-3">Change Password</button>
           </form>
           </div>
       </div>

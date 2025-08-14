@@ -35,7 +35,7 @@
           <form method="post" enctype="multipart/form-data">
             {% csrf_token %}
             {{ basic_form|crispy }}
-            <button type="submit" class="btn btn-primary mt-3">Save Basic Info</button>
+            <button type="submit" class="btn  mt-3">Save Basic Info</button>
           </form>
         </div>
       </div>
@@ -46,7 +46,7 @@
           <form method="post">
             {% csrf_token %}
             {{ contact_form|crispy }}
-            <button type="submit" class="btn btn-primary mt-3">Save Contact</button>
+            <button type="submit" class="btn  mt-3">Save Contact</button>
           </form>
         </div>
       </div>
@@ -57,7 +57,7 @@
           <form method="post" enctype="multipart/form-data">
             {% csrf_token %}
             {{ media_form|crispy }}
-            <button type="submit" class="btn btn-primary mt-3">Save Media</button>
+            <button type="submit" class="btn  mt-3">Save Media</button>
           </form>
         </div>
       </div>
@@ -68,7 +68,7 @@
           <form method="post">
             {% csrf_token %}
             {{ recruitment_form|crispy }}
-            <button type="submit" class="btn btn-primary mt-3">Save Recruitment</button>
+            <button type="submit" class="btn  mt-3">Save Recruitment</button>
           </form>
         </div>
       </div>
@@ -99,7 +99,7 @@
               {% endfor %}
             </div>
             <button type="button" class="btn btn-outline-primary mt-2" id="add-social-form">+ Add Social Link</button>
-            <button type="submit" class="btn btn-primary mt-3">Save Social Links</button>
+            <button type="submit" class="btn  mt-3">Save Social Links</button>
           </form>
         </div>
       </div>
