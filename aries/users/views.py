@@ -30,7 +30,8 @@ def register(request):
                 with transaction.atomic():
                     user = form.save()
                     request.session['pending_verification'] = user.email or user.username
-                    Thread(target=verify.send_verification, args=(user,)).start()
+                    request.session['pending_model'] = 'user'  # Store model type for verification
+                    Thread(target=verify.send_verification,kwargs={"account": user, "model_type": 'user', "method": 'email'}).start()
 
                     messages.info(request, "We've sent you a verification email.")
                     return redirect('verification_pending')
@@ -147,7 +148,6 @@ def all_gamers(request):
                     else:
                         match_results.append("D")
             background_image = player.profile.clan.clan_profile_pic.url if player.profile.clan and player.profile.clan.clan_profile_pic else '/static/images/areis-1.png'
-            print(background_image)
             players.append({
                 "player": player,
                 "background_image": background_image,
@@ -303,8 +303,9 @@ class CustomLoginView(LoginView):
                     Q(username=identifier) | Q(email=identifier) | Q(profile__phone=identifier)
                 ).first()
                 messages.info(self.request, 'Account not verified. Check your email.')
-                Thread(target=verify.send_verification, args=(user_obj,)).start()
+                Thread(target=verify.send_verification, kwargs={"account": user_obj, "model_type": 'user', "method": 'email'}).start()
                 self.request.session['pending_verification'] = identifier
+                self.request.session['pending_model'] = 'user'  # Store model type for verification
                 return redirect('verification_pending')
 
             if user:
@@ -326,8 +327,9 @@ class CustomLoginView(LoginView):
                     Q(clan_name=identifier) | Q(email=identifier) | Q(phone=identifier)
                 ).first()
                 messages.info(self.request, 'Account not verified. Check your email.')
-                Thread(target=verify.send_verification, args=(clan_obj,)).start()
+                Thread(target=verify.send_verification, kwargs={"account": clan, "model_type": 'clan', "method": 'email'}).start()
                 self.request.session['pending_verification'] = identifier
+                self.request.session['pending_model'] = 'clan'  # Store model type for verification
                 return redirect('verification_pending')
             if clan:
                 login(self.request, clan)
@@ -346,75 +348,80 @@ def verify_otp(request):
     if request.method == "POST":
         try:
             otp = request.POST.get("otp", "").strip()
-            identifier = request.session.get('pending_verification')
-
-            if not identifier:
+            identifier = request.session.get("pending_verification")
+            model_type = request.session.get("pending_model") 
+            if not identifier or not model_type:
                 messages.error(request, "Verification session expired. Please try again.")
-                return redirect('verification_pending')
+                return redirect("verification_pending")
 
-            user = User.objects.filter(
-                Q(username__iexact=identifier) |
-                Q(email__iexact=identifier) |
-                Q(profile__phone__iexact=identifier)
-            ).first()
+            account = None
+            if model_type == "user":
+                account = User.objects.filter(
+                    Q(username__iexact=identifier) |
+                    Q(email__iexact=identifier) |
+                    Q(profile__phone__iexact=identifier)
+                ).first()
+            elif model_type == "clan":
+                account = Clans.objects.filter(
+                    Q(clan_name__iexact=identifier) |
+                    Q(email__iexact=identifier)
+                ).first()
 
-            if not user:
-                messages.error(request, "User not found for verification.")
-                return redirect('verification_pending')
+            if not account:
+                messages.error(request, f"{model_type.title()} not found for verification.")
+                return redirect("verification_pending")
 
-            stored = cache.get(f"phone_otp_{user.pk}")
+            stored = cache.get(f"{model_type}_otp_{account.pk}")
+          
             if stored and otp == stored:
-                user.profile.is_verified = True  
-                user.profile.save()
-                cache.delete(f"phone_otp_{user.pk}")
-                messages.success(request, "Your account has been verified.")
-                return redirect('login')
+                if model_type == "user":
+                    account.profile.is_verified = True
+                    account.profile.save()
+                else:  # clan
+                    account.is_verified = True
+                    account.save()
+
+                cache.delete(f"{model_type}_otp_{account.pk}")
+                messages.success(request, f"Your {model_type} account has been verified.")
+                return redirect("login")
             else:
                 messages.error(request, "Invalid OTP.")
-                return redirect('verification_pending')
+                return redirect("verification_pending")
 
         except Exception as e:
-            ErrorHandler().handle(e, context=f"OTP verification for identifier: {identifier}")
+            ErrorHandler().handle(e, context=f"OTP verification for {identifier} ({model_type})")
             messages.error(request, "Something went wrong during verification. Try again.")
-            return redirect('verification_pending')
+            return redirect("verification_pending")
 
-    return redirect('login')
-
-def verify_email(request, uidb64, token):
+    return redirect("login")
+def verify_email(request, model_type, uidb64, token):
     try:
         uid = urlsafe_base64_decode(uidb64).decode()
-        user = None
-        clan = None
+        account = None
 
-        try:
-            user = User.objects.get(pk=uid)
-        except User.DoesNotExist:
-            try:
-                clan = Clans.objects.get(pk=uid)
-            except Clans.DoesNotExist:
-                pass
-
-        account = user or clan
+        if model_type == "user":
+            account = User.objects.filter(pk=uid).first()
+        elif model_type == "clan":
+            account = Clans.objects.filter(pk=uid).first()
         if not account:
             messages.error(request, "Invalid verification link.")
             return render(request, "users/verification_failed.html")
+
         if default_token_generator.check_token(account, token):
-            if user:
-                user.profile.is_verified = True
-                user.profile.save()
+            if model_type == "user":
+                account.profile.is_verified = True
+                account.profile.save()
             else:
-                clan.is_verified = True  # assumes Clans has an is_verified field
-                clan.save()
+                account.is_verified = True
+                account.save()
             return render(request, "users/verification_success.html")
         else:
             return render(request, "users/verification_failed.html")
 
-
     except Exception as e:
-        ErrorHandler().handle(e, context=f"Email verification attempt for UID: {uidb64}")
-        messages.error(request, "Verification failed due to a server error.")
+        ErrorHandler().handle(e, context=f"Email verification attempt failed for {model_type}:{uidb64}")
         return render(request, "users/verification_failed.html")
-  
+
 def verification_pending(request):
     identifier = request.session.get('pending_verification')
     if not identifier:
@@ -465,21 +472,21 @@ def resend_verification(request):
         Q(phone__iexact=identifier)
         ).first()
         account = clan or user
+        model = 'user' if user else 'clan'
         if not account:
             messages.error(request, "No account found for verification.")
             return redirect('login')
 
-        is_verified = (
-            account.profile.is_verified if user
-            else getattr(account, 'is_verified', False)  # assumes `is_verified` on Clans
-        )
-
+        if model == "user":
+            is_verified = account.profile.is_verified
+        else:  # clan
+            is_verified = getattr(account, "is_verified", False)
         if is_verified:
             messages.info(request, "Your account is already verified.")
             return redirect('login')
 
         try:
-            Thread(target=verify.send_verification, args=(account, method)).start()
+            Thread(target=verify.send_verification, kwargs={"account": account,'model_type':model,'method':'email'}).start()
             messages.success(request, f"Verification sent via {method}.")
         except Exception as e:
             ErrorHandler().handle(e, context=f"Resend verification failed for {getattr(account, 'username', getattr(account, 'clan_name', 'Unknown'))}")

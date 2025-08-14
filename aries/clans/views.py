@@ -308,12 +308,16 @@ def clan_register(request):
                     request.user.profile.clan = clan
                     clan.set_password(form.cleaned_data['password'])
                     request.session['pending_verification'] = clan.email or clan.clan_name
+                    request.session['pending_model'] = 'clan'  # Store model type for verification
                     clan.save()
                      # Link user's profile to this clan
                     profile = request.user.profile
                     profile.clan = clan
                     profile.save()
-                    Thread(target=verify.send_verification, args=(clan,)).start()
+                    Thread(target=verify.send_verification, kwargs={"account": clan, 
+                                                                    "model_type": "clan", 
+                                                                    "method": "email"
+                                                                    }).start()
 
                 messages.info(request, "We've sent you a verification email.")
                 return redirect('verification_pending')
@@ -464,7 +468,7 @@ def add_remove_players(request):
 @clan_login_required
 def edit_clan_profile(request):
     clan_id = request.session.get('clan_id')
-    print(clan_id)
+  
     clan = Clans.objects.get(id=clan_id)
     try:
         if request.method == "POST":

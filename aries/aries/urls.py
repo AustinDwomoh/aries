@@ -35,7 +35,7 @@ urlpatterns = [
     path('tournaments/', include('tournaments.urls')),  # Tournament-related functionality
 
     # Email verification flow URLs with tokens and OTP verification
-    path("verify/<uidb64>/<token>/", user_views.verify_email, name="verify_email"),
+    path("verify/<str:model_type>/<uidb64>/<token>/", user_views.verify_email, name="verify_email"),
     path("verify-otp/", user_views.verify_otp, name="verify_otp"),
     path('verify/pending/', user_views.verification_pending, name='verification_pending'),
     path('verify/resend/', user_views.resend_verification, name='resend_verification'),
