@@ -4,8 +4,8 @@ from django.contrib.auth.models import User
 from clans.models import Clans
 from scripts.error_handle import ErrorHandler
 from scripts.follow import *
-
-
+from django.conf import settings
+import os
 def home(request):
     """
     Renders the home page of the website.
@@ -76,5 +76,9 @@ def follow_list_view(request, ftype, model, profile_id):
     }
     return render(request, "Home/follow_list.html", context)
 
-
+def ads_txt(request):
+    file_path = os.path.join(settings.BASE_DIR, 'ads.txt')
+    with open(file_path, 'r') as file:
+        content = file.read()
+    return HttpResponse(content, content_type='text/plain')
     
