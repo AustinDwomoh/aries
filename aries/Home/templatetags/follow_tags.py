@@ -30,7 +30,7 @@ def render_follow_summary(context,account, followers, following):
         rank = account.profile.stats.rank
     elif account.__class__.__name__.lower() == "clans":
         model_name = 'clan'
-        rank = account.stat.ranking
+        rank = account.stat.rank
     return {
         'request': context['request'],
         "profile_id": account.id,

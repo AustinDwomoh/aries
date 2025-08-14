@@ -7,7 +7,8 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
-from aries.settings import SITE_DOMAIN,SITE_PROTOCOL,ErrorHandler
+from django.conf import settings
+from scripts.error_handle import ErrorHandler
 from django.contrib.auth.backends import BaseBackend
 from clans.models import Clans
 from . import email_handle
@@ -15,7 +16,21 @@ from . import email_handle
 UserModel = get_user_model()
 
 class MultiFieldAuthBackend(ModelBackend):
-    def authenticate(self, request, username=None, password=None, **kwargs):
+    """
+    Custom auth backend for UserModel allowing login by username, email, or phone.
+    Blocks admin login via this backend.
+    Verifies password and email verification status.
+    Returns user or error code.
+    """
+    def custom_authenticate(self, request, username=None, password=None, **kwargs):
+        """
+        Authenticate a User by username, email, or phone number.
+
+        - Blocks authentication attempts from the Django admin login page.
+        - Searches UserModel for a user matching the given username/email/phone.
+        - Checks the provided password against the hashed password.
+        - Returns the user object if authenticated and verified; otherwise returns None with an error code.
+        """
         if request and request.path.startswith('/admin/login/'):
             return None, 'admin_login_blocked'
         try:
@@ -33,7 +48,21 @@ class MultiFieldAuthBackend(ModelBackend):
         return None, 'invalid'
  
 class ClanBackend(BaseBackend):
-    def authenticate(self, request, username=None, password=None, **kwargs):
+    """
+    Custom auth backend for Clan model.
+    Allows login by clan_name, email, or phone.
+    Checks password equality (plain text?).
+    Verifies clan verification status.
+    Returns clan or error code.
+    """
+    def custom_authenticate(self, request, username=None, password=None, **kwargs):
+        """
+        Authenticate a Clan by clan_name, email, or phone number.
+
+        - Searches Clans model for a clan matching the given username/email/phone.
+        - Compares the provided password directly (no hashing) with clan.password — **insecure, should be hashed**.
+        - Returns the clan object if authenticated and verified; otherwise returns None with an error code.
+        """
         try:
             clan = Clans.objects.filter(
                 Q(clan_name=username) | Q(email=username) | Q(phone=username)
@@ -55,15 +84,21 @@ class ClanBackend(BaseBackend):
             return None
     
 def generate_otp():
+    """Generates a 6-digit numeric OTP as a string."""
     return str(random.randint(100000, 999999))
       
 def send_sms(to_number, message):
-    #logic for sms but gave up
+    """Stub for SMS sending functionality (not implemented)."""
     print(f"Sending SMS to {to_number}: {message}")
-    
 
 
 def send_verification(user, method='email'):
+    """
+    Sends verification OTP via email.
+    Caches OTP for 5 minutes keyed by user ID.
+    Sends email with verification link and OTP asynchronously.
+    Handles both UserModel and Clan instances.
+    """
     try:
         otp = str(generate_otp())
         cache.set(f"phone_otp_{user.pk}", otp, timeout=300)
@@ -71,7 +106,7 @@ def send_verification(user, method='email'):
         if method == 'email':
             uid = urlsafe_base64_encode(force_bytes(user.pk))
             token = default_token_generator.make_token(user)
-            email_link = f"{SITE_PROTOCOL}://{SITE_DOMAIN}/verify/{uid}/{token}/"
+            email_link = f"{settings.SITE_PROTOCOL}://{settings.SITE_DOMAIN}/verify/{uid}/{token}/"
             name = user.username if isinstance(user, UserModel) else user.clan_name
             html_content = render_to_string("users/verify_email.html", {
                 "name":name,

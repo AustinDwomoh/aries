@@ -2,24 +2,57 @@ from django.shortcuts import render, redirect, get_object_or_404
 from .models import Clans, ClanStats,ClanJoinRequest
 from django.utils.safestring import mark_safe
 import markdown
-from users.views import follow_toggle_view
 from tournaments.models import ClanTournament
 from django.contrib.auth.models import User
 from users.models import Profile
 from scripts.follow import *
+from django.views.decorators.http import require_POST
 from scripts import verify
 from django.contrib.auth.decorators import login_required
-from .forms import ClanRegistrationForm,AddPlayerToClanForm
+from .forms import ClanRegistrationForm,AddPlayerToClanForm,ClanSocialLinkFormSet,ClanBasicInfoForm,ClanContactForm,ClanMediaForm,ClanRecruitmentForm
 from django.http import JsonResponse
 from django.db.models import Q
-from aries.settings import ErrorHandler
+from scripts.error_handle import ErrorHandler
 from django.contrib import messages
 from django.db import transaction
 from threading import Thread
+
+def clan_login_required(view_func):
+    """
+    Custom decorator to ensure that only logged-in clans can access certain views.
+    """
+    def wrapper(request, *args, **kwargs):
+        if 'clan_id' not in request.session:  
+            return redirect('login')  
+        return view_func(request, *args, **kwargs)
+    return wrapper
+
 @login_required
 def clans(request):
     """
-    Displays a list of clans, sorted by their Elo rating. Supports searching by clan name, ranking, country, or primary game.
+        Displays a list of verified clans, optionally filtered by a search query.
+        The clans are sorted by their Elo rating (presumably handled elsewhere, maybe in template or queryset).
+        Users who are logged in as a clan (session 'is_clan') will have their own clan excluded from the list
+        to avoid showing themselves.
+
+        Supports searching clans by:
+        - clan_name (case-insensitive partial match)
+        - ranking (accessed via related 'stat' model)
+        - country (case-insensitive partial match)
+        - primary_game (case-insensitive partial match)
+
+        If no clans match the search, a 'no_results' flag is set for the template.
+
+        Error handling is done by catching any exceptions and passing them to a custom ErrorHandler.
+
+        Args:
+            request: Django HttpRequest object
+
+        Returns:
+            HttpResponse with rendered 'clans/clans.html' template and context including:
+            - query: the search term (empty string if none)
+            - clans: queryset of matching Clan objects
+            - no_results: boolean indicating if the query returned no clans
     """
     query = request.GET.get('q', '')
     clans = Clans.objects.none()  
@@ -35,7 +68,7 @@ def clans(request):
         if query:
             clans = clans.filter(
                 Q(clan_name__icontains=query) |
-                Q(stat__ranking__icontains=query) |
+                Q(stat__rank__icontains=query) |
                 Q(country__icontains=query) |
                 Q(primary_game__icontains=query)
             ).distinct()
@@ -51,10 +84,28 @@ def clans(request):
         'no_results': no_results
     })
 
-
 @login_required
 def request_to_join_clan(request, clan_id):
-    """Allows a player to request to join a clan."""
+    """
+    Allows a logged-in player (user) to request joining a specific clan.
+    
+    Process:
+    - Checks if the clan exists (404 if not).
+    - Prevents duplicate pending requests from the same player to the same clan.
+    - Creates a new join request with status 'pending'.
+    - Returns JSON responses with success or error messages.
+    - Uses error handling to catch unexpected issues and log them.
+    
+    Args:
+        request: Django HttpRequest object (must be authenticated user).
+        clan_id: Integer ID of the clan to join.
+    
+    Returns:
+        JsonResponse with:
+        - 200 status and confirmation message if request is successfully created.
+        - 400 status and message if a pending request already exists.
+        - 500 status and generic error message if something unexpected happens.
+    """
     try:
         clan = get_object_or_404(Clans, id=clan_id)
 
@@ -69,10 +120,31 @@ def request_to_join_clan(request, clan_id):
         return JsonResponse({"message": "An error occurred while processing your request."}, status=500)
 
 @login_required
+
 def leave_clan(request,clan_id):
-    """Allow players to leave clans"""
+    """
+    Allows a logged-in player to leave their current clan.
+
+    Process:
+    - Fetches the user's profile.
+    - Removes the clan association by setting profile.clan to None.
+    - Saves the updated profile.
+    - Adds a success message on successful operation.
+    - On failure, logs the error and adds an error message.
+    - Redirects the user back to the clan home page.
+
+    Args:
+        request: Django HttpRequest (user must be logged in).
+        clan_id: ID of the clan to leave 
+
+    Returns:
+        HttpResponseRedirect to 'clan_home'.
+    """
     try:
         profile = User.objects.get(username=request.user.username).profile
+        if not profile.clan or profile.clan.id != clan_id:
+            messages.error(request, "You are not a member of this clan.")
+            return redirect("clan_home")
         profile.clan = None
         profile.save()
         messages.success(request, 'You have successfully left the clan.')
@@ -81,9 +153,33 @@ def leave_clan(request,clan_id):
         messages.error(request, 'An error occurred while trying to leave the clan.')
     return redirect("clan_home")
 
+@login_required
+@clan_login_required
+@require_POST
 def change_recruitment_state(request,clan_id):
+    """
+    Toggles the recruitment state of a clan, switching it between open and closed.
+
+    Access Control:
+    Only the user who created the clan can toggle the recruitment state.
+
+    Workflow:
+    - Fetch clan by ID, 404 if not found.
+    - Verify request.user is the creator of the clan.
+    - Flip the 'is_recruiting' boolean.
+    - Save changes.
+    - Provide success or error feedback through Django messages.
+    - Redirect back to the clan dashboard.
+
+    Args:
+        request: HttpRequest object representing the current request.
+        clan_id: Integer primary key for the target clan.
+
+    Returns:
+        HttpResponseRedirect to the clan dashboard view.
+    """
     try:
-        clan = get_object_or_404(Clans, id=clan_id)
+        clan = get_object_or_404(Clans, id=clan_id)                                                                                                          
         clan.is_recruiting = not clan.is_recruiting
         clan.save()
         messages.success(request,'Recruitment stage changed')
@@ -91,8 +187,24 @@ def change_recruitment_state(request,clan_id):
         ErrorHandler().handle(e,context='Failed to change state')
         messages.error(request,'An error occurred while trying to change state')
     return redirect('clan_dashboard')
-    
+ 
+@login_required
+@clan_login_required
+@require_POST   
 def change_description(request, clan_id):
+    """
+    Updates the description of a clan.
+    
+    Only accepts POST requests and requires the user to be the clan creator.
+    
+
+    Args:
+        request: HttpRequest object with POST data.
+        clan_id: ID of the clan to update.
+
+    Returns:
+        JsonResponse with success or error message.
+    """
     try:
         clan = get_object_or_404(Clans, id=clan_id)
 
@@ -112,9 +224,17 @@ def change_description(request, clan_id):
         ErrorHandler().handle(e, context='Description Changed')
         return JsonResponse({"error": "An unexpected error occurred."}, status=500)
 
+@login_required
 def clan_view(request, clan_id):
     """
-    Displays detailed information using the clan_id about a specific clan, including its stats, members, and recent match results.
+    Display detailed information about a clan including stats, members, tournaments, and recent matches.
+
+    Args:
+        request: HttpRequest object.
+        clan_id: ID of the clan to display.
+
+    Returns:
+        Rendered clan detail page or error page.
     """
     try:
         clan = get_object_or_404(Clans, id=clan_id)
@@ -167,21 +287,28 @@ def clan_view(request, clan_id):
             'error': "Something went wrong while loading the clan view."
         })
 
-@login_required#ensures only users with accounts can create clubs needed for .created_by
+@login_required
 def clan_register(request):
     """
-    Handles clan registration. Validates the form and creates a new clan if the form is valid.
+    Handles clan registration.
+    
+    - Only authenticated users can create clans (via @login_required).
+    - Accepts POST requests with ClanRegistrationForm data.
+    - Creates a Clan object, links it to the user's profile, and sends verification.
     """
     if request.method == 'POST':
         form = ClanRegistrationForm(request.POST,request.FILES)  
         if form.is_valid():
             try:
                 with transaction.atomic():
+                    # Ensures DB consistency
+                    # Create clan but don't commit to DB yet
                     clan = form.save(commit=False)
                     clan.created_by = request.user
                     request.user.profile.clan = clan
                     clan.set_password(form.cleaned_data['password'])
                     clan.save()
+                     # Link user's profile to this clan
                     profile = request.user.profile
                     profile.clan = clan
                     profile.save()
@@ -196,23 +323,18 @@ def clan_register(request):
         form = ClanRegistrationForm()  
     return render(request, 'clans/create_clan.html', {'form': form})
 
-def clan_login_required(view_func):
-    """
-    Custom decorator to ensure that only logged-in clans can access certain views.
-    """
-    def wrapper(request, *args, **kwargs):
-        if 'clan_id' not in request.session:  
-            return redirect('login')  
-        return view_func(request, *args, **kwargs)
-    return wrapper
 
 @clan_login_required
 def clan_dashboard(request):
     """
-    Displays the dashboard for logged-in clans.
+    Renders the dashboard for the logged-in clan.
+
+    Retrieves clan details, statistics, members, tournaments, join requests,
+    recent match data, and follower counts. Supports optional search filtering 
+    for match history. Redirects to login if no active clan session exists.
     """
     try:
-        clan_id = request.session.get('clan_id')
+        clan_id = request.session.get('clan_id') #Gotten when an account logs in
         if not clan_id:
             messages.error(request, "Clan session missing.")
             return redirect("login")
@@ -272,10 +394,13 @@ def clan_dashboard(request):
         messages.error(request, "Something went wrong while loading your dashboard.")
         return redirect("login")
 
+@clan_login_required
+@require_POST
 def approve_reject(request):
     """
-    Approves or rejects a pending clan join request.
-    Only clan admins should have access to this.
+    Handles approval or rejection of a pending clan join request.
+    Only accessible by clan admins. Returns a JSON response with the outcome
+    or an error message if the request fails validation.
     """
     try:
         request_id = request.POST.get("request_id")
@@ -285,8 +410,8 @@ def approve_reject(request):
             return JsonResponse({"error": "Missing or invalid request parameters."}, status=400)
 
         join_request = get_object_or_404(ClanJoinRequest, id=request_id)
-        
-        clan = join_request.clan
+        #not needed
+        #clan = join_request.clan
 
         if action == "approve":
             join_request.approve()
@@ -300,11 +425,16 @@ def approve_reject(request):
         ErrorHandler().handle(e, context="Clan join approval/rejection")
         return JsonResponse({"error": "An internal error occurred."}, status=500)
 
+@clan_login_required
+@require_POST
 def add_remove_players(request):
+    """
+    Adds or removes players from the current clan.
+    Only the clan creator can perform these actions.
+    Returns a JSON message with the result or an error.
+    """
     try:
         clan = get_object_or_404(Clans, id=request.session['clan_id'])
-        if request.user != clan.created_by:
-            return JsonResponse({"error": "You are not authorized to modify this clan."}, status=403)
 
         form = AddPlayerToClanForm(request.POST or None, clan=clan)
         if request.method == "POST" and form.is_valid():
@@ -330,6 +460,71 @@ def add_remove_players(request):
         ErrorHandler().handle(e, context='Add/Remove Player in Clan')
         return JsonResponse({"error": "Something went wrong while managing the clan members."}, status=500)
 
+@clan_login_required
+def edit_clan_profile(request):
+    clan_id = request.session.get('clan_id')
+    print(clan_id)
+    clan = Clans.objects.get(id=clan_id)
+    try:
+        if request.method == "POST":
+            basic_form = ClanBasicInfoForm(request.POST, instance=clan)
+            contact_form = ClanContactForm(request.POST, instance=clan)
+            media_form = ClanMediaForm(request.POST, request.FILES, instance=clan)
+            recruitment_form = ClanRecruitmentForm(request.POST, instance=clan)
+            social_formset = ClanSocialLinkFormSet(request.POST, instance=clan)
+
+            with transaction.atomic():
+                if basic_form.is_valid():
+                    basic_form.save()
+                if contact_form.is_valid():
+                    contact_form.save()
+                if media_form.is_valid():
+                    media_form.save()
+                if recruitment_form.is_valid():
+                    recruitment_form.save()
+                if social_formset.is_valid():
+                    social_formset.save()
+
+            
+            forms_status = [
+                basic_form.is_valid(),
+                contact_form.is_valid(),
+                media_form.is_valid(),
+                recruitment_form.is_valid(),
+                social_formset.is_valid()
+            ]
+
+            if any(forms_status):
+                messages.success(request, "Your changes have been saved.")
+                return redirect('edit_clan_profile')
+            else:
+                messages.error(request, "No changes saved. Please fix the errors.")
+                return redirect('clan-home')
+
+        else:
+            basic_form = ClanBasicInfoForm(instance=clan)
+            contact_form = ClanContactForm(instance=clan)
+            media_form = ClanMediaForm(instance=clan)
+            recruitment_form = ClanRecruitmentForm(instance=clan)
+            social_formset = ClanSocialLinkFormSet(instance=clan)
+
+    except Exception as e:
+        messages.error(request, "There was an error updating your clan profile.")
+        ErrorHandler().handle(e, context=f"edit_clan_profile view for clan {clan.clan_name}")
+        basic_form = ClanBasicInfoForm(instance=clan)
+        contact_form = ClanContactForm(instance=clan)
+        media_form = ClanMediaForm(instance=clan)
+        recruitment_form = ClanRecruitmentForm(instance=clan)
+        social_formset = ClanSocialLinkFormSet(instance=clan)
+
+    return render(request, 'clans/edit_clan_profile.html', {
+        'basic_form': basic_form,
+        'contact_form': contact_form,
+        'media_form': media_form,
+        'recruitment_form': recruitment_form,
+        'social_formset': social_formset,
+        
+    })
 
  
 

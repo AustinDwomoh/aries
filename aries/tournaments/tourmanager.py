@@ -1,20 +1,27 @@
 import random,string,secrets
+from django.http import Http404
 from django.utils import timezone
 from typing import Dict
-from aries.settings import ErrorHandler
+from scripts.error_handle import ErrorHandler
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.models import User
-from django.core.exceptions import ObjectDoesNotExist
-from clans.models import Clans,ClanStats
+from clans.models import Clans
+
 class TourManager:
-    def __init__(self, json_data, teams_names, tournament_type,home_or_away,teams_advance=None,tour_name="Not specifed"):
+    """ 
+    TourManager class for managing tournament fixtures and results.
+    """
+    def __init__(self, json_data, teams_names, tournament_type, home_or_away, teams_advance=None, tour_name="Not specified"):
         """
         Initialize the TourManager.
 
         Args:
-            json_data (dict): Data storage for matches.
-            teams_names (list): List of team names.
-            tournament_type (str): Type of tournament ('league', 'cup', 'league_knockout', 'groups_knockout').
+            json_data (dict): Storage for match data, a dictionary with match details.
+            teams_names (list): List of team names participating in the tournament.
+            tournament_type (str): Type of tournament, e.g., 'league', 'cup', 'groups_knockout'.
+            home_or_away (str): A flag for determining if matches are home/away.
+            teams_advance (int, optional): Number of teams that advance to next round (if applicable).
+            tour_name (str, optional): Name of the tournament or tour. Defaults to "Not specified".
         """
         self.match_data = json_data
         self.teams = teams_names
@@ -22,12 +29,15 @@ class TourManager:
         self.teams_to_advance = teams_advance
         self.tour_name = tour_name
         self.home_or_away= home_or_away
-# ============================================================================ #
-#                                    leagues                                   #
-# ============================================================================ #
+    # ============================================================================ #
+    #                                    leagues                                   #
+    # ============================================================================ #
 
     def make_league(self):
-        """ Creates a round-robin structure for leagues. """
+        """ 
+        Generates a round-robin schedule for a league tournament. It creates fixtures where each team plays every other team once (or twice if home and away is enabled), handles odd numbers of teams by adding a bye, and initializes a standings table for tracking results. Returns a dictionary containing all rounds’ fixtures and the empty league table.
+        """
+        round_robin = {}
         try:
             teams = self.teams[:]
             if not teams or len(teams) < 2:
@@ -126,17 +136,17 @@ class TourManager:
                 goals_b = result["team_b_goals"]
                 match = next((m for m in round_matches if m["team_a"] == team_a and m["team_b"] == team_b), None)
                 if match and match['status'] !="complete":
-                    self.process_match(team_a,team_b,goals_a,goals_b,match)
+                    self.finalize_match_result(team_a,team_b,goals_a,goals_b,match)
             
         except Exception as e:
             ErrorHandler().handle(e,context=f"Failed to update league round {round_number} in {self.tour_name}")
         finally:
             return self.match_data
   
-# ============================================================================ #
-#                                   knockouts                                  #
-# ============================================================================ #
-   
+    # ============================================================================ #
+    #                                   knockouts                                  #
+    # ============================================================================ #
+    
     def make_knockout(self, teams=None) -> Dict:
         """
         Creates a knockout structure for tournaments with optional home/away legs.
@@ -313,10 +323,10 @@ class TourManager:
                         match["aggregate_team_b_goals"] = total_b
                         team_a_name = leg["team_a"]["name"]
                         team_b_name = leg["team_b"]["name"]
-                        self.process_match(team_a_name, team_b_name,total_a,total_b,match)
+                        self.finalize_match_result(team_a_name, team_b_name,total_a,total_b,match)
                 else:
                     if match["status"] != "complete":
-                        self.process_match(team_a,team_b,goals_a,goals_b,match)
+                        self.finalize_match_result(team_a,team_b,goals_a,goals_b,match)
 
             all_matches_complete = all(m.get("status") == "complete" for m in current_round["matches"])
 
@@ -342,13 +352,13 @@ class TourManager:
                                     if source_match:
                                         participant["name"] = source_match["winner"]
             
-        except ErrorHandler as e:
+        except Exception as e:
            ErrorHandler().handle(e,context=f'failed to update knouckout for {round_number} in {self.tour_name}')
         finally:
             return self.match_data
     
-#                                cup with groups                               #
-# ============================================================================ #
+    #                                cup with groups                               #
+    # ============================================================================ #
     def make_groups_stages(self) -> Dict:
         """
         Organizes teams into group stages and sets up initial fixtures for each group
@@ -425,7 +435,7 @@ class TourManager:
                     if match and  match['status'] != "complete":
                         match["team_a_goals"] = team_a_goals
                         match["team_b_goals"] = team_b_goals
-                        self.process_match(team_a,team_b,team_a_goals,team_b_goals,match,group_data=group_data)
+                        self.finalize_match_result(team_a,team_b,team_a_goals,team_b_goals,match,group_data=group_data)
             all_matches_complete = True
             for groups in self.match_data["group_stages"].values():
                 for round in groups["fixtures"].values():
@@ -439,7 +449,7 @@ class TourManager:
                 teams_to_advance = self.teams_to_advance if self.teams_to_advance else 2
                 for groups in self.match_data["group_stages"].values():
                     rankings = list(groups["table"].keys())
-                    next_round_players.extend(rankings[:teams_to_advance])
+                    next_round_players.extend(rankings[:teams_to_advance])#teams are sorted before hand
                 self.make_knockout(next_round_players)
         except Exception as e:
             ErrorHandler().handle(e,context=f"Failed to update the group stage for {round_number} in {self.tour_name}") 
@@ -447,7 +457,19 @@ class TourManager:
             return self.match_data
     
     def update_group_knouckout_table(self, team, goals_scored, goals_conceded, result_type,group_data):
-        """Update the league table for a team based on match result."""
+        """
+        Update the group knockout table for a team based on match result.
+
+        Args:
+            team (str): Team name.
+            goals_scored (int): Goals scored by the team.
+            goals_conceded (int): Goals conceded by the team.
+            group_data (dict): Group data containing the table.
+            result_type (str): "win", "draw", or "loss".
+            
+        Returns:
+            None: Updates the group table in place.
+        """
         try:
             table = group_data["table"]
             table[team]["goals_scored"] += goals_scored
@@ -476,7 +498,20 @@ class TourManager:
             ErrorHandler().handle(e,context=f"Failed to update grp_ko for {self.tour_name}")
      
     def update_knockout_stage(self, round_number, match_results):
-        """Updates knockout matches with results and progresses to the next round."""
+        """
+        Updates knockout matches with results and progresses to the next round.
+
+        Args:
+            round_number (int): The round number to update (1-based index).
+            match_results (List[Dict]): List of result dictionaries, each containing:
+                - "team_a" (str): Name of team A.
+                - "team_b" (str): Name of team B.
+                - "team_a_goals" (int): Goals scored by team A.
+                - "team_b_goals" (int): Goals scored by team B.
+
+        Returns:
+            dict: Updated match_data with knockout fixtures and table info.
+        """
         try:
             rounds = self.match_data["knock_outs"].get("rounds", [])
             current_round = next(
@@ -498,7 +533,7 @@ class TourManager:
                 if match['status'] !="complete":
                     match["team_a_goals"] = goals_a
                     match["team_b_goals"] = goals_b
-                    self.process_match(team_a,team_b,goals_a,goals_b,match)
+                    self.finalize_match_result(team_a,team_b,goals_a,goals_b,match)
                     
                     for team, scored, conceded in [
                         (team_a, match["team_a_goals"], match["team_b_goals"]),
@@ -546,11 +581,19 @@ class TourManager:
         finally:
             return self.match_data
 
-# ============================================================================ #
-#                                Init for tours                                #
-# ============================================================================ #
+    # ============================================================================ #
+    #                                Init for tours                                #
+    # ============================================================================ #
     def create_tournament(self):
-        """Creates the specified tournament type."""
+        """
+        Creates the specified tournament type.
+
+        Returns:
+            dict: The tournament data structure.
+
+        Raises:
+            ValueError: If the tournament type is unknown.
+        """
         if self.tournament_type == "league":
             return self.make_league()
         elif self.tournament_type == "cup":
@@ -560,51 +603,75 @@ class TourManager:
         else:
             raise ValueError(f"Unknown tournament type: {self.tournament_type}")
         
-# ============================================================================ #
-#                       stat update for clans and players                      #
-# ============================================================================ #
-    def store_records(self, winner, loser, winner_goals, loser_goals, result_type="win"):
+        
+    # ============================================================================ #
+    #                       stat update for clans and players                      #
+    # ============================================================================ #
+    def get_player_stats(self, winner_name, loser_name):
+        """Fetch PlayerStats instances for both winner and loser.
+        Args:
+            winner_name (str): Username of the winner.
+            loser_name (str): Username of the loser.
+
+        Returns:
+            tuple: (winner_stats, loser_stats) if found, otherwise (None, None).
+        """
+        try:
+            winner = User.objects.get(username__iexact=winner_name)
+            loser = User.objects.get(username__iexact=loser_name)
+            if winner and loser:
+                winner_stats = winner.profile.stats
+                loser_stats = loser.profile.stats
+                if winner_stats and loser_stats:
+                    return winner_stats, loser_stats
+        except Http404:
+            return None, None
+        except Exception as e:
+            ErrorHandler().handle(e,context="Failed to get player stats")
+            return None, None
+    
+    def get_clan_stats(self,winner_name, loser_name):
+        """Fetch ClanStats instances for both winner and loser.
+        Args:
+        winner_name (str): Username of the winner.
+        loser_name (str): Username of the loser.
+
+        Returns:
+            tuple: (winner_stats, loser_stats) if found, otherwise (None, None).
+        """
+        try:
+            winner = get_object_or_404(Clans, clan_name=winner_name)
+            loser = get_object_or_404(Clans, clan_name=loser_name)
+            if winner and loser:
+                return winner.stat, loser.stat
+        except Http404: #fails silently if clan not found might be a user
+            return None, None
+        except Exception as e:
+            ErrorHandler().handle(e,context="Failed to get clan stats")
+            return None, None
+        
+    def store_records(self, winner_name, loser_name, winner_goals, loser_goals, result_type):
         """
         Update and store  records for the match result.
 
         Args:
-            winner (Profile): The profile of the winning team.
-            loser (Profile): The profile of the losing team.
+            winner_name (str): The profile of the winning team.
+            loser_name (str): The profile of the losing team.
             winner_goals (int): Goals scored by the winner.
             loser_goals (int): Goals scored by the loser.
             result_type (str): Type of result ('win', 'draw').
         """
-        def get_player_stats(winner, loser):
-            """Fetch PlayerStats instances for both winner and loser."""
-            try:
-                winner = User.objects.filter(username__iexact=winner).first()
-                loser = User.objects.filter(username__iexact=loser).first()
-                if winner and loser:
-                    loser_stats = loser.profile.stats
-                    winner_stats = winner.profile.stats 
-                    return winner_stats, loser_stats
-            except ObjectDoesNotExist:
-                return None, None
-            return None, None 
 
-        def get_clan_stats(winner, loser):
-            """Fetch ClanStats instances for both winner and loser."""
-            try:
-                winner = get_object_or_404(Clans, clan_name=winner)
-                loser = get_object_or_404(Clans, clan_name=loser)
-                if winner and loser:
-                    loser_stats = loser.stat
-                    winner_stats = winner.stat
-                    return winner_stats, loser_stats
-            except ObjectDoesNotExist:
-                return None, None
-            return None, None 
-        winner_stats, loser_stats = get_player_stats(winner, loser)
-        stats_used = "player_stats" 
+        
+        winner_stats, loser_stats = self.get_player_stats(winner_name, loser_name) 
 
         if winner_stats is None or loser_stats is None:
-            winner_stats, loser_stats = get_clan_stats(winner, loser)
-            stats_used = "clan_stats"
+            winner_stats, loser_stats = self.get_clan_stats(winner_name, loser_name)
+        
+
+        if winner_stats is None or loser_stats is None:
+            ErrorHandler().handle(Exception("Could not find stats for winner or loser"), context="Failed to store records")
+            return
 
         winner_data = winner_stats.load_match_data_from_file()
         loser_data = loser_stats.load_match_data_from_file()
@@ -617,14 +684,14 @@ class TourManager:
         winner_entry = {
             "date": timezone.now().strftime("%Y-%m-%d %H:%M:%S"),
             "tour_name":self.tour_name, 
-            "opponent": loser,  
+            "opponent": loser_name,  
             "result": winner_result, 
             "score": f"{winner_goals}:{loser_goals}"
         }
         loser_entry = {
             "date": timezone.now().strftime("%Y-%m-%d %H:%M:%S"),
             "tour_name":self.tour_name,   
-            "opponent": winner,  
+            "opponent": winner_name,  
             "result": loser_result, 
             "score":f"{loser_goals}:{winner_goals}"
         }
@@ -641,6 +708,63 @@ class TourManager:
         winner_stats.save_match_data_to_file()
         loser_stats.save_match_data_to_file()
 
+    def get_player_elo_and_instance(self,name):
+        """
+        Fetch the Elo rating and stats instance for a player by username.
+
+        Args:
+            name (str): Username of the player.
+
+        Returns:
+            tuple: (elo_rating (float or int), stats instance) or (None, None) if not found.
+        """
+        try:
+            player = User.objects.get(username__iexact=name)
+            instance = player.profile.stats
+            return instance.elo_rating, instance    
+        except Exception as e:
+            ErrorHandler().handle(e,context="Failed to get player elo")
+            return None, None
+
+    def get_clan_elo_and_instance(self,name):
+        """
+        Fetch the Elo rating and stats instance for a clan by clan_name.
+
+        Args:
+            name (str): Clan name.
+
+        Returns:
+            tuple: (elo_rating (float or int), stats instance) or (None, None) if not found.
+        """
+        try:
+            clan = Clans.objects.get(clan_name=name)
+            instance = clan.stat
+            return instance.elo_rating, instance
+        except Clans.DoesNotExist as e:
+            ErrorHandler().handle(e, context="Failed to get clan elo")
+            return None, None
+        
+    def update_elo(self,winner_elo, loser_elo, k):
+        """
+        Calculate new Elo ratings for winner and loser.
+
+        Args:
+            winner_elo (float): Current Elo rating of the winner.
+            loser_elo (float): Current Elo rating of the loser.
+            k (float): The K-factor (maximum rating adjustment).
+
+        Returns:
+            tuple: (winner_new_elo, loser_new_elo) or (None, None) if error occurs.
+        """
+        try:
+            expected_winner = 1 / (1 + 10 ** ((loser_elo - winner_elo) / 400))
+            winner_new_elo = winner_elo + k * (1 - expected_winner)
+            loser_new_elo = loser_elo - k * (1 - expected_winner)
+            return winner_new_elo, loser_new_elo
+        except Exception as e:
+            ErrorHandler().handle(e, context="Failed to update Elo ratings")
+            return None, None
+    
     def update_elo_for_match(self,winner_name, loser_name, k=32):
         """
         Update Elo ratings for a match.
@@ -648,107 +772,89 @@ class TourManager:
         Args:
             winner_name (str): Name of the winner (player or clan).
             loser_name (str): Name of the loser (player or clan).
-            PlayerStatsModel: Django model for player stats.
-            ClanStatsModel: Django model for clan stats.
             k (int): The K-factor for Elo calculation (default: 32).
 
         Returns:
             None: Updates the database directly.
         """
-        def get_player_elo_and_instance(name):
-            """Fetch Elo rating and instance from a given player model."""
-            #player = User.objects.get(username=name)
-            player = User.objects.filter(username__iexact=name).first()
-            if player:
-                instance = player.profile.stats
-                return instance.elo_rating, instance
-            else:
-                return None, None
-
-        def get_clan_elo_and_instance(name):
-            """Fetch Elo rating and instance from the Clans model."""
-            clan = get_object_or_404(Clans, clan_name=name)
-            try:
-                instance = clan.stat 
-                return instance.elo_rating, instance
-            except clan.DoesNotExist:
-                return None, None
-            
-        def update_elo(winner_elo, loser_elo, k):
-            """Calculate Elo rating adjustments."""
-            expected_winner = 1 / (1 + 10 ** ((loser_elo - winner_elo) / 400))
-            winner_new_elo = winner_elo + k * (1 - expected_winner)
-            loser_new_elo = loser_elo - k * (1 - expected_winner)
-            return winner_new_elo, loser_new_elo
-        winner_elo, winner_instance = get_player_elo_and_instance(winner_name)
-        loser_elo, loser_instance = get_player_elo_and_instance(loser_name)
-        stats_used = "player_stats"
-
-
-        if winner_elo is None or loser_elo is None:
-            winner_elo, winner_instance = get_clan_elo_and_instance(winner_name)
-            loser_elo, loser_instance = get_clan_elo_and_instance(loser_name)
-            stats_used = "clan_stats"
-
         
-
-        winner_new_elo, loser_new_elo = update_elo(winner_elo, loser_elo, k)
-        if winner_instance:
+        winner_elo, winner_instance = self.get_player_elo_and_instance(winner_name)
+        loser_elo, loser_instance = self.get_player_elo_and_instance(loser_name)
+        
+        if winner_elo is None or loser_elo is None:
+            winner_elo, winner_instance = self.get_clan_elo_and_instance(winner_name)
+            loser_elo, loser_instance = self.get_clan_elo_and_instance(loser_name)
+            
+        winner_new_elo, loser_new_elo = self.update_elo(winner_elo, loser_elo, k)
+        if winner_instance and loser_instance:
             winner_instance.elo_rating = winner_new_elo
             winner_instance.save()
-            if stats_used == "player_stats":
-                winner_instance.set_rank_based_on_elo()
-            else:
-                winner_instance.set_rank_based_on_elo()
-
-        if loser_instance:
+            winner_instance.set_rank_based_on_elo()
+           
             loser_instance.elo_rating = loser_new_elo
             loser_instance.save()
-            if stats_used == "player_stats":
-                loser_instance.set_rank_based_on_elo()
-            else:
-                loser_instance.set_rank_based_on_elo()
+            loser_instance.set_rank_based_on_elo()
 
-    def update_team_db_stats(self,team,gf,ga,result_type="draw"):
+    def update_team_db_stats(self,team_a,team_b,goals_a, goals_b):
         """
-        Update clan statistics based on the tournament results.
+        Update clan statistics for two teams based on match results.
+        
+        Args:
+            team_a (str): Name or identifier of team A.
+            team_b (str): Name or identifier of team B.
+            goals_a (int): Goals scored by team A.
+            goals_b (int): Goals scored by team B.
         """
        
         try:
-            clan_stat = ClanStats.objects.get(clan__clan_name=team)
-            clan_stat.gd += gf-ga
-            clan_stat.gf += gf
-            clan_stat.ga += ga
-            clan_stat.total_matches += 1
-            if result_type =="win":
-                clan_stat.wins += 1
-            elif result_type == "loss":
-                clan_stat.losses += 1
+            team_a_stat, team_b_stat = self.get_clan_stats(team_a, team_b)
+            print(f"Updating stats for {team_a} vs {team_b}: {goals_a}-{goals_b}")
+            if team_a_stat is None or team_b_stat is None:
+                print(f"Stats not found for {team_a} or {team_b}, fetching player stats.")
+                # Fallback to player stats if clan stats are not available
+                team_a_stat, team_b_stat = self.get_player_stats(team_a, team_b)
+                if team_a_stat is None or team_b_stat is None:
+                    print(f"Player stats not found for {team_a} or {team_b}. Cannot update stats.")
+                    return   
+            if goals_a > goals_b:
+                result_a, result_b = "win", "loss"
+            elif goals_a < goals_b:
+                result_a, result_b = "loss", "win"
             else:
-                clan_stat.draws += 1
-            win_rate = ((clan_stat.wins + clan_stat.draws/2) / clan_stat.total_matches) * 100 if clan_stat.total_matches > 0 else 0
-            clan_stat.win_rate = round(win_rate,3)
-            clan_stat.save()
-        except ObjectDoesNotExist:
-            user = User.objects.get(username=team)
-            user_stat = user.profile.stats
-            user_stat.gd += gf-ga
-            user_stat.gf += gf
-            user_stat.ga += ga
-            user_stat.games_played += 1
-            if result_type =="win":
-                user_stat.total_wins  += 1
-            elif result_type == "loss":
-                user_stat.total_losses += 1
-            else:
-                user_stat.total_draws  += 1
-            win_rate = ((user_stat.total_wins + user_stat.total_draws/2) / user_stat.games_played) * 100 if user_stat.games_played > 0 else 0
-            user_stat.win_rate = round(win_rate,3)
-            user_stat.save()
+                result_a, result_b = "draw", "draw"
+            
+            for stat, gf, ga, result_type in [
+                            (team_a_stat, goals_a, goals_b, result_a),
+                            (team_b_stat, goals_b, goals_a, result_b)
+                        ]:
+                stat.gd += gf-ga
+                stat.gf += gf
+                stat.ga += ga
+                stat.total_matches += 1
+                if result_type == "win":
+                    stat.total_wins += 1
+                elif result_type == "loss":
+                    stat.total_losses += 1
+                else:
+                    stat.total_draws += 1
+                win_rate = ((stat.total_wins + stat.total_draws/2) / stat.total_matches) * 100 if stat.total_matches > 0 else 0
+                stat.win_rate = round(win_rate,3)
+                stat.save()
+        except Exception as e:
+            ErrorHandler().handle(e,context="Failed to update team DB stats")
 
-
-    def process_match(self, team_a, team_b, goals_a, goals_b, match,group_data=None):
+    def finalize_match_result(self, team_a, team_b, goals_a, goals_b, match, group_data=None):
+        """
+        Finalize the result of a match and update standings if applicable.
         
+        Args:
+            team_a (str): Name of Team A
+            team_b (str): Name of Team B
+            goals_a (int): Goals scored by Team A
+            goals_b (int): Goals scored by Team B
+            match (dict): Match data dictionary
+            group_data (dict): Optional group table/standings to update
+        """
         if goals_a > goals_b:
             winner, loser = team_a, team_b
             winner_goals, loser_goals = goals_a, goals_b
@@ -767,7 +873,20 @@ class TourManager:
         match["status"] = "complete"
         
     def update_table(self, team, goals_scored, goals_conceded, result_type):
-        """Update the league table for a team based on match result."""
+        """
+        Updates the league table for a given team after a match.
+
+        Args:
+            team (str): The team name.
+            goals_scored (int): Goals scored by the team in the match.
+            goals_conceded (int): Goals conceded by the team in the match.
+            result_type (str): "win", "draw", or "loss".
+
+        Notes:
+            - Initializes a team's stats if not already in the table.
+            - Updates goals, points, and match results.
+            - Sorts the table by points, goal difference, wins, then goals scored.
+        """
         table = self.match_data.get("table")
         if table:
             if team not in table:
@@ -810,24 +929,57 @@ class TourManager:
         
 
     def _handle_result(self, winner, loser, winner_goals, loser_goals,group_data=None):
+        """
+        Handles post-match updates when there is a winner.
+
+        Args:
+            winner (str): Name of the winning team.
+            loser (str): Name of the losing team.
+            winner_goals (int): Goals scored by the winner.
+            loser_goals (int): Goals scored by the loser.
+            group_data (dict, optional): Group/knockout table to update, if applicable.
+        """
+        # Update ELO rating for winner and loser
         self.update_elo_for_match(winner, loser)
+        
+        # Update match results in the league table and group/knockout table
         self.update_table(winner, winner_goals, loser_goals, result_type="win")
         self.update_table(loser, loser_goals, winner_goals, result_type="loss")
+        
+        # Update group/knockout table if provided
         if group_data:
             self.update_group_knouckout_table(winner, winner_goals, loser_goals,group_data=group_data, result_type="win")
             self.update_group_knouckout_table(loser, loser_goals, winner_goals,group_data=group_data,result_type="loss")
-        self.store_records(winner, loser, winner_goals, loser_goals)
-        self.update_team_db_stats(winner, winner_goals, loser_goals, result_type="win")
-        self.update_team_db_stats(loser, loser_goals, winner_goals, result_type="loss")
+            
+        # Store match records for both teams
+        self.store_records(winner, loser, winner_goals, loser_goals,result_type="win")
+        
+        # Update database statistics for the teams
+        self.update_team_db_stats(team_a=winner,team_b=loser, goals_a=winner_goals, goals_b=loser_goals)
 
     def _handle_draw(self, team_a, team_b, goals_a, goals_b,group_data=None):
+        """
+        Handles post-match updates when the match ends in a draw.
+
+        Args:
+            team_a (str): Name of Team A.
+            team_b (str): Name of Team B.
+            goals_a (int): Goals scored by Team A.
+            goals_b (int): Goals scored by Team B.
+            group_data (dict, optional): Group/knockout table to update, if applicable.
+        """
+        # Update league table for both teams
         self.update_table(team_a, goals_a, goals_b, result_type="draw")
         self.update_table(team_b, goals_b, goals_a, result_type="draw")
+        
+        # If in a group/knockout stage, also update that table
         if group_data:
             self.update_group_knouckout_table(team_a, goals_a, goals_b,group_data=group_data, result_type="draw")
             self.update_group_knouckout_table(team_b, goals_b, goals_a,group_data=group_data, result_type="draw")
+        # Store match record for history/statistics
         self.store_records(team_a, team_b, goals_a, goals_b, result_type="draw")
-        self.update_team_db_stats(team_a, goals_a, goals_b, result_type="draw")
-        self.update_team_db_stats(team_b, goals_b, goals_a, result_type="draw")
+        
+        # Update database statistics for the teams
+        self.update_team_db_stats(team_a,team_b,goals_a, goals_b)
 
 

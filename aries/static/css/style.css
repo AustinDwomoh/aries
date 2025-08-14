@@ -6,5 +6,37 @@ html, body {
     margin: 0; /* Remove default margins */
   }
 
+.btn {
+  background-color: #bac7be !important;   /* base button bg */
+  border: none !important;                 /* remove default border */
+  color: #333 !important;                  /* dark text */
+  font-weight: 700;
+  border-radius: 25px !important;          /* pill shape */
+  padding: 8px 24px !important;
+  box-shadow: 0 2px 6px rgba(186,199,190,0.6);
+  transition: background-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+}
 
-  
+.btn:hover,
+.btn:focus {
+  background-color: #a8b3aa !important;   /* hover darker */
+  color: #222 !important;
+  box-shadow: 0 4px 10px rgba(149,159,152,0.7);
+}
+
+.btn:active,
+.btn.active,
+.show > .btn.dropdown-toggle {
+  background-color: #959f98 !important;   /* active/dark */
+  color: #fff !important;
+  box-shadow: 0 4px 10px rgba(149,159,152,0.7);
+  border: none !important;
+}
+
+.btn:disabled,
+.btn.disabled {
+  background-color: #e0e4dd !important;   /* disabled lighter */
+  color: #999 !important;
+  box-shadow: none !important;
+  cursor: not-allowed !important;
+}

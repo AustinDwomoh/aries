@@ -6,11 +6,14 @@ from users.models import Profile
 from .tourmanager import TourManager
 import os,json
 from PIL import Image
-from aries.settings import ErrorHandler
+from scripts.error_handle import ErrorHandler
 
 # Create your models here.
 class ClanTournament(models.Model):
-    """Clan tournamnet model"""
+    """
+    Represents a clan-based tournament in the system.
+    Stores tournament metadata (name, description, format, teams, etc.), manages match schedules/results via JSON files, and handles related file cleanup.
+    """
     TOUR_CHOICES = [('league', 'League'),('cup', 'Cup'),('groups_knockout', 'Groups + Knockout')]
     PLAYER_MODE_CHOICES = [('fixed', 'Fixed'), ('dynamic', 'Dynamic')]
     name = models.CharField(max_length=255)
@@ -29,7 +32,7 @@ class ClanTournament(models.Model):
 
     
     def get_json_file_path(self):
-        """Return the file path for the JSON data."""
+        """Returns the absolute path to the JSON file storing match data for this tournament."""
         try:
             directory = os.path.join(settings.MEDIA_ROOT, 'tournament_data')
             os.makedirs(directory, exist_ok=True)  
@@ -39,7 +42,11 @@ class ClanTournament(models.Model):
             return RuntimeError("Failed to get JSON file path for clan tournament.")
     
     def load_match_data_from_file(self):
-        """Load match data from the JSON file."""
+        """
+        Loads match data from the JSON file.
+
+        Returns:
+            A dictionary containing the match data, or an empty dict if file doesnt exist or is invalid."""
         try:
             file_path = self.get_json_file_path()
             if not file_path:
@@ -56,18 +63,27 @@ class ClanTournament(models.Model):
 
         return {}
         
-    def save_match_data_to_file(self,match_data):
-        """Save match data to a JSON file."""
+    def save_match_data_to_file(self):
+        """
+        Saves the provided match data to the tournament's JSON file.
+
+        Args:
+            match_data (dict): Dictionary containing tournament matches and related data.
+        """
         try:
             file_path = self.get_json_file_path()
             #self.match_data = self.load_match_data_from_file()
             with open(file_path, 'w') as json_file:
-                json.dump(match_data, json_file)
+                json.dump(self.match_data, json_file)
         except Exception as e:
             ErrorHandler().handle(e,context='Save Fail for tour data')
 
     def delete(self, *args, **kwargs):
-        """Delete the JSON file when the tournament is deleted."""
+        """
+        Purpose: Removes the JSON data file when the tournament object is deleted.
+
+        Extra: Calls super().delete() to actually remove the database entry.
+        """
         try:
             file_path = self.get_json_file_path()
             if os.path.exists(file_path):
@@ -82,10 +98,11 @@ class ClanTournament(models.Model):
         return self.name
     
     def get_team_names(self):
-        """Extract team names from the related teams."""
+        """Returns a list of clan names for the participating teams"""
         return [team.clan_name for team in self.teams.all()]
 
     def toggle_player_mode(self):
+        """Switches player_mode between dynamic and fixed and saves the change"""
         try:
             self.player_mode = 'fixed' if self.player_mode == 'dynamic' else 'dynamic'
             self.save()
@@ -93,46 +110,41 @@ class ClanTournament(models.Model):
             ErrorHandler().handle(e,context='Changing tour mode')
     
     def create_matches(self):
+        """
+        Generates the match schedule for the clan tournament using TourManager.
+
+        Fails if no teams are registered or if matches already exist.
+        """
         try:
             team_names = self.get_team_names()
-            if not team_names:
-                raise ValueError("Cannot create matches: no teams registered.")
-
-            match_data = self.load_match_data_from_file()
-            if match_data.get("matches"):
-                raise ValueError("Matches already exist. Reset required to regenerate.")
-
+            self.match_data = self.load_match_data_from_file()
+           
             tour_manager = TourManager(
-                json_data=match_data,
+                json_data=self.match_data,
                 teams_names=team_names,
                 tournament_type=self.tour_type,
                 home_or_away=self.home_or_away,
                 tour_name=self.name
             )
-            match_data = tour_manager.create_tournament()
-
-            if not isinstance(match_data, dict) or "matches" not in match_data:
-                raise ValueError("Generated match data is invalid.")
-
-            self.save_match_data_to_file(match_data)
+            self.match_data = tour_manager.create_tournament()
+            print(self.match_data)
+        
+            self.save_match_data_to_file()
         except Exception as e:
             ErrorHandler().handle(e, context="Creating Clan tournament matches")
 
 
     def update_tour(self, round_number, match_results, KO=None):
         """
-        Update the tournament data based on the type of tournament.
+        Updates the match results for the given round, handling the specific tournament type (league, knockout, or groups + knockout).
 
         Args:
-            round_number (int): The round number to update.
-            match_results (list of dict): Results of matches to update.
-            KO (str, optional): The knockout stage identifier for 'groups_knockout' tournaments.
+            round_number: The round being updated.
+            match_results: List of match results.
+            KO: Knockout stage ID (for groups_knockout format).
 
         Returns:
-            dict: Updated match data after applying changes.
-
-        Raises:
-            ValueError: If the tournament type is invalid.
+            Updated match data dict.
         """
         try:
             team_names = self.get_team_names()
@@ -181,7 +193,8 @@ class ClanTournamentPlayer(models.Model):
 
 class IndiTournament(models.Model):
     """
-    Model representing an individual tournament.
+    Represents a individual-based tournament in the system.
+    Stores tournament metadata (name, description, format, teams, etc.), manages match schedules/results via JSON files, and handles related file cleanup.
     """
     TOUR_CHOICES = [('league', 'League'),('cup', 'Cup'),('groups_knockout', 'Groups + Knockout')]
     name = models.CharField(max_length=255)
@@ -203,12 +216,10 @@ class IndiTournament(models.Model):
         return [team.user.username for team in self.players.all()]
 
     def get_json_file_path(self):
-        """Return the file path for the JSON data."""
+        """Returns the absolute path to the JSON file storing match data for this tournament."""
         try:
-            # Use a directory named 'tournament_data' in the media root
             directory = os.path.join(settings.MEDIA_ROOT, 'tournament_data')
-            os.makedirs(directory, exist_ok=True)  # Ensure the directory exists
-            
+            os.makedirs(directory, exist_ok=True)  
         except Exception as e:
             ErrorHandler().handle(e,context='Json for Indi tournament')
             return RuntimeError("Failed to get JSON file path for clan tournament.")
@@ -216,7 +227,9 @@ class IndiTournament(models.Model):
             return os.path.join(directory, f'tournament_indi_{self.pk}.json')
 
     def save_match_data_to_file(self):
-        """Save match data to a JSON file."""
+        """
+        Saves the provided match data to the tournament's JSON file.
+        """
         try:
             file_path = self.get_json_file_path()
             with open(file_path, 'w') as json_file:
@@ -225,7 +238,11 @@ class IndiTournament(models.Model):
             ErrorHandler().handle(e,context='Save Fail for tour data')
     
     def load_match_data_from_file(self):
-        """Load match data from the JSON file."""
+        """
+        Loads match data from the JSON file.
+
+        Returns:
+            A dictionary containing the match data, or an empty dict if file doesnt exist or is invalid."""
         try:
             file_path = self.get_json_file_path()
             if not file_path:
@@ -243,7 +260,11 @@ class IndiTournament(models.Model):
         return {}
     
     def delete(self, *args, **kwargs):
-        """Delete the JSON file when the tournament is deleted."""
+        """
+        Purpose: Removes the JSON data file when the tournament object is deleted.
+
+        Extra: Calls super().delete() to actually remove the database entry.
+        """
         try:
             file_path = self.get_json_file_path()
             if os.path.exists(file_path):
@@ -258,10 +279,12 @@ class IndiTournament(models.Model):
 
     def create_matches(self):
         """
-        Create matches for the indi tournament using the TourManager.
+        Generates the match schedule for the individual tournament using TourManager.
+
+        Fails if no teams are registered or if matches already exist.
         """
         try:
-            team_names = [team.user.username for team in self.players.all()]
+            team_names = self.get_team_names()
             self.match_data = self.load_match_data_from_file()
             tour_manager = TourManager(json_data=self.match_data, teams_names=team_names,home_or_away=self.home_or_away, tournament_type=self.tour_type,tour_name=self.name)
             matches = tour_manager.create_tournament()
@@ -294,18 +317,15 @@ class IndiTournament(models.Model):
 
     def update_tour(self, round_number, match_results, KO=None):
         """
-        Update the tournament data based on the type of tournament.
+        Updates the match results for the given round, handling the specific tournament type (league, knockout, or groups + knockout).
 
         Args:
-            round_number (int): The round number to update.
-            match_results (list of dict): Results of matches to update.
-            KO (str, optional): The knockout stage identifier for 'groups_knockout' tournaments.
+            round_number: The round being updated.
+            match_results: List of match results.
+            KO: Knockout stage ID (for groups_knockout format).
 
         Returns:
-            dict: Updated match data after applying changes.
-
-        Raises:
-            ValueError: If the tournament type is invalid.
+            Updated match data dict.
         """
         try:
             team_names = self.get_team_names()

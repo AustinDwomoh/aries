@@ -102,6 +102,7 @@
       
 </section>
 
+<section>
 {% comment %} Tournamnets list {% endcomment %}  
 {% if indi_tournaments or cvc_tournaments%}
   <section>
@@ -238,7 +239,7 @@
               </tr>
               <tr>
                 <td>Total Matches</td>
-                <td>{{ user.profile.stats.games_played }}</td>
+                <td>{{ user.profile.stats.total_matches }}</td>
             </tr>
             <tr>
               <td>Total Wins</td>

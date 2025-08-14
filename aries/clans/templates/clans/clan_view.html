@@ -3,10 +3,11 @@
 {{ clan.name }}
 {% endblock %}
 {% load follow_tags %}
+{#Has same desing as the dash board#}
 {% block content %}
-<!-- Section for small screens (up to md) -->
+<!-- Responsive clan header: Smaller screens -->
 <section id="section-sm" class="d-md-none " >
-  <!--Name and follow stats-->
+  {# Clan banner background with profile pic, clan logo, and basic stats #}
     <div class="rounded-top text-white d-flex flex-column text-center text-md-start" 
           style="background-image: url('{{ clan.clan_profile_pic.url }}');     background-size: cover; background-position: center; height: 220px;">
 
@@ -169,7 +170,7 @@
                               <p class="small  mb-0">Win Rate</p>
                             </div>
                             <div class="mx-2">
-                              <p class="mb-1 h6 text-success">{{ player.profile.stats.games_played }}</p>
+                              <p class="mb-1 h6 text-success">{{ player.profile.stats.total_matches }}</p>
                               <p class="small  mb-0">Matches</p>
                             </div>
                             <div class="mx-2">
@@ -201,15 +202,15 @@
                   <!-- Each row should have both <td> for Stat and Value -->
                   <tr>
                       <td>Total Wins</td>
-                      <td>{{ stats.wins }}</td>
+                      <td>{{ stats.total_wins }}</td>
                   </tr>
                   <tr>
                       <td>Total Draws</td>
-                      <td>{{ stats.draws }}</td>
+                      <td>{{ stats.total_draws }}</td>
                   </tr>
                   <tr>
                       <td>Total Losses</td>
-                      <td>{{ stats.losses }}</td>
+                      <td>{{ stats.total_losses }}</td>
                   </tr>
                   <tr>
                       <td>Scored Goals</td>
@@ -352,24 +353,6 @@
 </section>
 
 <script>
-  function toggleFollow(followedId, followedModel,sectionId) {
-    let section = document.getElementById(sectionId);
-  
-    let button = section.querySelector('.follow-btn');
-    let messageBox = section.querySelector('.follow-message');
-    let action = button.innerText.trim() === "Follow" ? "follow" : "unfollow";
-    console.log(button.innerText)
-    fetch(`/clans/${action}/${followedModel}/${followedId}/`)
-        .then(response => response.json())
-        .then(data => {
-          button.innerText = action === "follow" ? "Unfollow" : "Follow";
-          messageBox.innerText = data.context.message;
-          messageBox.style.display = "block";
-          setTimeout(() => {location.reload();}, 3000);
-      });
-  }
-
- 
   function joinClub(sectionId) {
         let section = document.getElementById(sectionId);
         let form = section.querySelector(".join-clan-form");

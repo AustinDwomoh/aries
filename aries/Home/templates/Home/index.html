@@ -24,7 +24,6 @@
     </div>
   
 <style>
- 
     table {
         width: 100%;
         background: #fff;
@@ -118,12 +117,12 @@
                         </div>
                     </td>
                     <td class="hide">{{ clan.stat.total_matches }}</td>
-                    <td>{{ clan.stat.wins }}</td>
-                    <td class="hide">{{ clan.stat.draws }}</td>
-                    <td class="hide">{{ clan.stat.losses }}</td>
+                    <td>{{ clan.stat.total_wins }}</td>
+                    <td class="hide">{{ clan.stat.total_draws }}</td>
+                    <td class="hide">{{ clan.stat.total_losses }}</td>
                     <td>{{ clan.stat.gf }}</td>
                     <td>{{ clan.stat.win_rate}}%</td>
-                    <td>{{ clan.stat.ranking }}</td>
+                    <td>{{ clan.stat.rank}}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -157,7 +156,7 @@
                         <span>{{ player.username }}</span>
                         </div>
                     </td>
-                    <td class="hide">{{ player.profile.stats.games_played }}</td>
+                    <td class="hide">{{ player.profile.stats.total_matches }}</td>
                     <td>{{ player.profile.stats.total_wins }}</td>
                     <td class="hide">{{ player.profile.stats.total_draws }}</td>
                     <td class="hide">{{ player.profile.stats.total_losses }}</td>

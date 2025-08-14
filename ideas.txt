@@ -7,3 +7,9 @@
 [+] Created clan: Clan_cassidy97 | Password: !j7d$LUM3%
 [+] Created clan: Clan_lindsaybender | Password: Bm0WJWRs@l
 [+] Created clan: Clan_jon03 | Password: p9PQq@TT^j
+
+rgb(186,199,190)
+#bac7be
+
+#959f98
+rgb(149,159,152)

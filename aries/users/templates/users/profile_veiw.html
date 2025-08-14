@@ -78,7 +78,7 @@
 
     <div class="d-flex justify-content-between align-items-center py-3 px-4 bg-light rounded shadow-sm">
       <div>
-       <h4 class="mb-1 text-dark fw-bold">
+        <h4 class="mb-1 text-dark fw-bold">
           {{ player.username }}
           </h4>
         
@@ -108,66 +108,62 @@
         {% render_follow_summary player followers following %}
         {% comment %} Check the template tags folder it renders them so i can use accross view {% endcomment %}
       </div>
-     
+    </div>
 
 </section>
 
 
-  <div class="card-body p-4 text-black">
-    <div class="mb-5  text-body">
-      <div class="row">
-        <div class="container mt-4">
-          <h4 class="text-center">Statistics</h4>
-          <table class="table text-center table-striped table-hover">
-            <thead class="table-dark">
-                <tr>
-                    <th>Stat</th>
-                    <th>Value</th>
-                </tr>
-            </thead>
-            <tbody> 
-                <tr>
-                    <td>Total Wins</td>
-                    <td>{{ player.profile.stats.total_wins }}</td>
-                </tr>
-                <tr>
-                    <td>Total Draws</td>
-                    <td>{{ player.profile.stats.total_draws }}</td>
-                </tr>
-                <tr>
-                    <td>Total Losses</td>
-                    <td>{{ player.profile.stats.total_losses }}</td>
-                </tr>
-                <tr>
-                    <td>Scored Goals</td>
-                    <td>{{ player.profile.stats.gf }}</td>
-                </tr>
-                <tr>
-                    <td>Conceeded</td>
-                    <td>{{ player.profile.stats.ga }}</td>
-                </tr>
-                <tr>
-                  <td>Win Rate</td>
-                  <td>{{ player.profile.stats.win_rate|floatformat:1}}%</td>
+<div class="card-body p-4 text-black">
+  <div class="mb-5  text-body">
+    <div class="row">
+      <div class="container mt-4">
+        <h4 class="text-center">Statistics</h4>
+        <table class="table text-center table-striped table-hover">
+          <thead class="table-dark">
+              <tr>
+                  <th>Stat</th>
+                  <th>Value</th>
+              </tr>
+          </thead>
+          <tbody> 
+              <tr>
+                  <td>Total Wins</td>
+                  <td>{{ player.profile.stats.total_wins }}</td>
               </tr>
               <tr>
-                <td>Total Matches</td>
-                <td>{{ player.profile.stats.games_played }}</td>
+                  <td>Total Draws</td>
+                  <td>{{ player.profile.stats.total_draws }}</td>
+              </tr>
+              <tr>
+                  <td>Total Losses</td>
+                  <td>{{ player.profile.stats.total_losses }}</td>
+              </tr>
+              <tr>
+                  <td>Scored Goals</td>
+                  <td>{{ player.profile.stats.gf }}</td>
+              </tr>
+              <tr>
+                  <td>Conceeded</td>
+                  <td>{{ player.profile.stats.ga }}</td>
+              </tr>
+              <tr>
+                <td>Win Rate</td>
+                <td>{{ player.profile.stats.win_rate|floatformat:1}}%</td>
+            </tr>
+            <tr>
+              <td>Total Matches</td>
+              <td>{{ player.profile.stats.total_matches }}</td>
             </tr>
             <tr>
               <td>Total Wins</td>
               <td>{{ player.profile.stats.total_wins }}</td>
-          </tr>
-            </tbody>
+            </tr>
+          </tbody>
         </table>
       </div>
-      
-      </div>
     </div>
-
   </div>
-  
-</section>
+</div>
 
 <section>
   {% if match_data %}

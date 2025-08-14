@@ -61,7 +61,7 @@ def create_clan_with_image(name, created_by):
         "discord": f"https://discord.gg/{fake.lexify(text='????????')}",
     }
 
-    clan = Clans(
+    clan = Clans.objects.create(
         clan_name=name,
         clan_tag=clan_tag,
         email=email,

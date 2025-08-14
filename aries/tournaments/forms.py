@@ -43,16 +43,17 @@ class IndiTournamentForm(forms.ModelForm):
 
         if current_profile:
             profile_type = ContentType.objects.get_for_model(User)
+            follower_user_ids = Follow.objects.filter(
+                followed_content_type=profile_type,
+                followed_object_id=current_profile.id,
+                follower_content_type=profile_type
+            ).values_list('follower_object_id', flat=True)
 
-            # Get the list of follower ids
-            follower_ids = Follow.objects.filter(
-                followed_type=profile_type,
-                followed_id=current_profile.id,
-                follower_type=profile_type
-            ).values_list('follower_id', flat=True)
-
-            self.fields['players'] = forms.ModelMultipleChoiceField(queryset=Profile.objects.filter(id__in=follower_ids), widget=forms.SelectMultiple(attrs={'class': 'select2','data-placeholder': 'Select players that follow you'}))
-            #
+            self.fields['players'] = forms.ModelMultipleChoiceField(
+                queryset=Profile.objects.filter(user__id__in=follower_user_ids),  # <-- user__id here
+                widget=forms.SelectMultiple(attrs={'class': 'select2','data-placeholder': 'Select players that follow you'})
+            )
+          
         else:
             # Fallback: No followers, empty queryset for 'players'
             self.fields['players'] = forms.ModelMultipleChoiceField(queryset=Profile.objects.none(), widget=forms.SelectMultiple(attrs={'class': 'select2','data-placeholder': 'Select players that follow you'}))
@@ -76,18 +77,13 @@ class ClanTournamentForm(forms.ModelForm):
 
         if current_profile:
             profile_type = ContentType.objects.get_for_model(Clans)
-
-            # Get the list of follower ids
             follower_ids = Follow.objects.filter(
-                followed_type=profile_type,
-                followed_id=current_profile.id,
-                follower_type=profile_type
-            ).values_list('follower_id', flat=True)
-        
+                followed_content_type=profile_type,
+                followed_object_id=current_profile.id,
+                follower_content_type=profile_type
+            ).values_list('follower_object_id', flat=True) 
             self.fields['teams'] = forms.ModelMultipleChoiceField(queryset=Clans.objects.filter(id__in=follower_ids), widget=forms.SelectMultiple(attrs={'class': 'select2','data-placeholder': 'Select Clans that follow you'}))
-            #Clans.objects.filter(id__in=follower_ids), widget=forms.SelectMultiple(attrs={'class': 'select2'})
         else:
-            # Fallback: No followers, empty queryset for 'players'
             self.fields['teams'] = forms.ModelMultipleChoiceField(queryset=Clans.objects.all(), widget=forms.SelectMultiple(attrs={'class': 'select2','data-placeholder': 'Select Clans that follow you'}))
 
 

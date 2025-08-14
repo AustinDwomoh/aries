@@ -23,21 +23,29 @@ from Home.views import trigger_error_view
 
 
 urlpatterns = [
-    path('admin/', admin.site.urls),#admin url
-    path('', include('Home.urls') ),#index url
-    path('clans/', include('clans.urls')),#url that links to club link
-    path('register/',user_views.register,name='register'),#url to create account
-    path('login/',user_views.CustomLoginView.as_view(),name='login'),
-    path('logout/',user_views.logout_view,name='logout'),
-    path('users/', include('users.urls')),#url that links to user, gamers
-    path('tournaments/',include('tournaments.urls')),#url that links to tours,
+    path('admin/', admin.site.urls),  # Default Django admin interface
+    path('', include('Home.urls')),   # Home app: serves main landing/index pages
+
+    path('clans/', include('clans.urls')),  # Clan management features
+    path('register/', user_views.register, name='register'),  # User registration page
+    path('login/', user_views.CustomLoginView.as_view(), name='login'),  # Custom login view with extended logic serves both clan and users
+    path('logout/', user_views.logout_view, name='logout'),  # Account logout endpoint
+
+    path('users/', include('users.urls')),  # User profiles and related gamer features
+    path('tournaments/', include('tournaments.urls')),  # Tournament-related functionality
+
+    # Email verification flow URLs with tokens and OTP verification
     path("verify/<uidb64>/<token>/", user_views.verify_email, name="verify_email"),
     path("verify-otp/", user_views.verify_otp, name="verify_otp"),
     path('verify/pending/', user_views.verification_pending, name='verification_pending'),
     path('verify/resend/', user_views.resend_verification, name='resend_verification'),
-    path('err/', trigger_error_view),
-    path('follow/<str:action>/<str:model>/<int:obj_id>/', user_views.follow_toggle_view, name="follow-toggle"),
 
-] 
+    path('err/', trigger_error_view),  # Test view to deliberately trigger an error for monitoring/debugging
+
+    # Dynamic follow/unfollow toggle for various models identified by type and object ID
+    path('follow/<str:action>/<str:model>/<int:obj_id>/', user_views.follow_toggle_view, name="follow-toggle"),
+]
+
 if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL,document_root=settings.MEDIA_ROOT)#to allow the media files to be saved and accesed
+    # Serve media files via Django during development (not suitable for production)
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

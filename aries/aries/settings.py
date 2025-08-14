@@ -10,14 +10,11 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
-import base64
+
 from pathlib import Path
-import os,environ,logging,traceback,base64
-from scripts import email_handle
-from threading import Thread
-from datetime import datetime
+import os,environ,logging
+
 logger = logging.getLogger(__name__)
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 env = environ.Env(
     DEBUG=(bool, False),
@@ -32,14 +29,15 @@ DEBUG = env("DEBUG")
 ENV = env("ENV")
 
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS")
-GMAIL_USER = env("GMAIL_USER")
-GMAIL_PASSWORD = env("GMAIL_PASSWORD")
-
-SITE_DOMAIN = env("SITE_DOMAIN")
+RESEND_API_KEY = env("RESEND_API") #mail api
+SITE_DOMAIN = env("SITE_DOMAIN") #swicthes between http and https depe
 SITE_PROTOCOL = env("SITE_PROTOCOL")
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL")
 SECURE_HSTS_SECONDS = 31536000
 SECURE_HSTS_PRELOAD = True
+# ============================================================================ #
+#                                 cokkie stuff                                 #
+# ============================================================================ #
 SESSION_COOKIE_SECURE = env.bool("SESSION_COOKIE_SECURE")
 CSRF_COOKIE_SECURE = env.bool("CSRF_COOKIE_SECURE")
 SESSION_COOKIE_AGE = env.int("SESSION_COOKIE_AGE")
@@ -61,15 +59,17 @@ INSTALLED_APPS = [
     'clans.apps.ClansConfig',
     'tournaments.apps.TournamentsConfig',
     'users.apps.UsersConfig',
-    'crispy_forms',
-    "crispy_bootstrap5",
+    'crispy_forms',           # Form rendering with Crispy Forms
+    "crispy_bootstrap5",      # Bootstrap 5 templates for crispy forms
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'django.contrib.staticfiles',#'anymail'
+    'django.contrib.staticfiles',
+    
 ]
+# Crispy Forms is used for better form rendering with Bootstrap 5 integration
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -80,30 +80,34 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
-LOGGING = {
+""" LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'handlers': {
         'file': {
             'level': 'ERROR',
             'class': 'logging.FileHandler',
-            'filename': '/var/log/django/error.log',
+            'filename': '/var/log/django/error.log',  # Log file path for capturing server errors
         },
     },
     'loggers': {
         'django': {
             'handlers': ['file'],
-            'level': 'ERROR',
+            'level': 'ERROR',  # Only log ERROR and higher severity messages
             'propagate': True,
         },
     },
-}
+} """
+# Configure logging to capture only ERROR-level messages in a dedicated log file
+# Note: Verify that the server has write permissions for /var/log/django/error.log
 
 AUTHENTICATION_BACKENDS = [
-    'django.contrib.auth.backends.ModelBackend',  # Default user 
-    'scripts.verify.MultiFieldAuthBackend',
-    'scripts.verify.ClanBackend'
+    'django.contrib.auth.backends.ModelBackend',  # Default authentication backend (username/password)
+    'scripts.verify.MultiFieldAuthBackend',       # Custom backend supporting multi-field login
+    'scripts.verify.ClanBackend',                  # Custom backend handling clan-based authentication logic
 ]
+# Custom authentication backends extend default auth to support additional login workflows
+# Order matters: Django tries them in sequence until one authenticates successfully
 
 ROOT_URLCONF = 'aries.urls'
 
@@ -119,7 +123,8 @@ TEMPLATES = [
                 'django.template.context_processors.debug',
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages','scripts.context.profile_picture_context',
+                'django.contrib.messages.context_processors.messages',
+                'scripts.context.profile_picture_context',  # Custom context processor to give accurate profile picture globally
             ],
         },
     },
@@ -137,7 +142,6 @@ DATABASES = {
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
@@ -172,66 +176,27 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
-LOGIN_REDIRECT_URL = 'Home'
-LOGOUT_REDIRECT_URL = 'Home'
-LOGIN_URL = 'login'
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-STATIC_URL = '/static/'
-CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
-CRISPY_TEMPLATE_PACK = "bootstrap5"
+LOGIN_REDIRECT_URL = 'Home'   # Redirect users here after successful login
+LOGOUT_REDIRECT_URL = 'Home'  # Redirect users here after logout
+LOGIN_URL = 'login'           # URL to redirect unauthorized users for login
+
+MEDIA_URL = '/media/'         # Base URL to serve user-uploaded media files
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')  # Filesystem path where media files are stored
+
+STATIC_URL = '/static/'       # URL prefix for serving static files (CSS, JS, images)
 STATICFILES_DIRS = [
-    BASE_DIR / 'static',
-      # Path to your static files folder
+    BASE_DIR / 'static',      # Additional static files directory (for development)
 ]
-STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATIC_ROOT = BASE_DIR / 'staticfiles'  # Directory where 'collectstatic' will gather all static files for production
+
+CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"  # Allow only Bootstrap 5 template pack in crispy-forms
+CRISPY_TEMPLATE_PACK = "bootstrap5"           # Use Bootstrap 5 templates for rendering crispy forms
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-LOG_BASE_DIR = 'error_logs'
-class ErrorHandler:
-    LOG_BASE_DIR = 'error_logs'
-    NOTIFY_EMAIL = 'dwomohaustin14@gmail.com'
+LOG_BASE_DIR = 'error_logs' # Custom base directory for application error logs
 
-    def __init__(self, notify=True):
-        self.notify = notify
-        os.makedirs(self.LOG_BASE_DIR, exist_ok=True)  
-
-    def handle(self, error, context=""):
-        now = datetime.now()
-        day_folder = now.strftime("%Y-%m-%d")
-        time_stamp = now.strftime("%H-%M-%S")
-
-        folder_path = os.path.join(self.LOG_BASE_DIR, day_folder)
-        os.makedirs(folder_path, exist_ok=True)  
-        file_path = os.path.join(folder_path, f"error_{time_stamp}.txt")
-
-        error_message = (
-            f"Timestamp: {now}\n"
-            f"Context: {context}\n"
-            f"Exception: {str(error)}\n\n"
-            f"Traceback:\n{traceback.format_exc()}\n"
-        )
-
-        with open(file_path, "w", encoding="utf-8") as f:
-            f.write(error_message)
-
-        if self.notify:
-            self.notify_admin(file_path)
-
-    def notify_admin(self, file_path):
-        subject = '[ALERT] Server Error Notification'
-        body = 'An error occurred. Please see the attached log file.'
-        
-        to_email = self.NOTIFY_EMAIL
-
-        Thread(target=email_handle.send_email_with_attachment, kwargs={
-        "subject": subject,
-        "body": body,
-        "to_email": to_email,
-        "file_path": file_path,
-    }).start()
-        
     

@@ -3,7 +3,7 @@
 {{ clan.clan_name }}
 {% endblock %}
 {% load static %} 
-{% load follow_tags %}
+{% load follow_tags %}  {# Custom template tags related to follow functionality #}
 {% block content %}
 <style>
   textarea {
@@ -13,9 +13,9 @@
     
 }
 </style>
-<!--Smaller screen-->
+<!-- Responsive clan header: Smaller screens -->
 <section  class="d-md-none" >
-  <!--Name and follow stats-->
+  {# Clan banner background with profile pic, clan logo, and basic stats #}
     <div class="rounded-top text-white d-flex flex-column text-center text-md-start" 
           style="background-image: url('{{ clan.clan_profile_pic.url }}');     background-size: cover; background-position: center; height: 220px;">
 
@@ -34,7 +34,7 @@
         <h4 class="mb-1 text-dark fw-bold">
           {{ clan.clan_name }} <span class="text-muted">[{{ clan.clan_tag }}]</span>  
         </h4>
-        {% comment %} <p class="small text-muted">Ranking: <strong>{{ stats.ranking }}</strong></p> {% endcomment %}
+        {#last five matches#}
         {% if match_results %}
           <p>
             {% for result in match_results %}
@@ -53,13 +53,15 @@
 
 
         <div>
-          <!-- First Section: Followers & Following -->
+          {#Renders follow count and following buttons#}
           {% render_follow_summary clan followers following %}
         </div>
     </div>
 </section>
+<!-- Responsive clan header: Smaller screens -->
 
-<!--Medium screen upwards-->
+
+<!-- Responsive clan header: Medium and larger screens -->
 <section class="d-none d-md-block">
   <!-- Clan Banner with Logo -->
   <div class="rounded-top text-white d-flex flex-column text-center text-md-start position-relative" 
@@ -85,7 +87,7 @@
          {{ clan.clan_name }} <span class="text-muted">[{{ clan.clan_tag }}]</span>  
        </h4>
        
-       
+       {#Last 5 macthes#}
        {% if match_results %}
        <p>
          {% for result in match_results %}
@@ -107,60 +109,14 @@
   </div>
 </section>
     
-     <!-- About section make it editable in place-->
+<!-- About Section -->
 <h2 class="mt-3">About</h2>
 <section class="  py-2 px-3 text-body bg-light rounded shadow-sm" style="width: 100%;">
-  <p>Recruitment Status:{{clan.is_recruiting}} | <a href="#" onclick="event.preventDefault(); document.getElementById('change_recruitment_state').submit();" class="btn btn-success">Change</a></p>  
+  {# Shows recruitment status with a form toggle to update it #}
+  <p>Recruitment Status:{{clan.is_recruiting}}</p>
   <p>{{ clan.clan_description|safe }}</p>
-  <form id="change_recruitment_state" action="{% url 'change_recruitment_state' clan.id %}" method="post" style="display: none;">
-    {% csrf_token %}
-  </form>
-  <form method="post" id="change-description" action="{% url 'change_description' clan.id %}">
-    {% csrf_token %}
-    <input type="hidden" name="request_id" value=""> <!-- Automatically filled request ID -->
-
-    <textarea name="clan_description" class="form-control" placeholder="description" maxlength="1000"></textarea>
-
-    <p id="status-message" class="alert alert-success d-none"></p> <!-- Bootstrap alert for messages -->
-    <button id="approve-button" class="btn btn-primary" onclick="event.preventDefault(); change_desc();">Confirm</button>
-    <button id="reject-button" class="btn btn-secondary" onclick="event.preventDefault();location.reload();">Cancel</button>
-</form>
-
-<script>
-function change_desc() {
-    let form = document.getElementById("change-description");
-    let statusMessage = document.getElementById("status-message");
-
-    fetch(form.action, {
-        method: "POST",
-        body: new FormData(form),
-        headers: {
-            "X-Requested-With": "XMLHttpRequest"
-        }
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error("Failed to update description.");
-        }
-        return response.json(); // Expecting a JSON response from the server
-    })
-    .then(data => {
-        statusMessage.textContent = "Description updated successfully!";
-        statusMessage.classList.remove("d-none");
-        setTimeout(() => {
-            location.reload();
-        }, 2000);
-    })
-    .catch(error => {
-        console.error("Error:", error);
-        statusMessage.textContent = "An error occurred. Please try again.";
-        statusMessage.style.color = "red";
-        statusMessage.classList.remove("d-none");
-    });
-}
-</script>
 </section>
-<!-- Players section and club stats -->
+<!-- Members Section -->
 <section>
   <div class="row">
     <h2 class="mt-3">Members</h2>
@@ -186,7 +142,7 @@ function change_desc() {
                             <p class="small  mb-0">Win Rate</p>
                           </div>
                           <div class="mx-2">
-                            <p class="mb-1 h6 text-success">{{ player.profile.stats.games_played }}</p>
+                            <p class="mb-1 h6 text-success">{{ player.profile.stats.total_matches }}</p>
                             <p class="small  mb-0">Matches</p>
                           </div>
                           <div class="mx-2">
@@ -201,7 +157,7 @@ function change_desc() {
       {% endif %}
       {% endfor %}
   </div>
-
+   <!-- Clan statistics summary -->
   <div class="card-body p-4 text-black">
     <div class="mb-5  text-body">
       <div class="row">
@@ -218,15 +174,15 @@ function change_desc() {
                 <!-- Each row should have both <td> for Stat and Value -->
                 <tr>
                     <td>Total Wins</td>
-                    <td>{{ stats.wins }}</td>
+                    <td>{{ stats.total_wins }}</td>
                 </tr>
                 <tr>
                     <td>Total Draws</td>
-                    <td>{{ stats.draws }}</td>
+                    <td>{{ stats.total_draws }}</td>
                 </tr>
                 <tr>
                     <td>Total Losses</td>
-                    <td>{{ stats.losses }}</td>
+                    <td>{{ stats.total_losses }}</td>
                 </tr>
                 <tr>
                     <td>Scored Goals</td>
@@ -263,64 +219,66 @@ function change_desc() {
   
 </section>
 
-{% comment %} tours {% endcomment %}
+
+<!-- Tournaments Section -->
 <section>
   <div class="container-fluid my-4">
         <div class="container">
+            {# Search and list tournaments related to this clan #}
             <div class="row align-items-center"> 
-            <h2 class="text-center">Tournaments</h2>
-            <form method="GET" action="{% url 'tournament-home' %}" class="mb-4 d-flex justify-content-center">
-                <input type="text" name="r" class="form-control w-50" placeholder="Search for a Tournament..." value="{{ query }}">
-                <button type="submit" class="btn btn-primary mx-2">Search</button>
-                <a href="{%url 'create_clan_tournament' %}" class="btn btn-primary">Create</a>
-            </form>
+              <h2 class="text-center">Tournaments</h2>
+              <form method="GET" action="{% url 'tournament-home' %}" class="mb-4 d-flex justify-content-center">
+                  <input type="text" name="r" class="form-control w-50" placeholder="Search for a Tournament..." value="{{ query }}">
+                  <button type="submit" class="btn btn-primary mx-2">Search</button>
+                  <a href="{%url 'create_clan_tournament' %}" class="btn btn-primary">Create</a>
+              </form>
             </div>
         </div>
-    </div>
-          {% if no_results %}
-          <div class="alert alert-warning" role="alert">
-              No  tournaments found for "{{ query }}". Please try a different search term.
+  </div>
+  {% if no_results %}
+  <div class="alert alert-warning" role="alert">
+      No  tournaments found for "{{ query }}". Please try a different search term.
+  </div>
+  {% endif %}
+  <div class="container-fluid my-4">
+      <div class="row">
+          {% for tours in tournaments %}
+          <div class="col-md-4" data-aos="fade-right" data-aos-delay="{{ forloop.counter0|add:"0" }}00">
+              <a href="{% url 'cvc_details' tours.id %}">
+                  <div class="card my-3 rounded-3 shadow" >
+                      <div class="card-body text-center  rounded-3"  style="background-image: url('{{ tours.created_by.profile.profile_picture.url  }}');background-size: cover; background-position: center;text-shadow: 2px 2px 4px rgba(0, 0, 0,1);color:white;">
+                          <div class="rounded-3 " style="position: absolute; top: 0; right: 0; bottom: 0; left: 0; background: rgba(0,0,0,0.5); z-index: 1;"></div>
+                          <div  style="position: relative; z-index: 2;">
+                              <img src="{{  tours.logo.url }}" alt="{{  tours.name }}'s avatar" class="img-fluid rounded-circle mb-3" style="width: 100px; height: 100px;" loading="lazy">
+                  
+                              <h5 class="card-title">{{ tours.name }}</h5>
+                      
+                              <div class="d-flex justify-content-between text-center ">
+                                  <div class="mx-2">
+                                  <p class="mb-1 h6 text-success">{{tours.created_by }}</p>
+                                  <p class="small  mb-0">Creator</p>
+                                  </div>
+                                  <div class="mx-2">
+                                      <p class="mb-1 h6 text-primary">{{ tours.tour_type }}</p>
+                                      <p class="small  mb-0">Type</p>
+                                  </div>
+                                  <div class="mx-2">
+                                  <p class="mb-1 h6 text-warning">{{ tours.teams.count }}</p>
+                                  <p class="small  mb-0">Clans</p>
+                                  </div>
+                              </div>
+                          </div>
+                  
+                      </div>
+                  </div>
+              </a>
           </div>
-          {% endif %}
-    <div class="container-fluid my-4">
-        <div class="row">
-
-            {% for tours in tournaments %}
-            <div class="col-md-4" data-aos="fade-right" data-aos-delay="{{ forloop.counter0|add:"0" }}00">
-                <a href="{% url 'cvc_details' tours.id %}">
-                    <div class="card my-3 rounded-3 shadow" >
-                        <div class="card-body text-center  rounded-3"  style="background-image: url('{{ tours.created_by.profile.profile_picture.url  }}');background-size: cover; background-position: center;text-shadow: 2px 2px 4px rgba(0, 0, 0,1);color:white;">
-                            <div class="rounded-3 " style="position: absolute; top: 0; right: 0; bottom: 0; left: 0; background: rgba(0,0,0,0.5); z-index: 1;"></div>
-                            <div  style="position: relative; z-index: 2;">
-                                <img src="{{  tours.logo.url }}" alt="{{  tours.name }}'s avatar" class="img-fluid rounded-circle mb-3" style="width: 100px; height: 100px;" loading="lazy">
-                    
-                                <h5 class="card-title">{{ tours.name }}</h5>
-                        
-                                <div class="d-flex justify-content-between text-center ">
-                                    <div class="mx-2">
-                                    <p class="mb-1 h6 text-success">{{tours.created_by }}</p>
-                                    <p class="small  mb-0">Creator</p>
-                                    </div>
-                                    <div class="mx-2">
-                                        <p class="mb-1 h6 text-primary">{{ tours.tour_type }}</p>
-                                        <p class="small  mb-0">Type</p>
-                                    </div>
-                                    <div class="mx-2">
-                                    <p class="mb-1 h6 text-warning">{{ tours.teams.count }}</p>
-                                    <p class="small  mb-0">Clans</p>
-                                    </div>
-                                </div>
-                            </div>
-                    
-                        </div>
-                    </div>
-                </a>
-            </div>
-            {% endfor %}
-        </div>
-    </div>
+          {% endfor %}
+      </div>
+  </div>
 </section>
-<!-- Player add and remove section -->
+
+<!-- Player Management Section -->
  <section>
   <div class="container-fluid text-center">
     <h3>Add a Player to the Clan</h3>
@@ -328,130 +286,31 @@ function change_desc() {
       {% csrf_token %}
       {{ form.as_p }}  <!-- Django renders the form -->
       <button type="submit" class="btn btn-success" name="action" value="add_player">Add Player</button>
-  <button type="submit" class="btn btn-danger" name="action" value="remove_player">Remove Player</button>
-  </form>
-  <p id="message" style="color: green; display: none;"></p>
-  <p id="error" style="color: red; display: none;"></p>  
-  </div>
-  
-  <!--Player finding script-->
-  <script type="text/javascript">
-    $(document).ready(function() {
-        $('.select2').select2({
-            placeholder: 'Select a player',
-            allowClear: true,
-            width: '100%'
-        });
-    });
-  </script>
-  <script>
-      function submitForm(formId, url) {
-          document.getElementById(formId).addEventListener("submit", function(event) {
-              event.preventDefault(); // Prevent page reload
-              let formData = new FormData(this);
-              let clickedButton = document.activeElement; 
-              if (clickedButton && clickedButton.name === "action") {
-                  formData.set("action", clickedButton.value);
-              }
-              fetch(url, { 
-                  method: "POST",
-                  body: formData,
-                  headers: {
-                      "X-Requested-With": "XMLHttpRequest"
-                  }
-              })
-              .then(response => response.json())
-              .then(data => {
-                  let messageEl = document.getElementById("message");
-                  messageEl.innerText = data.message;
-                  messageEl.style.display = "block";
-                  setTimeout(() => {location.reload();}, 3000);
-                  
-              })
-              .catch(error => console.error("Error:", error));
-          });}
-      document.addEventListener("DOMContentLoaded", function() {
-          submitForm("add-player-form", "{% url 'players_manage' %}");
-      });
-  </script>
-    
-  {% if join_requests %}
-  <h3>Pending Join Requests</h3>
-  {% for request in join_requests %}
-    <form method="post" id="join-request-form-{{ request.id }}">
-        {% csrf_token %}
-        <p>{{ request.player.username }} wants to join.</p>
-        <input type="hidden" name="request_id" value="{{ request.id }}">
-        <p id="status-message-{{ request.id }}" style="color: green; display: none;"></p> <!-- For success/error message -->
-
-        <button id="approve-button-{{ request.id }}" class="btn btn-success">Approve</button>
-        <button id="reject-button-{{ request.id }}" class="btn btn-danger">Reject</button>
+      <button type="submit" class="btn btn-danger" name="action" value="remove_player">Remove Player</button>
     </form>
-     <!-- Message area -->
-{% endfor %}
+    <p id="message" style="color: green; display: none;"></p>
+    <p id="error" style="color: red; display: none;"></p>  
+  </div>
+  {# Pending join requests with approve/reject buttons and AJAX handling #}
+  {% if join_requests %}
+    <h3>Pending Join Requests</h3>
+    {% for request in join_requests %}
+      <form method="post" id="join-request-form-{{ request.id }}">
+          {% csrf_token %}
+          <p>{{ request.player.username }} wants to join.</p>
+          <input type="hidden" name="request_id" value="{{ request.id }}">
+          <p id="status-message-{{ request.id }}" style="color: green; display: none;"></p> <!-- For success/error message -->
+
+          <button id="approve-button-{{ request.id }}" class="btn btn-success">Approve</button>
+          <button id="reject-button-{{ request.id }}" class="btn btn-danger">Reject</button>
+      </form>
+      <!-- Message area -->
+    {% endfor %}
   {% endif %}
     </div>
-    <!--* ======================= Request form aprove  script ====================== -->
-    <script>
-      document.addEventListener("DOMContentLoaded", function() {
-          // Loop through each request for join handling
-          {% for request in join_requests %}
-          // Get buttons for approve/reject actions
-          let approveButton = document.getElementById("approve-button-{{ request.id }}");
-          let rejectButton = document.getElementById("reject-button-{{ request.id }}");
-          
-          // Handle the approve action
-          approveButton.addEventListener("click", function(event) {
-              event.preventDefault(); // Prevent page reload
-              handleJoinRequest(event, "{{ request.id }}", "approve");
-          });
-          const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-        
-          // Handle the reject action
-          rejectButton.addEventListener("click", function(event) {
-              event.preventDefault(); // Prevent page reload
-              handleJoinRequest(event, "{{ request.id }}", "reject");
-          });
-  
-          // Function to handle both approve/reject actions
-          function handleJoinRequest(event, requestId, action) {
-              let formData = new FormData();
-              formData.append("request_id", requestId);
-              formData.append("manage_request", action);
-  
-              // Send the request using Fetch API
-              fetch("{% url 'players_approve_reject' %}", {  // URL to handle the request
-                  method: "POST",  // POST method for form submission
-                  body: formData,  // Send form data
-                  headers: {
-                      "X-Requested-With": "XMLHttpRequest" ,
-                      "X-CSRFToken": csrfToken // Ensure it's an AJAX request
-                  }
-              })
-              .then(response => response.json())  // Parse the response as JSON
-              .then(data => {
-                  // Display the response message
-                  let statusMessageEl = document.getElementById("status-message-{{ request.id }}");
-                  statusMessageEl.innerText = data.message;  // Display message from the response
-                  statusMessageEl.style.display = "block";  // Make the message visible
-  
-                  approveButton.disabled = true;
-                  rejectButton.disabled = true;
-  
-                 
-                   location.reload();  // Uncomment to reload the page
-              })
-              .catch(error => {
-                  console.error("Error:", error);
-              });
-          }
-          {% endfor %}
-      });
-    </script>
-  
 </section>
 
-<!--Match DAta section-->
+<!-- Match History Section -->
 <section>
   {% if match_data %}
   <div class="card-body p-4 text-black">
@@ -494,5 +353,135 @@ function change_desc() {
   </div>
   {% endif %}
 </section>
+{% comment %} Javascript section {% endcomment %}
+<script>
+  function change_desc() {
+      let form = document.getElementById("change-description");
+      let statusMessage = document.getElementById("status-message");
 
+      fetch(form.action, {
+          method: "POST",
+          body: new FormData(form),
+          headers: {
+              "X-Requested-With": "XMLHttpRequest"
+          }
+      })
+      .then(response => {
+          if (!response.ok) {
+              throw new Error("Failed to update description.");
+          }
+          return response.json(); // Expecting a JSON response from the server
+      })
+      .then(data => {
+          statusMessage.textContent = "Description updated successfully!";
+          statusMessage.classList.remove("d-none");
+          setTimeout(() => {
+              location.reload();
+          }, 2000);
+      })
+      .catch(error => {
+          console.error("Error:", error);
+          statusMessage.textContent = "An error occurred. Please try again.";
+          statusMessage.style.color = "red";
+          statusMessage.classList.remove("d-none");
+      });
+  }
+
+  $(document).ready(function() {
+          $('.select2').select2({
+              placeholder: 'Select a player',
+              allowClear: true,
+              width: '100%'
+          });
+  });
+
+
+  function submitForm(formId, url) {
+    document.getElementById(formId).addEventListener("submit", function(event) {
+        event.preventDefault(); // Prevent page reload
+        let formData = new FormData(this);
+        let clickedButton = document.activeElement; 
+        if (clickedButton && clickedButton.name === "action") {
+            formData.set("action", clickedButton.value);
+        }
+        fetch(url, { 
+            method: "POST",
+            body: formData,
+            headers: {
+                "X-Requested-With": "XMLHttpRequest"
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            let messageEl = document.getElementById("message");
+            messageEl.innerText = data.message;
+            messageEl.style.display = "block";
+            setTimeout(() => {location.reload();}, 3000);
+            
+        })
+        .catch(error => console.error("Error:", error));
+      });
+    }
+      document.addEventListener("DOMContentLoaded", function() {
+        submitForm("add-player-form", "{% url 'players_manage' %}");
+    });
+
+
+
+
+  document.addEventListener("DOMContentLoaded", function() {
+      // Loop through each request for join handling
+      {% for request in join_requests %}
+      // Get buttons for approve/reject actions
+        let approveButton = document.getElementById("approve-button-{{ request.id }}");
+        let rejectButton = document.getElementById("reject-button-{{ request.id }}");
+        
+        // Handle the approve action
+        approveButton.addEventListener("click", function(event) {
+            event.preventDefault(); // Prevent page reload
+            handleJoinRequest(event, "{{ request.id }}", "approve");
+        });
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+      
+        // Handle the reject action
+        rejectButton.addEventListener("click", function(event) {
+            event.preventDefault(); // Prevent page reload
+            handleJoinRequest(event, "{{ request.id }}", "reject");
+        });
+
+        // Function to handle both approve/reject actions
+        function handleJoinRequest(event, requestId, action) {
+            let formData = new FormData();
+            formData.append("request_id", requestId);
+            formData.append("manage_request", action);
+
+            // Send the request using Fetch API
+            fetch("{% url 'players_approve_reject' %}", {  // URL to handle the request
+                method: "POST",  // POST method for form submission
+                body: formData,  // Send form data
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest" ,
+                    "X-CSRFToken": csrfToken // Ensure it's an AJAX request
+                }
+            })
+            .then(response => response.json())  // Parse the response as JSON
+            .then(data => {
+                // Display the response message
+                let statusMessageEl = document.getElementById("status-message-{{ request.id }}");
+                statusMessageEl.innerText = data.message;  // Display message from the response
+                statusMessageEl.style.display = "block";  // Make the message visible
+
+                approveButton.disabled = true;
+                rejectButton.disabled = true;
+
+                
+                  location.reload();  // Uncomment to reload the page
+            })
+            .catch(error => {
+                console.error("Error:", error);
+            });
+        }
+      {% endfor %}
+  });
+</script>
 {% endblock %}

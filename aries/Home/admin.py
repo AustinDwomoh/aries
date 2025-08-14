@@ -1,5 +1,6 @@
-from clans.models import Clans, ClanStats
-from users.models import Profile, PlayerStats
+from clans.models import *
+from Home.models import Follow
+from users.models import Profile, PlayerStats,SocialLink
 from django.contrib import admin
 from tournaments.models import ClanTournament, IndiTournament
 
@@ -55,7 +56,6 @@ class ProfileInline(admin.TabularInline):
     model = Profile
     extra = 0  # No extra blank forms displayed by default
 
-
 @admin.register(Clans)
 class ClansAdmin(admin.ModelAdmin):
     """
@@ -69,3 +69,6 @@ class ClansAdmin(admin.ModelAdmin):
 # Register additional models with the default admin configuration
 admin.site.register(ClanStats)
 admin.site.register(PlayerStats)
+admin.site.register(ClanJoinRequest)
+admin.site.register(Follow)
+admin.site.register(SocialLink)

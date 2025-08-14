@@ -4,6 +4,7 @@ from itertools import chain
 from django.db.models import Q
 from django.contrib.auth import logout,login
 from django.contrib.auth.decorators import login_required
+from django.urls import reverse
 from .forms import UserRegisterForm,UserUpdateForm,ProfileUpdateForm, SocialLinkFormSet,CustomLoginForm
 from tournaments.models import ClanTournament, IndiTournament,ClanTournamentPlayer
 from django.contrib.auth.models import User
@@ -13,10 +14,12 @@ from django.utils.http import urlsafe_base64_decode
 from django.contrib.auth.tokens import default_token_generator
 from django.core.cache import cache
 from scripts import verify,follow
-from aries.settings import ErrorHandler
+from scripts.error_handle import ErrorHandler
 from django.db import transaction
 from threading import Thread
 from clans.models import Clans
+from django.contrib.auth.forms import PasswordChangeForm
+from django.contrib.auth import update_session_auth_hash
 # Create your views here.
 def register(request):
     """Registration view to create a new user account"""
@@ -107,7 +110,7 @@ def logout_view(request):
 def all_gamers(request):
     """View to display all gamers with sorting and search functionality"""
     query = request.GET.get('q', '').strip()
-    player_match_results = []
+    players = []
     no_results = False
 
     try:
@@ -143,9 +146,11 @@ def all_gamers(request):
                         match_results.append("L")
                     else:
                         match_results.append("D")
-
-            player_match_results.append({
+            background_image = player.profile.clan.clan_profile_pic.url if player.profile.clan and player.profile.clan.clan_profile_pic else '/static/images/areis-1.png'
+            print(background_image)
+            players.append({
                 "player": player,
+                "background_image": background_image,
                 "match_results": match_results,
             })
 
@@ -156,7 +161,7 @@ def all_gamers(request):
         ErrorHandler().handle(e, context="all_gamers view")
 
     context = {
-        'players': player_match_results,
+        'players': players,
         'query': query,
         'no_results': no_results,
     }
@@ -211,38 +216,53 @@ def gamer_view(request,player_id):
  
     return render(request,'users/profile_veiw.html',context)
 
+@login_required
 def edit_profile(request):
     profile = request.user.profile
     try:
         if request.method == 'POST':
             u_form = UserUpdateForm(request.POST, instance=request.user)
             p_form = ProfileUpdateForm(request.POST, request.FILES, instance=profile)
+            pass_form = PasswordChangeForm(request.user, request.POST)
             social_formset = SocialLinkFormSet(request.POST, instance=profile)
 
-            if u_form.is_valid() and p_form.is_valid() and social_formset.is_valid():
-                u_form.save()
-                p_form.save()
-                social_formset.save()
+            password_changed = False
 
-                messages.success(request, "Your account has been updated!")
+            with transaction.atomic():
+                if u_form.is_valid():
+                    u_form.save()
+                if p_form.is_valid():
+                    p_form.save()
+                if social_formset.is_valid():
+                    social_formset.save()
+                if pass_form.is_valid():
+                    user = pass_form.save()
+                    update_session_auth_hash(request, user)
+                    password_changed = True
+            if any([u_form.is_valid(),p_form.is_valid(),social_formset.is_valid(),pass_form.is_valid()]):
+                messages.success(request, "Your changes have been saved.")
+                return redirect('edit_profile')
+            else:
+                messages.error(request, "No changes saved. Please fix the errors.")
                 return redirect('user-home')
 
         else:
             u_form = UserUpdateForm(instance=request.user)
             p_form = ProfileUpdateForm(instance=profile)
+            pass_form = PasswordChangeForm(request.user)
             social_formset = SocialLinkFormSet(instance=profile)
     except Exception as e:
         messages.error(request, "There was an error updating your profile.")
         ErrorHandler().handle(e, context=f"edit_profile view for user {request.user.username}")
-
-        # Provide empty forms to avoid breaking the template
         u_form = UserUpdateForm(instance=request.user)
         p_form = ProfileUpdateForm(instance=profile)
         social_formset = SocialLinkFormSet(instance=profile)
+        pass_form = PasswordChangeForm(request.user)
 
     return render(request, 'users/edit_profile.html', {
         'u_form': u_form,
         'p_form': p_form,
+        'pass_form': pass_form,
         'social_formset': social_formset,
     })
 
@@ -277,7 +297,7 @@ class CustomLoginView(LoginView):
         # Try authenticating user first
         try:
             auth_backend = verify.MultiFieldAuthBackend()
-            user, reason = auth_backend.authenticate(request=self.request, username=identifier, password=password)
+            user, reason = auth_backend.custom_authenticate(request=self.request, username=identifier, password=password)
             if reason == 'unverified':
                 user_obj = User.objects.filter(
                     Q(username=identifier) | Q(email=identifier) | Q(profile__phone=identifier)
@@ -300,7 +320,7 @@ class CustomLoginView(LoginView):
         # Try authenticating as clan
         try:
             clan_backend = verify.ClanBackend()
-            clan,reason = clan_backend.authenticate(self.request, username=identifier, password=password)
+            clan,reason = clan_backend.custom_authenticate(self.request, username=identifier, password=password)
             if reason == 'unverified':
                 clan_obj = Clans.objects.filter(
                     Q(clan_name=identifier) | Q(email=identifier) | Q(phone=identifier)
@@ -424,8 +444,6 @@ def verification_pending(request):
 
     return render(request, 'users/verification_pending.html', {'user': user,'clan':clan})
 
-  
-#@csrf_exempt  # only if CSRF causes issues in dev; remove this in production
 def resend_verification(request):
     if request.method == 'POST':
         method = request.POST.get('method')

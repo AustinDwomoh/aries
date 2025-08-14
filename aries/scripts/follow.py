@@ -3,11 +3,12 @@ from django.shortcuts import get_object_or_404
 from Home.models import Follow  
 from clans.models import Clans  
 from django.contrib.auth.models import User
-from django import template
-from django.contrib.contenttypes.models import ContentType
-from collections import defaultdict
 
 def get_logged_in_entity(request):
+    """
+    Returns the logged-in user or clan instance based on session flags.
+    Returns None if no valid login is found.
+    """
     if request.session.get('is_user'):
         return request.user
     elif request.session.get('is_clan'):
@@ -19,8 +20,11 @@ def get_logged_in_entity(request):
             return None
     return None
 
-
 def get_followed_instance(followed_model, followed_id):
+    """
+    Retrieves and returns an instance of User or Clans based on model type string and ID.
+    Raises ValueError if the model type is invalid.
+    """
     model_map = {
         "clan": Clans,
         "user": User,
@@ -30,17 +34,14 @@ def get_followed_instance(followed_model, followed_id):
         raise ValueError("Invalid followed model.")
     return get_object_or_404(Model, id=followed_id)
 
-
-def get_profile_instance(profile_id):
-    try:
-        return Clans.objects.get(id=profile_id)
-    except Clans.DoesNotExist:
-        return get_object_or_404(User, id=profile_id)
-
-
 def follow(follower_instance, followed_instance, status='accepted'):
-    if type(follower_instance) == type(followed_instance) and follower_instance.id == followed_instance.id:
-        raise ValueError("Cannot follow yourself.")
+    """
+    Creates or updates a follow relationship between follower and followed.
+    Prevents self-follow and updates mutual status if reciprocal accepted follow exists.
+    Returns the follow object and whether it was created.
+    """
+    if (follower_instance.__class__ == followed_instance.__class__ and follower_instance.id == followed_instance.id):
+        raise ValueError("Cannot follow yourself.")#safeguard against self-follow 
 
     follow_obj, created = Follow.objects.get_or_create(
         follower_content_type=ContentType.objects.get_for_model(follower_instance),
@@ -71,9 +72,11 @@ def follow(follower_instance, followed_instance, status='accepted'):
 
     return follow_obj, created
 
-
-
 def unfollow(follower_instance, followed_instance):
+    """
+    Deletes the follow relationship where follower follows followed.
+    Returns the number of deleted objects.
+    """
     return Follow.objects.filter(
         follower_content_type=ContentType.objects.get_for_model(follower_instance),
         follower_object_id=follower_instance.id,
@@ -81,8 +84,11 @@ def unfollow(follower_instance, followed_instance):
         followed_object_id=followed_instance.id
     ).delete()
 
-
 def is_follower(follower_instance, followed_instance):
+    """
+    Checks if a follow relationship exists where follower follows followed.
+    Returns True if exists, False otherwise.
+    """
     return Follow.objects.filter(
         follower_content_type=ContentType.objects.get_for_model(follower_instance),
         follower_object_id=follower_instance.id,
@@ -90,8 +96,10 @@ def is_follower(follower_instance, followed_instance):
         followed_object_id=followed_instance.id
     ).exists()
 
-
 def get_following(instance):
+    """
+    Returns a dict with lists of users and clans that the instance is following.
+    """
     content_type = ContentType.objects.get_for_model(instance)
     follows = Follow.objects.filter(
         follower_content_type=content_type,
@@ -109,8 +117,10 @@ def get_following(instance):
 
     return result
 
-
 def get_followers(instance):
+    """
+    Returns a dict with lists of users and clans that are following the instance.
+    """
     content_type = ContentType.objects.get_for_model(instance)
     follows = Follow.objects.filter(
         followed_content_type=content_type,
@@ -143,14 +153,11 @@ def count_followers(instance):
         status='accepted'
     ).count()
 
-def block(follower_instance, followed_instance):
-    return follow(follower_instance, followed_instance, status='blocked')
-
-
 def accept_follow_request(followed_instance, follower_instance):
     """
-    Accept a pending follow request.
-    Note: follower_instance initiated the follow.
+    Accepts a pending follow request initiated by follower to followed.
+    Updates mutual status if reciprocal accepted follow exists.
+    Returns the updated follow object or None.
     """
     follow_obj = Follow.objects.filter(
         follower_content_type=ContentType.objects.get_for_model(follower_instance),
@@ -181,8 +188,10 @@ def accept_follow_request(followed_instance, follower_instance):
 
     return None
 
-
 def get_unnotified_follows_for(instance):
+    """
+    Returns all accepted follow records where instance is followed and notification is pending.
+    """
     return Follow.objects.filter(
         followed_content_type=ContentType.objects.get_for_model(instance),
         followed_object_id=instance.id,

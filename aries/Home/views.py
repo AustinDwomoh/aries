@@ -2,21 +2,13 @@ from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import render
 from django.contrib.auth.models import User
 from clans.models import Clans
-from aries.settings import ErrorHandler
+from scripts.error_handle import ErrorHandler
 from scripts.follow import *
-from django.views.generic import ListView
-from .models import Follow
-from django.contrib.contenttypes.models import ContentType
+
 
 def home(request):
     """
     Renders the home page of the website.
-
-    Args:
-        request (HttpRequest): The HTTP request object sent by the client.
-
-    Returns:
-        HttpResponse: Renders the 'Home/index.html' template as the response.
     """
     try:
         clans = Clans.objects.select_related('stat').filter(is_verified=True).order_by('-stat__elo_rating')[:10]
@@ -36,27 +28,37 @@ def home(request):
 def about(request):
     """
     Renders the about page of the website.
-
-    Args:
-        request (HttpRequest): The HTTP request object sent by the client.
-
-    Returns:
-        HttpResponse: Renders the 'Home/about.html' template as the response.
     """
     return render(request, 'Home/about.html')
 
-
 def trigger_error_view(request):
-    handler = ErrorHandler()
-
+    """
+    A test view that deliberately raises an exception (division by zero) to
+    verify error handling and logging mechanisms. The error is caught, logged,
+    and a 500 response is returned to confirm the error was recorded.
+    """
     try:
         # Intentional error
         1 / 0
     except Exception as e:
-        handler.handle(e, context="Trigger error test view")
+        ErrorHandler().handle(e, context="Trigger error test view")
         return HttpResponse("Error has been logged and admin notified.", status=500)
 
 def follow_list_view(request, ftype, model, profile_id):
+    """
+    Displays a list of followers or following entities for a given profile.
+
+    Args:
+        ftype (str): The type of list to display, either 'followers' or 'following'.
+        model (str): The model name of the profile entity.
+        profile_id (int): The ID of the profile whose followers/following to retrieve.
+
+    Returns:
+        Rendered HTML page showing the lists of users and clans for the specified type.
+
+    Handles invalid 'ftype' with a bad request response.
+    """
+    print(f"Follow list view called with ftype={ftype}, model={model}, profile_id={profile_id}")
     if ftype == 'followers':
         instance = get_followed_instance(model, profile_id)
         data = get_followers(instance)  

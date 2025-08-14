@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% load static crispy_forms_tags %}
+{% block title %}{{ clan.clan_name }}{% endblock %}
+{% block content %}
+<style>
+  body { background-color: #fff !important; }
+</style>
+
+<section>
+  <div class="container-fluid mt-4">
+    <!-- Tab Navigation -->
+    <ul class="nav nav-tabs" role="tablist">
+      <li class="nav-item">
+        <a class="nav-link active" data-bs-toggle="tab" href="#basic" role="tab">Basic Info</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" data-bs-toggle="tab" href="#contact" role="tab">Contact</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" data-bs-toggle="tab" href="#media" role="tab">Media</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" data-bs-toggle="tab" href="#recruitment" role="tab">Recruitment</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" data-bs-toggle="tab" href="#social-links" role="tab">Social Links</a>
+      </li>
+    </ul>
+
+    <div class="tab-content mt-3">
+
+      <!-- Basic Info Tab -->
+      <div class="tab-pane fade show active" id="basic" role="tabpanel">
+        <div class="container mt-3">
+          <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            {{ basic_form|crispy }}
+            <button type="submit" class="btn btn-primary mt-3">Save Basic Info</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Contact Tab -->
+      <div class="tab-pane fade" id="contact" role="tabpanel">
+        <div class="container mt-3">
+          <form method="post">
+            {% csrf_token %}
+            {{ contact_form|crispy }}
+            <button type="submit" class="btn btn-primary mt-3">Save Contact</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Media Tab -->
+      <div class="tab-pane fade" id="media" role="tabpanel">
+        <div class="container mt-3">
+          <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            {{ media_form|crispy }}
+            <button type="submit" class="btn btn-primary mt-3">Save Media</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Recruitment Tab -->
+      <div class="tab-pane fade" id="recruitment" role="tabpanel">
+        <div class="container mt-3">
+          <form method="post">
+            {% csrf_token %}
+            {{ recruitment_form|crispy }}
+            <button type="submit" class="btn btn-primary mt-3">Save Recruitment</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Social Links Tab -->
+      <div class="tab-pane fade" id="social-links" role="tabpanel">
+        <div class="container mt-3">
+          <form method="post" id="social-links-form" style="width:auto;">
+            {% csrf_token %}
+            {{ social_formset.management_form }}
+            <div id="social-links-formset" class="mb-3">
+              {% for form in social_formset %}
+                <div class="card p-3 mb-2 border social-form">
+                  <div class="row g-2 align-items-center">
+                    <div class="col-md-3 col-sm-12">{{ form.link_type|as_crispy_field }}</div>
+                    <div class="col-md-5">{{ form.url|as_crispy_field }}</div>
+                    <div class="col-md-2">{{ form.display_order|as_crispy_field }}</div>
+                    <div class="col-md-1">{{ form.is_active|as_crispy_field }}</div>
+                    <div class="col-md-1 text-center">
+                      {% if form.instance.pk %}
+                        {{ form.DELETE }} <small>Delete</small>
+                      {% else %}
+                        <button type="button" class="btn btn-danger btn-sm remove-form">✖</button>
+                      {% endif %}
+                    </div>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+            <button type="button" class="btn btn-outline-primary mt-2" id="add-social-form">+ Add Social Link</button>
+            <button type="submit" class="btn btn-primary mt-3">Save Social Links</button>
+          </form>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const formsetDiv = document.getElementById("social-links-formset");
+    const addFormButton = document.getElementById("add-social-form");
+    const totalForms = document.querySelector("#social-links-form input[name$='-TOTAL_FORMS']");
+
+    addFormButton.addEventListener("click", function () {
+        const formCount = parseInt(totalForms.value);
+        const newFormHtml = document.querySelector(".social-form").outerHTML.replace(
+            /social_formset-\d+/g,
+            `social_formset-${formCount}`
+        );
+        const tempDiv = document.createElement("div");
+        tempDiv.innerHTML = newFormHtml;
+
+        tempDiv.querySelectorAll("input, select").forEach(input => {
+            if (input.type === "checkbox" || input.type === "radio") input.checked = false;
+            else input.value = "";
+        });
+
+        const col = tempDiv.querySelector(".col-md-1.text-center");
+        if (col) col.innerHTML = `<button type="button" class="btn btn-danger btn-sm remove-form">✖</button>`;
+
+        formsetDiv.appendChild(tempDiv.firstElementChild);
+        totalForms.value = formCount + 1;
+    });
+
+    formsetDiv.addEventListener("click", function (e) {
+        if (e.target.classList.contains("remove-form")) {
+            e.target.closest(".social-form").remove();
+
+            const updatedCount = document.querySelectorAll(".social-form").length;
+            totalForms.value = updatedCount;
+
+            document.querySelectorAll(".social-form").forEach((form, index) => {
+                form.querySelectorAll("[name], [id]").forEach(el => {
+                    if (el.name) el.name = el.name.replace(/social_formset-\d+/, `social_formset-${index}`);
+                    if (el.id) el.id = el.id.replace(/social_formset-\d+/, `social_formset-${index}`);
+                });
+            });
+        }
+    });
+});
+</script>
+
+{% endblock %}

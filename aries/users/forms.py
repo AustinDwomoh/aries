@@ -37,26 +37,46 @@ class UserRegisterForm(UserCreationForm):
 
         return user
 
-
-class UserUpdateForm(forms.ModelForm):
-    class Meta:
-        model = User
-        fields = ['username']
-
 class SocialLinkForm(forms.ModelForm):
     class Meta:
         model = SocialLink
-        fields = ['link_type', 'url']
+        fields = ['link_type', 'url', 'display_order', 'is_active']
+        widgets = {
+            'link_type': forms.Select(attrs={'class': 'form-select'}),
+            'url': forms.URLInput(attrs={'placeholder': 'https://example.com', 'class': 'form-control'}),
+            'display_order': forms.NumberInput(attrs={'class': 'form-control', 'min': 0}),
+            'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
 
-SocialLinkFormSet = inlineformset_factory(Profile, SocialLink, form=SocialLinkForm, extra=1, can_delete=True)
 
+SocialLinkFormSet = inlineformset_factory(
+    Profile,            
+    SocialLink,         
+    form=SocialLinkForm,
+    extra=1,            
+    can_delete=True     
+)
 
+class UserUpdateForm(forms.ModelForm):
+    email = forms.EmailField(required=False)
+    class Meta:
+        model = User
+        fields = ['username','email']
+        widgets = {
+            'username': forms.TextInput(attrs={'class': 'form-control form-control-lg'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control form-control-lg'}),
+        }
+        
 class ProfileUpdateForm(forms.ModelForm):
     profile_picture = forms.ImageField(required=False)
-
+    phone = forms.CharField(required=False)
     class Meta:
         model = Profile
-        fields = ['profile_picture']
+        fields = ['profile_picture','phone']
+        widgets = {
+            'profile_picture': forms.TextInput(attrs={'class': 'form-control form-control-lg'}),
+            'phone': forms.EmailInput(attrs={'class': 'form-control form-control-lg'}),
+        }
 
 class CustomLoginForm(forms.Form):
     identifier = forms.CharField(widget=forms.TextInput(attrs={

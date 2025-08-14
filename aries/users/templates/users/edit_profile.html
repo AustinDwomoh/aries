@@ -1,137 +1,163 @@
 {% extends "base.html" %}
-{% load static %}
-{% block title %}{{ user.username }} {% endblock title %}
-{% load crispy_forms_tags %}
+{% load static crispy_forms_tags %}
+{% block title %}{{ user.username }}{% endblock %}
 {% block content %}
-<STYle>
-  body{
-    background-color: #fff !important;
-  }
-</STYle>
+<style>
+  body { background-color: #fff !important; }
+</style>
 
 <section>
-  <div class="rounded-top text-white d-flex flex-row" style="background-image: url('{{ user.profile.clan.clan_profile_pic.url }}'); background-size: cover; background-position: center; height: 220px;">
-    <div class="ms-2 mt-5 d-flex flex-column" style="width: 150px;">
-      <img src="{{ user.profile.profile_picture.url }}" 
-           alt="Inphinithy"  class="img-fluid img-thumbnail mt-2 mb-2" style="width: 150px;height: 160px;  z-index: 1" loading="lazy">
+  <!-- Forms with Tabs -->
+  <div class="container-fluid mt-4">
+      <!-- Tab Navigation -->
+    <ul class="nav nav-tabs" role="tablist">
+      <li class="nav-item">
+          <a class="nav-link active" data-bs-toggle="tab" href="#account" role="tab">Account</a>
+      </li>
+      <li class="nav-item">
+          <a class="nav-link" data-bs-toggle="tab" href="#profile" role="tab">Profile</a>
+      </li>
+      <li class="nav-item">
+          <a class="nav-link" data-bs-toggle="tab" href="#social-links" role="tab">Social Links</a>
+      </li>
+      <li class="nav-item">
+          <a class="nav-link" data-bs-toggle="tab" href="#password" role="tab">Password</a>
+      </li>
+    </ul>
+
+    <div class="tab-content mt-3">
+
+      <!-- Account Tab -->
+      <div class="tab-pane fade show active" id="account" role="tabpanel">
+          <div class="container mt-3">
+            <form method="post" enctype="multipart/form-data" id="account-form">
+                {% csrf_token %}
+                {{ u_form|crispy }}
+                <button type="submit" class="btn btn-primary mt-3">Save Account</button>
+            </form>
+          </div>
+      </div>
+
+      <!-- Profile Tab -->
+      <div class="tab-pane fade" id="profile" role="tabpanel">
+        <div class="container mt-3">
+          <form method="post" enctype="multipart/form-data" id="profile-form">
+              {% csrf_token %}
+              {{ p_form|crispy }}
+              <button type="submit" class="btn btn-primary mt-3">Save Profile</button>
+          </form>
+          </div>
+      </div>
+
+      <!-- Social Links Tab -->
+      <div class="tab-pane fade" id="social-links" role="tabpanel">
+        <div class="container mt-3">
+          <form method="post" id="social-links-form" style="width: auto;">
+              {% csrf_token %}
+              {{ social_formset.management_form }}
+              <div id="social-links-formset" class="mb-3">
+                  {% for form in social_formset %}
+                      <div class="card p-3 mb-2 border social-form">
+                          <div class="row g-2 align-items-center">
+                              <div class="col-md-3 col-sm-12">{{ form.link_type|as_crispy_field }}</div>
+                              <div class="col-md-5">{{ form.url|as_crispy_field }}</div>
+                              <div class="col-md-2">{{ form.display_order|as_crispy_field }}</div>
+                              <div class="col-md-1">{{ form.is_active|as_crispy_field }}</div>
+                              <div class="col-md-1 text-center">
+                                  {% if form.instance.pk %}
+                                      {{ form.DELETE }} <small>Delete</small>
+                                  {% else %}
+                                      <button type="button" class="btn btn-danger btn-sm remove-form">✖</button>
+                                  {% endif %}
+                              </div>
+                          </div>
+                      </div>
+                  {% endfor %}
+              </div>
+              <button type="button" class="btn btn-outline-primary mt-2" id="add-social-form">+ Add Social Link</button>
+              <button type="submit" class="btn btn-primary mt-3">Save Social Links</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Password Tab -->
+      <div class="tab-pane fade" id="password" role="tabpanel">
+        <div class="container mt-3">
+          <form method="post" id="password-form">
+              {% csrf_token %}
+              {{ pass_form|crispy }}
+              <button type="submit" class="btn btn-primary mt-3">Change Password</button>
+          </form>
+          </div>
+      </div>
+
     </div>
   </div>
-  <div class="d-flex justify-content-between align-items-center py-2 px-3 text-body bg-light rounded shadow-sm" style="width: 100%;">
-    <div class="text-left">
-      <h5>Username:{{ user.username }} [{{ user.profile.role|slice:":1"}}]</h5>
-      {% if user.profile.clan.clan_name %}
-        <p>Clan:{{ user.profile.clan.clan_name }} [{{user.profile.clan.clan_tag}}]</p>
-      {% else %}
-        <p>Clanless</p>
-      {% endif %}
-    </div>  
-  </div>
- 
-<div class="container-fluid">
-  <form method="post" enctype="multipart/form-data">
-    {% csrf_token %}
-    <div class="mb-4">
-        {{ u_form|crispy }}
-        {{ p_form|crispy }}
-    </div>
-
-    <div id="social-links-formset">
-        {{ social_formset.management_form }}
-
-        {% for form in social_formset %}
-            <div class="card mb-3 p-3 social-form">
-                <div class="row">
-                    <div class="col-md-5">
-                        {{ form.link_type|as_crispy_field }}
-                    </div>
-                    <div class="col-md-6">
-                        {{ form.url|as_crispy_field }}
-                    </div>
-                    <div class="col-md-1 d-flex align-items-center">
-                        {% if form.instance.pk %}
-                            <label class="form-check-label">
-                                {{ form.DELETE }} Delete
-                            </label>
-                        {% else %}
-                            <button type="button" class="btn btn-danger btn-sm remove-form">✖</button>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-        {% endfor %}
-    </div>
-
-    <button type="button" class="btn btn-secondary" id="add-form">Add Social Link</button>
-    <button type="submit" class="btn btn-primary">Update</button>
-</form>
-
-</div>
-
 </section>
+
 <script>
   document.addEventListener("DOMContentLoaded", function () {
-      const formsetDiv = document.getElementById("social-links-formset");
-      const addFormButton = document.getElementById("add-form");
-      const totalForms = document.querySelector("#id_social_formset-TOTAL_FORMS");
-  
-      addFormButton.addEventListener("click", function () {
-          const formCount = parseInt(totalForms.value);
-          const newFormHtml = document.querySelector(".social-form").outerHTML.replace(
-              /social_formset-\d+/g,
-              `social_formset-${formCount}`
-          ).replace(
-              /id="id_/g,
-              `id="id_`
-          );
-  
-          const tempDiv = document.createElement("div");
-          tempDiv.innerHTML = newFormHtml;
-  
-          // Reset input values in the new form
-          const inputs = tempDiv.querySelectorAll("input, select");
-          inputs.forEach(input => {
-              if (input.type === "checkbox" || input.type === "radio") {
-                  input.checked = false;
-              } else {
-                  input.value = "";
-              }
-          });
-  
-          // Remove any DELETE checkbox from the new form
-          const deleteInput = tempDiv.querySelector('input[type="checkbox"][name$="DELETE"]');
-          if (deleteInput) {
-              deleteInput.closest('label')?.remove();
-          }
-  
-          // Add remove button
-          const col = tempDiv.querySelector(".col-md-1");
-          if (col) {
-              col.innerHTML = `<button type="button" class="btn btn-danger btn-sm remove-form">✖</button>`;
-          }
-  
-          formsetDiv.appendChild(tempDiv.firstElementChild);
-          totalForms.value = formCount + 1;
-      });
-  
-      // Remove form on clicking the X button
-      formsetDiv.addEventListener("click", function (e) {
-          if (e.target.classList.contains("remove-form")) {
-              e.target.closest(".social-form").remove();
-  
-              // Recalculate form count
-              const updatedCount = document.querySelectorAll(".social-form").length;
-              totalForms.value = updatedCount;
-  
-              // Rename inputs so Django doesn't freak out
-              document.querySelectorAll(".social-form").forEach((form, index) => {
-                  form.querySelectorAll("[name], [id]").forEach(el => {
-                      if (el.name) el.name = el.name.replace(/social_formset-\d+/, `social_formset-${index}`);
-                      if (el.id) el.id = el.id.replace(/social_formset-\d+/, `social_formset-${index}`);
-                  });
-              });
-          }
-      });
-  });
-  </script>
-  
-{% endblock content %}
+    const formsetDiv = document.getElementById("social-links-formset");
+    const addFormButton = document.getElementById("add-social-form");
+    const totalForms = document.querySelector("#social-links-form input[name$='-TOTAL_FORMS']");
+
+    addFormButton.addEventListener("click", function () {
+        const formCount = parseInt(totalForms.value);
+        const newFormHtml = document.querySelector(".social-form").outerHTML.replace(
+            /social_formset-\d+/g,
+            `social_formset-${formCount}`
+        );
+        const tempDiv = document.createElement("div");
+        tempDiv.innerHTML = newFormHtml;
+
+        // Clear inputs in the new form
+        tempDiv.querySelectorAll("input, select").forEach(input => {
+            if (input.type === "checkbox" || input.type === "radio") input.checked = false;
+            else input.value = "";
+        });
+
+        // Update remove button
+        const col = tempDiv.querySelector(".col-md-1.text-center");
+        if (col) col.innerHTML = `<button type="button" class="btn btn-danger btn-sm remove-form">✖</button>`;
+
+        formsetDiv.appendChild(tempDiv.firstElementChild);
+        totalForms.value = formCount + 1;
+    });
+
+    // Remove form on clicking the X button
+    formsetDiv.addEventListener("click", function (e) {
+        if (e.target.classList.contains("remove-form")) {
+            e.target.closest(".social-form").remove();
+
+            const updatedCount = document.querySelectorAll(".social-form").length;
+            totalForms.value = updatedCount;
+
+            // Rename inputs so Django can process them correctly
+            document.querySelectorAll(".social-form").forEach((form, index) => {
+                form.querySelectorAll("[name], [id]").forEach(el => {
+                    if (el.name) el.name = el.name.replace(/social_formset-\d+/, `social_formset-${index}`);
+                    if (el.id) el.id = el.id.replace(/social_formset-\d+/, `social_formset-${index}`);
+                });
+            });
+        }
+    });
+});
+
+document.addEventListener("DOMContentLoaded", function () {
+    const passwordTab = document.querySelector('#password');
+    const passwordFields = passwordTab.querySelectorAll('input');
+
+    document.querySelectorAll('a[data-bs-toggle="tab"]').forEach(tabLink => {
+        tabLink.addEventListener('shown.bs.tab', function (e) {
+            if (e.target.getAttribute('href') === '#password') {
+                passwordFields.forEach(f => f.required = true);
+            } else {
+                passwordFields.forEach(f => f.required = false);
+            }
+        });
+    });
+});
+
+</script>
+{% endblock %}
+

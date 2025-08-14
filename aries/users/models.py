@@ -41,7 +41,7 @@ class PlayerStats(models.Model):
     achievements = models.JSONField(blank=True, null=True)
     RANK_CHOICES = [('rookie', 'Rookie'),('prodigy', 'Prodigy'),('veteran', 'Veteran'),('legend', 'Legend'),('superstar', 'Superstar'),('elite', 'Elite'),('mvp', 'MVP'),('world_class', 'World-Class'),]
     rank = models.CharField(max_length=20,choices=RANK_CHOICES,default="Unranked",null=True,editable=False)
-    games_played = models.IntegerField(default=0)
+    total_matches = models.IntegerField(default=0)
     win_rate = models.FloatField(default=0.0)
     total_wins = models.IntegerField(default=0)
     total_losses = models.IntegerField(default=0)
@@ -65,11 +65,11 @@ class PlayerStats(models.Model):
             (2400, 'grandmaster'),
             (2600, 'champion'),
         ]
-        self.ranking = 'invincible'
+        self.rank = 'invincible'
 
         for threshold, rank in ranking_thresholds:
             if self.elo_rating < threshold:
-                self.ranking = rank
+                self.rank = rank
                 break
 
         self.save()
@@ -113,14 +113,27 @@ class SocialLink(models.Model):
         ('linkedin', 'LinkedIn'),
         ('twitter', 'Twitter'),
         ('instagram', 'Instagram'),
+        ('facebook', 'Facebook'),
+        ('youtube', 'YouTube'),
+        ('tiktok', 'TikTok'),
         ('website', 'Website'),
         ('other', 'Other'),
     ]
 
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='social_links')
     link_type = models.CharField(max_length=20, choices=SOCIAL_CHOICES)
-    url = models.URLField()
+    url = models.URLField(max_length=500)
+    display_order = models.PositiveIntegerField(default=0, help_text="Order in which this link should appear")
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["display_order", "link_type"]
+        unique_together = ("profile", "link_type")
 
     def __str__(self):
-        return f"{self.get_link_type_display()}: {self.url}"
+        return f"{self.get_link_type_display()} - {self.url}"
 
+    def clean(self):
+        # Auto-prepend https:// if missing
+        if self.url and not self.url.startswith(("http://", "https://")):
+            self.url = "https://" + self.url

@@ -17,9 +17,9 @@ Clans
       opacity: 1;
   }
 </style>
+{% comment %} Search bar {% endcomment %}
 <div class="container">
   <div class="row align-items-center"> 
-    <h2 class="text-center">Clans</h2>
       <form method="GET" action="{% url 'clan_home' %}" class="mb-4">
         <div class="d-flex justify-content-between">
           <input type="text" name="q" class="form-control" placeholder="Search for a clan..." value="{{ query }}">
@@ -72,7 +72,7 @@ Clans
                             <p class="small  mb-0">Matches</p>
                           </div>
                           <div class="mx-2">
-                            <p class="mb-1 h6 text-warning">{{ clan.stat.ranking }}</p>
+                            <p class="mb-1 h6 text-warning">{{ clan.stat.rank }}</p>
                             <p class="small  mb-0">Tier</p>
                           </div>
                         {% if clan.is_recruiting %}

@@ -9,53 +9,52 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone
 from django.urls import reverse
-
+from .tourmanager import TourManager
 
 def tours(request):
-    """View function to display all tournaments with optional search functionality."""
-    cvc_tournaments = ClanTournament.objects.annotate(
-        team_count=Count('teams')
-    ).order_by('-team_count')
+    """
+    Display all tournaments (Clan vs Clan and Individual) with optional search.
+    Results are ordered by number of participants (teams or players).
+    """
+    query = request.GET.get('q', '').strip()
 
-    indi_tournaments = IndiTournament.objects.annotate(
-        player_count=Count('players')
-    ).order_by('-player_count')
-    
-    query = request.GET.get('q', '')
-    if query:
-        cvc_tournaments = cvc_tournaments.filter(
-            Q(name__icontains=query) | 
-            Q(tour_type__icontains=query) 
-        )
+    def filter_and_order(queryset, count_field, search_fields):
+        """
+        Annotates a queryset with a count field, orders by it (descending),
+        and applies search filtering if a query is provided.
+        """
+        qs = queryset.annotate(count=Count(count_field)).order_by('-count')
+        if query:
+            search_filter = Q()
+            for field in search_fields:
+                search_filter |= Q(**{f"{field}__icontains": query})
+            qs = qs.filter(search_filter)
+        return qs
 
-        indi_tournaments = indi_tournaments.filter(
-            Q(name__icontains=query) |
-            Q(tour_type__icontains=query)
-        )
-
-    no_results_cvc = not cvc_tournaments.exists()
-    no_results_indi = not indi_tournaments.exists()
- 
+    cvc_tournaments = filter_and_order(ClanTournament.objects.all(),'teams',['name', 'tour_type'])
+    indi_tournaments = filter_and_order(IndiTournament.objects.all(),'players',['name', 'tour_type']) 
     context = {
         "cvc_tournaments": cvc_tournaments,
         "indi_tournaments": indi_tournaments,
-        "no_results_cvc": no_results_cvc,  
-        "no_results_indi": no_results_indi,
+        "no_results_cvc": not cvc_tournaments.exists(),
+        "no_results_indi": not indi_tournaments.exists(),
     }
     return render(request, 'tournaments/tours.html', context)
 
 def tours_cvc_view(request,tour_id):
+    """
+    View for displaying a single Clan vs Clan tournament's match data.
+
+    Args:
+        request (HttpRequest): Incoming HTTP request object.
+        tour_id (int): The primary key (ID) of the ClanTournament to display
+
+    """
     cvc_tournaments = get_object_or_404(ClanTournament, id=tour_id)
     match_data = cvc_tournaments.load_match_data_from_file()
     tour_kind = 'cvc'
 
-    match_data, rounds = process_tournament_data(
-        cvc_tournaments.tour_type,
-        match_data,
-        resolver=resolve_team_clan,
-        tournament=cvc_tournaments
-    )
-
+    match_data, rounds = process_tournament_data(cvc_tournaments.tour_type,match_data,resolver=resolve_team_clan,tournament=cvc_tournaments)
     return render(request, 'tournaments/tours_veiw.html', {
         'tour': cvc_tournaments,
         'match_data': match_data,
@@ -64,6 +63,14 @@ def tours_cvc_view(request,tour_id):
     })
 
 def tours_indi_view(request,tour_id):
+    """
+    View for displaying a single indi vs indi tournament's match data.
+
+    Args:
+        request (HttpRequest): Incoming HTTP request object.
+        tour_id (int): The primary key (ID) of the Inditournament to display
+
+    """
     indi_tournaments = get_object_or_404(IndiTournament, id=tour_id)
     match_data = indi_tournaments.load_match_data_from_file()
     tour_kind = 'indi'
@@ -84,7 +91,22 @@ def tours_indi_view(request,tour_id):
 
 @login_required
 def create_clan_tournament(request):
-    """View function to create a new Clan Tournament."""
+    """
+    Create a new Clan vs Clan (CVC) tournament.
+
+    Behavior:
+        - Requires the user to be logged in.
+        - On GET: renders an empty form.
+        - On POST: validates the form, assigns `created_by` as the current user,
+          saves the tournament, and links selected teams.
+        - Redirects to the CVC tournament details page after creation.
+
+    Args:
+        request (HttpRequest): HTTP request object.
+
+    Returns:
+        HttpResponse: Rendered template or redirect.
+    """
     if request.method == 'POST':
         form = ClanTournamentForm(request.POST,request.FILES)
         if form.is_valid():
@@ -104,19 +126,32 @@ def create_clan_tournament(request):
 
 @login_required
 def create_indi_tournament(request):
-    """View function to create a new indi Tournament."""
+    """
+    Create a new Individual tournament.
+
+    Behavior:
+        - Requires the user to be logged in.
+        - On GET: renders an empty form.
+        - On POST: validates the form, assigns `created_by` as the current user,
+          saves the tournament, and links selected players.
+        - Redirects to the individual tournament details page after creation.
+
+    Args:
+        request (HttpRequest): HTTP request object.
+
+    Returns:
+        HttpResponse: Rendered template or redirect.
+    """
     if request.method == 'POST':
         form = IndiTournamentForm(request.POST, request.FILES,current_profile=request.user.profile)  # Handle files for logo
 
         if form.is_valid():
             tour = form.save(commit=False)
-            tour.created_by = request.user  
-            tour.save()  
-            players = form.cleaned_data.get('players')
-            tour.players.set(players)  
+            tour.created_by = request.user
+            tour.logo = form.cleaned_data.get('logo', tour.logo)  # Set logo if provided
             tour.save()
-            tour.logo = form.cleaned_data.get('logo', tour.logo)
-            tour.save()
+            tour.players.set(form.cleaned_data.get('players', []))  # Link players
+            tour.save()  # Save just incase
             return redirect(reverse("indi_details", kwargs={"tour_id": tour.id}))
     else:
         form = IndiTournamentForm(current_profile=request.user.profile)
@@ -125,12 +160,37 @@ def create_indi_tournament(request):
 
 @login_required
 def update_indi_tour(request, tour_id):
-    """View function to update an individual tournament match result."""
-    indi_tournaments = get_object_or_404(IndiTournament, id=tour_id)
+    """
+    Update an Individual Tournament match result.
+
+    Behavior:
+        - Retrieves the tournament by ID (404 if not found).
+        - Reads `team_a`, `team_b`, and round number (regular or knockout) from query params.
+        - On GET: displays a form for entering match scores.
+        - On POST: validates and updates the tournament data via its `update_tour()` method.
+        - Redirects to tournament details after successful update.
+
+    Args:
+        request (HttpRequest): HTTP request object.
+        tour_id (int): ID of the Individual Tournament to update.
+
+    Query Parameters:
+        team_a (str): Name of team A.
+        team_b (str): Name of team B.
+        round (int): Round number for league/group stages.
+        kround (int): Knockout round number (if applicable).
+        leg (int): Optional leg number for multi-leg matches.
+
+    Returns:
+        HttpResponse: Rendered template or redirect.
+    """
+    indi_tournament = get_object_or_404(IndiTournament, id=tour_id)
     team_a_name = request.GET.get('team_a', '')
     team_b_name = request.GET.get('team_b', '')
    
-    round_num = int(request.GET.get('round', 0) or request.GET.get('kround', 0))
+    # Determine round number (kround takes priority if present)
+    round_num = int(request.GET.get('kround') or request.GET.get('round') or 0)
+    leg_number = int(request.GET.get('leg', '0'))
     if request.method == "POST":
         form = MatchResultForm(request.POST)
         if form.is_valid():
@@ -141,15 +201,16 @@ def update_indi_tour(request, tour_id):
                     "team_b": team_b_name,
                     "team_a_goals": form.cleaned_data["team_a_goals"],
                     "team_b_goals": form.cleaned_data["team_b_goals"],
-                    "leg_number": int(request.GET.get('leg','0'))
+                    "leg_number": leg_number
                 }
             ]
            
-            if request.GET.get('kround', None):
-                indi_tournaments.update_tour(round_num, match_results, KO=True)
-            else:
-                indi_tournaments.update_tour(round_num, match_results)
-            return redirect(reverse("indi_details", kwargs={"tour_id": indi_tournaments.id}))
+            indi_tournament.update_tour(
+                round_num,
+                match_results,
+                KO=bool(request.GET.get('kround'))
+            )
+            return redirect(reverse("indi_details", kwargs={"tour_id": indi_tournament.id}))
     else:
         form = MatchResultForm()
 
@@ -157,11 +218,34 @@ def update_indi_tour(request, tour_id):
         "form": form, 
         "team_a_name": team_a_name,
         "team_b_name": team_b_name,
-        'round':round
+        "round": round_num,  
+        "leg": leg_number
     })
 
 @login_required
 def assign_user_to_tournament(request, tournament_id, clan_id):
+    """
+    Assign a user to a clan for a given Clan Tournament.
+
+    Behavior:
+        - Accepts only POST requests.
+        - Retrieves the target user, tournament, and clan (404 if any are missing).
+        - If the tournament has 'fixed' player mode, returns a message instead of assigning.
+        - Otherwise, creates the assignment if it does not exist already.
+
+    Args:
+        request (HttpRequest): Incoming HTTP request object.
+        tournament_id (int): ID of the ClanTournament.
+        clan_id (int): ID of the Clans entry.
+
+    POST Data:
+        user_id (int): ID of the user to assign.
+
+    Returns:
+        HttpResponse or HttpResponseRedirect:
+            - Redirects to a success page on assignment.
+            - Returns an error message for fixed mode or bad data.
+    """
     if request.method == "POST":
         user_id = request.POST.get('user_id')
         user = User.objects.get(pk=user_id)
@@ -169,7 +253,6 @@ def assign_user_to_tournament(request, tournament_id, clan_id):
         clan = Clans.objects.get(pk=clan_id)
 
         if tournament.player_mode == 'fixed':
-            # Check if mid-season update is allowed
             return HttpResponse("Player assignments are fixed for this tournament.")
         
         ClanTournamentPlayer.objects.get_or_create(user=user, clan=clan, tournament=tournament)
@@ -190,172 +273,10 @@ def update_clan_tour(request, tour_id):
     team_a_players = list(team_a_clan.members.all())
     team_b_players = list(team_b_clan.members.all())
 
-    round_num = int(request.GET.get('round', 0) or request.GET.get('kround', 0))
+    round_num = int(request.GET.get('kround') or request.GET.get('round') or 0)
+    leg_number = int(request.GET.get('leg', '0'))
         
-    def player_store_records(winner, loser, winner_goals, loser_goals, result_type="win"):
-        """
-        Update and store  records for the match result.
-
-        Args:
-            winner (Profile): The profile of the winning team.
-            loser (Profile): The profile of the losing team.
-            winner_goals (int): Goals scored by the winner.
-            loser_goals (int): Goals scored by the loser.
-            result_type (str): Type of result ('win', 'draw').
-        """
-        def get_player_stats(winner, loser):
-            """Fetch PlayerStats instances for both winner and loser."""
-            try:
-                winner = User.objects.filter(username__iexact=winner).first()
-                loser = User.objects.filter(username__iexact=loser).first()
-                if winner and loser:
-                    loser_stats = loser.profile.stats
-                    winner_stats = winner.profile.stats 
-                    return winner_stats, loser_stats
-            except ObjectDoesNotExist:
-                return None, None
-            return None, None 
-
-    
-        winner_stats, loser_stats = get_player_stats(winner, loser)
-        stats_used = "player_stats" 
-
-        winner_data = winner_stats.load_match_data_from_file()
-        loser_data = loser_stats.load_match_data_from_file()
-        if result_type == "win":
-            winner_result = "win"
-            loser_result = "loss"
-        elif result_type == "draw":
-            winner_result = "draw"
-            loser_result = "draw"
-        winner_entry = {
-            "date": timezone.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "tour_name":f"{cvc_tournaments.name}-CvC", 
-            "opponent": loser,  
-            "result": winner_result, 
-            "score": f"{winner_goals}:{loser_goals}"
-        }
-        loser_entry = {
-            "date": timezone.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "tour_name":f"{cvc_tournaments.name}-CvC",   
-            "opponent": winner,  
-            "result": loser_result, 
-            "score":f"{loser_goals}:{winner_goals}"
-        }
-
-        if "matches" not in winner_data:
-            winner_data["matches"] = []
-        if "matches" not in loser_data:
-            loser_data["matches"] = []
-
-        winner_data["matches"].append(winner_entry)
-        loser_data["matches"].append(loser_entry)
-        winner_stats.match_data = winner_data 
-        loser_stats.match_data = loser_data 
-        winner_stats.save_match_data_to_file()
-        loser_stats.save_match_data_to_file()
-
-    def update_player_stats(player, goals_scored, goals_conceded, result_type="draw"):
-        """
-        Update user statistics based on the tournament results.
-        """
-        user = User.objects.get(username=player)
-        user_stat = user.profile.stats
-        user_stat.gd += goals_scored-goals_conceded
-        user_stat.gf += goals_scored
-        user_stat.ga += goals_conceded
-        user_stat.games_played += 1
-        if result_type =="win":
-            user_stat.total_wins  += 1
-        elif result_type == "loss":
-            user_stat.total_losses += 1
-        else:
-            user_stat.total_draws  += 1
-        win_rate = ((user_stat.total_wins + user_stat.total_draws/2) / user_stat.games_played) * 100 if user_stat.games_played > 0 else 0
-        user_stat.win_rate = round(win_rate,3)
-        user_stat.save()
-
-        data = cvc_tournaments.load_match_data_from_file()
-        if "player_stats" not in data:
-            data["player_stats"] = {}  # Create an empty dictionary if missing
-    
-        # Ensure player exists in 'player_stats'
-        if player not in data["player_stats"]:
-            data["player_stats"][player] = {
-                "goals_scored": 0,
-                "goals_conceded": 0,
-                "goal_difference": 0,
-                "clan": user.profile.clan.clan_tag,
-                "matches_played": 0,
-                "win": 0,
-                "draw": 0,
-                "loss": 0
-            }  # Create empty player data if missing
-        player_data = data["player_stats"][player] 
-        player_data["goals_scored"] += goals_scored
-        player_data["goals_conceded"] += goals_conceded
-        player_data["goal_difference"] = ( player_data["goals_scored"] - player_data["goals_conceded"])
-        player_data["matches_played"] += 1
-        player_data[result_type] += 1
-        sorted_table = sorted(
-            data["player_stats"].items(),
-            key=lambda item: (
-                item[1]["win"],  # Sorting by number of wins first
-                item[1]["goals_scored"]  # Then by total goals scored
-            ),
-            reverse=True
-        )
-        # ✅ Store sorted data properly
-        data["player_stats"] = {team[0]: team[1] for team in sorted_table}
-        cvc_tournaments.save_match_data_to_file(data)
-    
-    def update_elo_for_player(winner_name, loser_name, k=32):
-        """
-        Update Elo ratings for a match.
-
-        Args:
-            winner_name (str): Name of the winner (player or clan).
-            loser_name (str): Name of the loser (player or clan).
-            PlayerStatsModel: Django model for player stats.
-            ClanStatsModel: Django model for clan stats.
-            k (int): The K-factor for Elo calculation (default: 32).
-
-        Returns:
-            None: Updates the database directly.
-        """
-        def get_player_elo_and_instance(name):
-            """Fetch Elo rating and instance from a given player model."""
-            #player = User.objects.get(username=name)
-            player = User.objects.filter(username__iexact=name).first()
-            if player:
-                instance = player.profile.stats
-                return instance.elo_rating, instance
-            else:
-                return None, None
-            
-        def update_elo(winner_elo, loser_elo, k):
-            """Calculate Elo rating adjustments."""
-            expected_winner = 1 / (1 + 10 ** ((loser_elo - winner_elo) / 400))
-            winner_new_elo = winner_elo + k * (1 - expected_winner)
-            loser_new_elo = loser_elo - k * (1 - expected_winner)
-            return winner_new_elo, loser_new_elo
-        winner_elo, winner_instance = get_player_elo_and_instance(winner_name)
-        loser_elo, loser_instance = get_player_elo_and_instance(loser_name)
-
-        winner_new_elo, loser_new_elo = update_elo(winner_elo, loser_elo, k)
-        if winner_instance:
-            winner_instance.elo_rating = winner_new_elo
-            winner_instance.save()
-            winner_instance.set_rank_based_on_elo()
-
-        if loser_instance:
-            loser_instance.elo_rating = loser_new_elo
-            loser_instance.save()
-            loser_instance.set_rank_based_on_elo()
-    
-
-        
-
+   
     if request.method == "POST":
         player_a_ids =  [request.POST[key] for key in request.POST if key.startswith('player_a_')]
         player_b_ids = [request.POST[key] for key in request.POST if key.startswith('player_b_')]
@@ -372,32 +293,22 @@ def update_clan_tour(request, tour_id):
             player_a = get_object_or_404(Profile, id=player_a_ids[i])
             player_b = get_object_or_404(Profile, id=player_b_ids[i])
             score_a, score_b = int(scores_a[i]), int(scores_b[i])
-
-            match_results.append({
+            #pretty dure its never used
+            match_data = {
                 "player_a": player_a.user.username,
                 "player_b": player_b.user.username,
-                "player_a_score": score_a,
-                "player_b_score": score_b,
-            })
+                "team_a_goals": score_a,#due to how the tourmanager works
+                "team_b_goals": score_b,
+            }
+            match_results.append(match_data)
             team_a_total_goals += score_a
             team_b_total_goals += score_b
 
             if score_a > score_b:
                 team_a_wins += 1
-                player_store_records(player_a.user.username, player_b.user.username, score_a, score_b)
-                update_player_stats(player_a.user.username, score_a, score_b, "win")
-                update_player_stats(player_b.user.username, score_b, score_a, "loss")
-                update_elo_for_player(player_a.user.username, player_b.user.username)
             elif score_a < score_b:
                 team_b_wins += 1
-                player_store_records(player_b.user.username, player_a.user.username, score_b, score_a)
-                update_player_stats(player_a.user.username, score_a, score_b, "loss")
-                update_player_stats(player_b.user.username, score_b, score_a, "win")
-                update_elo_for_player(player_b.user.username, player_a.user.username)
-            else:
-                player_store_records(player_a.user.username, player_b.user.username, score_a, score_b, "draw")
-                update_player_stats(player_a.user.username, score_a, score_b, "draw")
-                update_player_stats(player_b.user.username, score_b, score_a, "draw")
+            TourManager().finalize_match_result(team_a=player_a.user.username, team_b=player_b.user.username, goals_a=score_a, goals_b=score_b,match=match_data)
 
         final_match_results = [{
         "round": round_num,
@@ -407,24 +318,14 @@ def update_clan_tour(request, tour_id):
         "team_a_player_goals": team_a_total_goals,
         "team_b_goals": team_b_wins,
         "team_b_player_goals": team_b_total_goals,
-        "leg_number": int(request.GET.get('leg','0'))
+        "leg_number":leg_number
         }]
      
-        team_a_clan_stat = ClanStats.objects.get(clan__clan_name=team_a_name)
-        team_b_clan_stat = ClanStats.objects.get(clan__clan_name=team_b_name)
-
-        team_a_clan_stat.player_scored += team_a_total_goals
-        team_b_clan_stat.player_scored += team_b_total_goals
-        team_a_clan_stat.player_conceeded += team_b_total_goals
-        team_b_clan_stat.player_conceeded += team_a_total_goals
-        team_a_clan_stat.save()
-        team_b_clan_stat.save()
-
-        if request.GET.get('kround'):
-            cvc_tournaments.update_tour(round_num, final_match_results, KO=True)
-        else:
-            cvc_tournaments.update_tour(round_num, final_match_results)
-
+        # Update the tournament with the final match result
+        cvc_tournaments.update_tour(
+            round_num,
+            final_match_results,KO=bool(request.GET.get('kround'))
+        )
         return redirect(reverse("cvc_details", kwargs={"tour_id": cvc_tournaments.id}))
 
     return render(request, "tournaments/update_clan_tour.html", {
@@ -437,29 +338,58 @@ def update_clan_tour(request, tour_id):
 
 # ============================= Non veiw function ============================ #
 def resolve_team_clan(name):
-    """Resolve a clan name into display name and logo."""
+    """
+    Resolves a clan name into display metadata (name + logo).
+
+    Args:
+        name (str): Clan name string, or "Bye"/None if no opponent.
+
+    Returns:
+        dict: {
+            "display_name": (str) Clan's display name or "TBD" if unknown,
+            "logo": (ImageField or None) Clan's logo if found
+        }
+    """
     if name == "Bye" or name is None:
         return {"display_name": "TBD", "logo": None}
     clan = get_object_or_404(Clans, clan_name=name)
     return {"display_name": clan.clan_name, "logo": clan.clan_logo}
 
 def resolve_team_user(name):
-    """Resolve a username into display name and logo."""
+    """
+    Resolves a username into display metadata (name + profile picture).
+
+    Args:
+        name (str): Username string, or "Bye"/None if no opponent.
+
+    Returns:
+        dict: {
+            "display_name": (str) User's username or "TBD" if unknown,
+            "logo": (ImageField or None) User's profile picture if found
+        }
+    """
     if name == "Bye" or name is None:
         return {"display_name": "TBD", "logo": None}
     user = User.objects.get(username=name)
     return {"display_name": user.username, "logo": user.profile.profile_picture}
 
-
 def process_tournament_data(tour_type, match_data, resolver, tournament):
     """
-    Process tournament match data and attach display names/logos.
+    Enriches tournament match data with display names and logos, depending on tournament type.
+
+    Args:
+        tour_type (str): Tournament format type ('cup', 'league', 'groups_knockout').
+        match_data (dict): Raw match/tournament data structure.
+        resolver (callable): Function to resolve a team identifier into a display dict.
+        tournament (Model): Tournament object, used for fallback logo.
+
     Returns:
-      - processed match_data (mutated in-place)
-      - rounds array for rendering
+        tuple:
+            - dict: Processed match_data with added display metadata.
+            - list: Rounds array for rendering (used in group/knockout stages).
     """
     rounds = []
-
+    # --- CUP FORMAT ---
     if tour_type == "cup":
         for round_data in match_data["rounds"]:
             for match in round_data["matches"]:
@@ -469,8 +399,7 @@ def process_tournament_data(tour_type, match_data, resolver, tournament):
                         team_info = resolver(team_name)
                         match[f"{side}_display_name"] = team_info["display_name"]
                         match[f"{side}_logo"] = team_info["logo"] or tournament.logo
-
-
+                    # Handle legs if present
                     if "legs" in match:
                         for leg_match in match["legs"]:
                             for side in ["team_a", "team_b"]:
@@ -478,7 +407,9 @@ def process_tournament_data(tour_type, match_data, resolver, tournament):
                                     team_name = ( leg_match[side].get("name") if isinstance(leg_match[side], dict) else leg_match[side])
                                     team_info = resolver(team_name)
                                     leg_match[f"{side}_display_name"] = team_info["display_name"]
-                                    leg_match[f"{side}_logo"] = team_info["logo"] or tournament.logo
+                                    leg_match[f"{side}_logo"] = team_info["logo"] or tournament.logo                           
+    
+     # --- LEAGUE FORMAT ---
     elif tour_type == "league":
         for round_key, matches in match_data["fixtures"].items():
             for match in matches:
@@ -492,6 +423,7 @@ def process_tournament_data(tour_type, match_data, resolver, tournament):
             team_info = resolver(team_name)
             team_stats["team_logo"] = team_info["logo"] or tournament.logo
 
+     # --- GROUPS + KNOCKOUT FORMAT ---
     elif tour_type == "groups_knockout":
         for group_key, group_data in match_data.get("group_stages", {}).items():
             for round_number, matches in group_data.get("fixtures", {}).items():
@@ -502,10 +434,9 @@ def process_tournament_data(tour_type, match_data, resolver, tournament):
                 else:
                     rounds.append({
                         "round_number": round_number,
-                        "matches": matches[:],  # shallow copy
+                        "matches": matches[:],  
                     })
-
-                # Add display data to matches
+            # Enrich matches with team display names and logos
                 for match in matches:
                     for side in ["team_a", "team_b"]:
                         team_name = match.get(side)

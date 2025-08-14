@@ -4,36 +4,53 @@ Tournaments
 {% endblock title %}
 {% block content %}
 <style>
-    /* Optional: Smooth transition for content change */
-    .content-section {
-        display: none;
-        transition: opacity 0.5s ease-in-out;
-    }
+#statsTab {
+  border-bottom: none; 
+  background-color: transparent;
+}
 
-    .active-content {
-        display: block;
-        opacity: 1;
-    }
+#statsTab .nav-link {
+  border: 1px solid #bac7be;      
+  border-radius: 25px;             
+  padding: 8px 30px;
+  margin: 0 8px;
+  color: #495049 !important;        
+  font-weight: 700;
+  background-color: #f5f7f3;       
+  transition: background-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+}
+
+#statsTab .nav-link.active {
+  background-color: #959f98;        
+  color: #fff !important;          
+  box-shadow: 0 2px 8px rgba(149, 159, 152, 0.6); 
+  border-color: #959f98;
+}
+
+#statsTab .nav-link:hover:not(.active) {
+  background-color: #d7dfd9;        
+  color: #333 !important;
+  cursor: pointer;
+}
+
+
 </style>
-<nav class="navbar navbar-expand-lg bg-light navbar-light" style="margin-top:-9px;padding:-10px">
-    <div class="container-fluid">
-        <ul class="list-inline d-flex justify-content-end w-100">
-            <li class="list-inline-item mx-2">
-                <a class="nav-link mini-nav active  fw-bold" href="#" data-target="#section1">Clan</a>
-            </li>
-            <li class="list-inline-item mx-2">
-                <a class="nav-link mini-nav  fw-bold" href="#" data-target="#section2">Individuals</a>
-            </li>
-        </ul>
-    </div>
-</nav>
-
+<div class="d-flex justify-content-center mb-3">
+  <ul class="nav nav-tabs flex-nowrap" id="statsTab" role="tablist" style="white-space: nowrap;">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" id="clan-tab" data-bs-toggle="tab" data-bs-target="#section-1" type="button" role="tab" aria-controls="section-1" aria-selected="true">Clan</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="indi-tab" data-bs-toggle="tab" data-bs-target="#section-2" type="button" role="tab" aria-controls="section-2" aria-selected="false">Individuals</button>
+    </li>
+  </ul>
+</div>
 <!-- cvc Sections -->
-<div id="section1" class="content-section active-content text-center">
+<div class="tab-content mt-3">
+  <div id="section-1" class="tab-pane fade show active text-center">
     <div class="container-fluid my-4">
         <div class="container">
             <div class="row align-items-center"> 
-            <h2 class="text-center">CVC Tournaments</h2>
             <form method="GET" action="{% url 'tournament-home' %}" class="mb-4 d-flex justify-content-center">
                 <input type="text" name="q" class="form-control w-50" placeholder="Search for a Tournament..." value="{{ query }}">
                 <button type="submit" class="btn btn-primary mx-2">Search</button>
@@ -81,82 +98,58 @@ Tournaments
             </div>
             {% endfor %}
         </div>
-</div>
-<div id="section2" class="content-section  text-center" >
-    <div class="container-fluid my-4">
-        <div class="container">
-            <div class="row align-items-center"> 
-            <h2 class="text-center">Indi Tournaments</h2>
-            <form method="GET" action="{% url 'tournament-home' %}" class="mb-4 d-flex justify-content-center">
-                <input type="text" name="q" class="form-control w-50" placeholder="Search for a Tournament..." value="{{ query }}">
-                <button type="submit" class="btn btn-primary mx-2">Search</button>
-                <a href="{%url 'create_indi_tournament' %}" class="btn btn-primary">Create</a>
-            </form>
-            </div>
-        </div>
     </div>
-        {% if no_results_indi  %}
-        <div class="alert alert-warning" role="alert">
-            No CVC tournaments found for "{{ query }}". Please try a different search term.
-        </div>
-        {% endif %}
-        <div class="row">
-            {% for tours in indi_tournaments %}
-            <div class="col-md-4" data-aos="fade-right" data-aos-delay="{{ forloop.counter0|add:"0" }}00">
-                <a href="{% url 'indi_details' tours.id %}">
-                    <div class="card my-3 rounded-3 shadow" >
-                        <div class="card-body text-center  rounded-3"  style="background-image: url('{{ tours.created_by.profile.profile_picture.url  }}');background-size: cover; background-position: center;text-shadow: 2px 2px 4px rgba(0, 0, 0,1);color:white;">
-                            <div class="rounded-3 " style="position: absolute; top: 0; right: 0; bottom: 0; left: 0; background: rgba(0,0,0,0.5); z-index: 1;"></div>
-                            <div  style="position: relative; z-index: 2;">
-                                <img src="{{  tours.logo.url }}" alt="{{  tours.name }}'s avatar" class="img-fluid rounded-circle mb-3" style="width: 100px; height: 100px;" loading="lazy">
-                        <h5 class="card-title">{{ tours.name }}</h5>
-                        
-                            <div class="d-flex justify-content-between text-center ">
-                                <div class="mx-2">
-                                  <p class="mb-1 h6 text-success">{{tours.created_by }}</p>
-                                  <p class="small  mb-0">Host</p>
-                                </div>
-                                <div class="mx-2">
-                                    <p class="mb-1 h6 text-primary">{{ tours.tour_type }}</p>
-                                    <p class="small  mb-0">Type</p>
-                                </div>
-                                <div class="mx-2">
-                                  <p class="mb-1 h6 text-warning">{{ tours.players.count }}</p>
-                                  <p class="small  mb-0">Teams</p>
-                            </div>
-                        </div>
-                        
-                    </div>
-                    </div>
+    <div id="section-2" class="tab-pane fade text-center">
+        <div class="container-fluid my-4">
+            <div class="container">
+                <div class="row align-items-center"> 
+                
+                <form method="GET" action="{% url 'tournament-home' %}" class="mb-4 d-flex justify-content-center">
+                    <input type="text" name="q" class="form-control w-50" placeholder="Search for a Tournament..." value="{{ query }}">
+                    <button type="submit" class="btn btn-primary mx-2">Search</button>
+                    <a href="{%url 'create_indi_tournament' %}" class="btn btn-primary">Create</a>
+                </form>
                 </div>
-            </a>
             </div>
-            {% endfor %}
         </div>
- </div>
-
-
-<script>
-    // JavaScript to handle active link switching and content change
-    const navLinks = document.querySelectorAll('.mini-nav');
-    const contentSections = document.querySelectorAll('.content-section');
-
-    navLinks.forEach(link => {
-        link.addEventListener('click', function(e) {
-            e.preventDefault(); 
-            navLinks.forEach(item => item.classList.remove('active'));
-
-        
-            link.classList.add('active');
-            const target = link.getAttribute('data-target');
-
-            // Hide all sections
-            contentSections.forEach(section => section.classList.remove('active-content'));
-
-            // Show the selected section
-            const targetSection = document.querySelector(target);
-            targetSection.classList.add('active-content');
-        });
-    });
-</script>
+            {% if no_results_indi  %}
+            <div class="alert alert-warning" role="alert">
+                No CVC tournaments found for "{{ query }}". Please try a different search term.
+            </div>
+            {% endif %}
+            <div class="row">
+                {% for tours in indi_tournaments %}
+                <div class="col-md-4" data-aos="fade-right" data-aos-delay="{{ forloop.counter0|add:"0" }}00">
+                    <a href="{% url 'indi_details' tours.id %}">
+                        <div class="card my-3 rounded-3 shadow" >
+                            <div class="card-body text-center  rounded-3"  style="background-image: url('{{ tours.created_by.profile.profile_picture.url  }}');background-size: cover; background-position: center;text-shadow: 2px 2px 4px rgba(0, 0, 0,1);color:white;">
+                                <div class="rounded-3 " style="position: absolute; top: 0; right: 0; bottom: 0; left: 0; background: rgba(0,0,0,0.5); z-index: 1;"></div>
+                                <div  style="position: relative; z-index: 2;">
+                                    <img src="{{  tours.logo.url }}" alt="{{  tours.name }}'s avatar" class="img-fluid rounded-circle mb-3" style="width: 100px; height: 100px;" loading="lazy">
+                            <h5 class="card-title">{{ tours.name }}</h5>
+                            
+                                <div class="d-flex justify-content-between text-center ">
+                                    <div class="mx-2">
+                                    <p class="mb-1 h6 text-success">{{tours.created_by }}</p>
+                                    <p class="small  mb-0">Host</p>
+                                    </div>
+                                    <div class="mx-2">
+                                        <p class="mb-1 h6 text-primary">{{ tours.tour_type }}</p>
+                                        <p class="small  mb-0">Type</p>
+                                    </div>
+                                    <div class="mx-2">
+                                    <p class="mb-1 h6 text-warning">{{ tours.players.count }}</p>
+                                    <p class="small  mb-0">Teams</p>
+                                </div>
+                            </div>
+                            
+                        </div>
+                        </div>
+                    </div>
+                </a>
+                </div>
+                {% endfor %}
+            </div>
+    </div>
+</div>
 {% endblock content %}
