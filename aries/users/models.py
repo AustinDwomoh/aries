@@ -109,15 +109,15 @@ class PlayerStats(models.Model):
 
 class SocialLink(models.Model):
     SOCIAL_CHOICES = [
-        ('github', 'GitHub'),
-        ('linkedin', 'LinkedIn'),
-        ('twitter', 'Twitter'),
-        ('instagram', 'Instagram'),
-        ('facebook', 'Facebook'),
-        ('youtube', 'YouTube'),
-        ('tiktok', 'TikTok'),
-        ('website', 'Website'),
-        ('other', 'Other'),
+        ('discord', 'Discord'),
+    ('whatsapp', 'WhatsApp'),
+    ('x', 'X / Twitter'),
+    ('instagram', 'Instagram'),
+    ('tiktok', 'TikTok'),
+    ('youtube', 'YouTube'),
+    ('twitch', 'Twitch'),
+    ('website', 'Website'),
+    ('other', 'Other'),
     ]
 
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='social_links')

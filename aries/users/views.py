@@ -4,7 +4,6 @@ from itertools import chain
 from django.db.models import Q
 from django.contrib.auth import logout,login
 from django.contrib.auth.decorators import login_required
-from django.urls import reverse
 from .forms import UserRegisterForm,UserUpdateForm,ProfileUpdateForm, SocialLinkFormSet,CustomLoginForm
 from tournaments.models import ClanTournament, IndiTournament,ClanTournamentPlayer
 from django.contrib.auth.models import User
@@ -14,12 +13,14 @@ from django.utils.http import urlsafe_base64_decode
 from django.contrib.auth.tokens import default_token_generator
 from django.core.cache import cache
 from scripts import verify,follow
+from scripts.context import make_social_links_dict 
 from scripts.error_handle import ErrorHandler
 from django.db import transaction
 from threading import Thread
 from clans.models import Clans
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth import update_session_auth_hash
+from .models import SocialLink
 # Create your views here.
 def register(request):
     """Registration view to create a new user account"""
@@ -66,7 +67,7 @@ def profile(request):
         indi_2 = IndiTournament.objects.filter(players=request.user.profile).order_by('-id')[:5]
         combined = list(chain(indi_1, indi_2))
         indi_tournaments = sorted(set(combined), key=lambda x: x.id, reverse=True)[:5]
-
+        socials = make_social_links_dict(SocialLink.objects.filter(profile=player.profile).all())
         if match_data:
             for match in match_data["matches"][-5:]:
                 result = match["result"]
@@ -97,7 +98,8 @@ def profile(request):
         'followers':followers,
         'following':following,
         'indi_tournaments':indi_tournaments,
-        'cvc_tournaments':cvc_tournaments
+        'cvc_tournaments':cvc_tournaments,
+        'socials':socials,
         
     }
     return render(request, 'users/profile.html',context)
@@ -173,7 +175,7 @@ def gamer_view(request,player_id):
     player = get_object_or_404(User, id=player_id)
     player_stats = player.profile.stats  
     match_data = player_stats.load_match_data_from_file()
-
+    socials = make_social_links_dict(SocialLink.objects.filter(profile=player.profile).all())
     followers = follow.count_followers(player)
     following = follow.count_following(player)
     is_following =  follow.is_follower(follow.get_logged_in_entity(request),player)
@@ -210,7 +212,8 @@ def gamer_view(request,player_id):
         'followed': player,     
         'model_name': 'user',
         "show_button": request.user != player,
-        "follow_type": "user"
+        "follow_type": "user",
+        'socials':socials,
         }
   
  

@@ -115,6 +115,15 @@
   {# Shows recruitment status with a form toggle to update it #}
   <p>Recruitment Status:{{clan.is_recruiting}}</p>
   <p>{{ clan.clan_description|safe }}</p>
+  {% if socials %}
+  <div class="mt-3 d-flex flex-wrap gap-3">
+    {% for name, data in socials.items %}
+      <a href="{{ data.url }}" target="_blank" class="text-decoration-none fs-4">
+        {{ data.icon|safe }}
+      </a>
+    {% endfor %}
+  </div>
+  {% endif %}
 </section>
 <!-- Members Section -->
 <section>

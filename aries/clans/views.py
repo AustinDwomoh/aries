@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import Clans, ClanStats,ClanJoinRequest
+from .models import Clans, ClanStats,ClanJoinRequest,ClanSocialLink
 from django.utils.safestring import mark_safe
 import markdown
 from tournaments.models import ClanTournament
@@ -8,6 +8,7 @@ from users.models import Profile
 from scripts.follow import *
 from django.views.decorators.http import require_POST
 from scripts import verify
+from scripts.context import make_social_links_dict
 from django.contrib.auth.decorators import login_required
 from .forms import ClanRegistrationForm,AddPlayerToClanForm,ClanSocialLinkFormSet,ClanBasicInfoForm,ClanContactForm,ClanMediaForm,ClanRecruitmentForm
 from django.http import JsonResponse
@@ -244,9 +245,10 @@ def clan_view(request, clan_id):
         followers = count_followers(clan)
         following = count_following(clan)
         is_following = is_follower(get_logged_in_entity(request),clan)
-
+        
+        socials  = make_social_links_dict(ClanSocialLink.objects.filter(clan=clan).all())
         tournaments = ClanTournament.objects.filter(teams=clan).order_by('-id')[:5]
-
+        
         match_results = []
         if match_data and "matches" in match_data:
             last_5_matches = match_data["matches"][-5:]
@@ -265,7 +267,6 @@ def clan_view(request, clan_id):
             ]
 
         members = User.objects.filter(profile__clan=clan)
-
         context = {
             'clan': clan,
             'stats': clan_stats,
@@ -276,7 +277,8 @@ def clan_view(request, clan_id):
             'query': query,
             'followers': followers,
             'following': following,
-            'is_following': is_following
+            'is_following': is_following,
+            'socials': socials,
         }
 
         return render(request, 'clans/clan_view.html', context)
@@ -356,6 +358,7 @@ def clan_dashboard(request):
         members =User.objects.filter(profile__clan=clan)
         tournaments = ClanTournament.objects.filter(teams=clan)
         join_requests = ClanJoinRequest.objects.filter(clan=clan, status="pending")
+        socials  = make_social_links_dict(ClanSocialLink.objects.filter(clan=clan).all())
         followers = count_followers(clan)
         following = count_following(clan)
     # ============================ get last 5 matches ============================ #
@@ -391,6 +394,7 @@ def clan_dashboard(request):
             "query": query,
             "followers": followers,
             "following": following,
+            'socials': socials,
         }
         return render(request, "clans/clan_dashboard.html", context)
 

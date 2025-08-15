@@ -194,13 +194,13 @@ class ClanJoinRequest(models.Model):
 
 class ClanSocialLink(models.Model):
     SOCIAL_CHOICES = [
-        ('github', 'GitHub'),
-        ('linkedin', 'LinkedIn'),
-        ('twitter', 'Twitter'),
+        ('x', 'X / Twitter'),
+        ('whatsapp', 'WhatsApp'),
+        ('discord', 'Discord'),
         ('instagram', 'Instagram'),
-        ('facebook', 'Facebook'),
-        ('youtube', 'YouTube'),
         ('tiktok', 'TikTok'),
+        ('youtube', 'YouTube'),
+        ('twitch', 'Twitch'),
         ('website', 'Website'),
         ('other', 'Other'),
     ]

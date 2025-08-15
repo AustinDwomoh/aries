@@ -16,7 +16,7 @@ aries/media/clan_profile/
 aries/media/match_data/
 aries/media/tournament_data/
 aries/staticfiles/
-
+aries/error_logs/
 # Local settings, envs
 .env.testing
 .env.production

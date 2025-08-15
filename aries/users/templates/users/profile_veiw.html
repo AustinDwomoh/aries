@@ -50,7 +50,16 @@
             {% endfor %}
         </p>
         {% endif %}
-        <div >
+        {% if socials %}
+        <div class="mt-2 d-flex flex-wrap gap-3 justify-content-center">
+          {% for name, data in socials.items %}
+            <a href="{{ data.url }}" target="_blank" class="text-decoration-none fs-4">
+              {{ data.icon|safe }}
+            </a>
+          {% endfor %}
+        </div>
+        {% endif %}
+          <div >
             {% render_follow_summary player followers following %}
             {% comment %} Check the template tags folder it renders them so i can use accross view {% endcomment %}
           </div>
@@ -101,6 +110,15 @@
                 </span>
             {% endfor %}
         </p>
+        {% endif %}
+        {% if socials %}
+        <div class="mt-2 d-flex flex-wrap gap-3 justify-content-center">
+          {% for name, data in socials.items %}
+            <a href="{{ data.url }}" target="_blank" class="text-decoration-none fs-4">
+              {{ data.icon|safe }}
+            </a>
+          {% endfor %}
+        </div>
         {% endif %}
       </div>
         <!-- Followers & Following -->

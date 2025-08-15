@@ -43,6 +43,17 @@ CSRF_COOKIE_SECURE = env.bool("CSRF_COOKIE_SECURE")
 SESSION_COOKIE_AGE = env.int("SESSION_COOKIE_AGE")
 SESSION_SAVE_EVERY_REQUEST = env.bool("SESSION_SAVE_EVERY_REQUEST")
 SESSION_EXPIRE_AT_BROWSER_CLOSE = env.bool("SESSION_EXPIRE_AT_BROWSER_CLOSE")
+SOCIAL_ICONS = {
+    "discord": '<i class="bi bi-discord"></i>',
+    "x": '<i class="bi bi-twitter"></i>',
+    'whatsapp': '<i class="bi bi-whatsapp"></i>',
+    'instagram': '<i class="bi bi-instagram"></i>',
+    'tiktok':' <i class="bi bi-tiktok"></i>',
+    'youtube': '<i class="bi bi-youtube"></i>',
+    'twitch': '<i class="bi bi-twitch"></i>',
+    'website': '<i class="bi bi-browser-chrome"></i>',
+    'other': '<i class="bi bi-link-45deg"></i>',
+    }
 # ============================================================================ #
 #                                    SECRETS                                   #
 # ============================================================================ #

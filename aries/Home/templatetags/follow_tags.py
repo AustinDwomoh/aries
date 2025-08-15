@@ -24,7 +24,6 @@ def render_follow_button(context, profile_obj, model_name):
     
 @register.inclusion_tag("Home/follow_summary.html",takes_context=True)
 def render_follow_summary(context,account, followers, following):
-    
     if account.__class__.__name__.lower() == "user":
         model_name = 'user'
         rank = account.profile.stats.rank

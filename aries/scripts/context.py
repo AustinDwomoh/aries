@@ -1,7 +1,7 @@
 from clans.models import Clans
 from django.contrib.auth.models import User
 from scripts.error_handle import ErrorHandler
-
+from django.conf import settings
 def profile_picture_context(request):
     """
     Context processor that provides profile picture URL and authentication status
@@ -42,3 +42,22 @@ def profile_picture_context(request):
         'is_user_authenticated': is_user_authenticated,
         'is_clan_authenticated': is_clan_authenticated
     }
+    
+def make_social_links_dict(social_links):
+    """
+    Converts a queryset of social links into a dictionary with icons and URLs.
+    uses the constants defined in settings.SOCIAL_ICONS for icon HTML.
+    Args:
+        social_links (QuerySet): A queryset of SocialLink objects (with fields: name, url).
+    
+    Returns:
+        dict: { "platform": {"url": url, "icon": icon_html}, ... }
+    """
+    result = {}
+    for link in social_links:
+        key = link.link_type.lower().strip()
+        result[key] = {
+            "url": link.url,
+            "icon": settings.SOCIAL_ICONS.get(key, settings.SOCIAL_ICONS["other"])
+        }
+    return result

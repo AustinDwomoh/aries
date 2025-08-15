@@ -10,8 +10,8 @@ logging.getLogger().setLevel(logging.CRITICAL)  # Only show your print statement
 
 from django.core.files import File
 from django.contrib.auth.models import User
-from users.models import Profile
-from clans.models import Clans
+from users.models import Profile,SocialLink
+from clans.models import Clans,ClanSocialLink
 
 # Constants
 NUM_CLANS = 4
@@ -19,7 +19,15 @@ CLAN_MEMBERS = 10
 TOTAL_USERS = 5
 
 fake = Faker()
-
+DEFAULT_SOCIAL_LINKS = {
+    "discord": "https://discord.gg/",
+    "x": "https://x.com/",
+    "youtube": "https://youtube.com/",
+    "twitch": "https://twitch.tv/",
+    "instagram": "https://instagram.com/",
+    "tiktok": "https://tiktok.com/@",
+    "website": "https://example.com/",
+}
 def create_unique_user():
     while True:
         name = fake.user_name()
@@ -42,7 +50,8 @@ def create_user_with_image(name):
     user = User.objects.create_user(username=name, password='pass1234', email=f'{name}@example.com')
     profile = user.profile
     profile.is_verified = True
-
+    for i, (link_type, url) in enumerate(DEFAULT_SOCIAL_LINKS.items(), start=1):
+        SocialLink.objects.create(profile=profile,link_type=link_type,url=url,display_order=i)
     img_temp = download_image('https://picsum.photos/300/300')
     if img_temp.getbuffer().nbytes > 0:
         profile.profile_picture.save(f'{name}.jpg', File(img_temp), save=True)
@@ -56,28 +65,25 @@ def create_clan_with_image(name, created_by):
     password = fake.password()
     print(f"[+] Created clan: {name} | Password: {password}")
 
-    social_links = {
-        "twitter": f"https://twitter.com/{name.lower()}",
-        "discord": f"https://discord.gg/{fake.lexify(text='????????')}",
-    }
 
     clan = Clans.objects.create(
-        clan_name=name,
-        clan_tag=clan_tag,
-        email=email,
-        password=password,
-        clan_description=fake.paragraph(),
-        clan_website=f"https://{name.lower()}.gg",
-        country=fake.country(),
-        social_links=social_links,
-        is_recruiting=fake.boolean(),
-        recruitment_requirements=fake.text(max_nb_chars=150),
-        created_by=created_by,
-        primary_game="Valorant",
-        other_games="Overwatch, Apex Legends"
+    clan_name=name,
+    clan_tag=clan_tag,
+    email=email,
+    clan_description=fake.paragraph(),
+    clan_website=f"https://{name.lower()}.gg",
+    country=fake.country(),
+    is_recruiting=fake.boolean(),
+    recruitment_requirements=fake.text(max_nb_chars=150),
+    created_by=created_by,
+    primary_game="Valorant",
+    other_games="Overwatch, Apex Legends"
     )
-    clan.save()
 
+    clan.set_password(password)  
+    clan.save()
+    for i, (link_type, url) in enumerate(DEFAULT_SOCIAL_LINKS.items(), start=1):
+        ClanSocialLink.objects.create(clan=clan,link_type=link_type,url=url,display_order=i)
     clan.clan_logo.save(f'{name}_logo.jpg', File(download_image('https://picsum.photos/300/300')), save=True)
     clan.clan_profile_pic.save(f'{name}_profile.jpg', File(download_image('https://picsum.photos/300/300')), save=True)
 

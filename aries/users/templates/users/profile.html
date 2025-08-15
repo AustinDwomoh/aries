@@ -45,6 +45,15 @@
             {% endfor %}
         </p>
         {% endif %}
+        {% if socials %}
+        <div class="mt-2 d-flex flex-wrap gap-3 justify-content-center">
+          {% for name, data in socials.items %}
+            <a href="{{ data.url }}" target="_blank" class="text-decoration-none fs-4">
+              {{ data.icon|safe }}
+            </a>
+          {% endfor %}
+        </div>
+        {% endif %}
         <div >
           <!-- First Section: Followers & Following -->
           {% render_follow_summary user followers following %}
@@ -93,6 +102,15 @@
                 </span>
             {% endfor %}
         </p>
+        {% endif %}
+        {% if socials %}
+        <div class="mt-2 d-flex flex-wrap gap-3 justify-content-center">
+          {% for name, data in socials.items %}
+            <a href="{{ data.url }}" target="_blank" class="text-decoration-none fs-4">
+              {{ data.icon|safe }}
+            </a>
+          {% endfor %}
+        </div>
         {% endif %}
       </div>
         <!-- Followers & Following -->
