@@ -91,24 +91,24 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
-""" LOGGING = {
+LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'handlers': {
         'file': {
             'level': 'ERROR',
             'class': 'logging.FileHandler',
-            'filename': '/var/log/django/error.log',  # Log file path for capturing server errors
+            'filename': os.path.join(BASE_DIR, 'error_logs', 'django_errors.log'),
         },
     },
     'loggers': {
         'django': {
             'handlers': ['file'],
-            'level': 'ERROR',  # Only log ERROR and higher severity messages
+            'level': 'ERROR',
             'propagate': True,
         },
     },
-} """
+}
 # Configure logging to capture only ERROR-level messages in a dedicated log file
 # Note: Verify that the server has write permissions for /var/log/django/error.log
 
