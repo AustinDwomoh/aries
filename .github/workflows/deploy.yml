@@ -109,14 +109,8 @@ jobs:
             # =============================
             # 6. Restart services
             # =============================
-            sudo systemctl restart gunicorn
             sudo systemctl restart nginx
             sudo systemctl restart emperor.uwsgi.service
-
-            # =============================
-            # 7. Capture last 20 lines of Gunicorn logs
-            # =============================
-            sudo journalctl -u gunicorn --no-pager -n 20 > /tmp/deploy_last_logs.txt
 
             # =============================
             # 8. Cleanup old releases (keep last $KEEP_RELEASES)
@@ -129,7 +123,7 @@ jobs:
         if: failure()
         run: |
           curl -H "Content-Type: application/json" \
-          -d "{\"content\": \":x: Django deploy failed on **${{ github.repository }}** \nBranch: **${{ github.ref_name }}** \nCommit: <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|${{ github.sha }}> \nCheck logs: /tmp/deploy_last_logs.txt\"}" \
+          -d "{\"content\": \":x: Django deploy failed on **${{ github.repository }}** \nBranch: **${{ github.ref_name }}** \nCommit: <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|${{ github.sha }}> \nCheck logs: error_logs/\"}" \
           ${{ secrets.DISCORD_WEBHOOK }}
 
       # Step 6: Notify Discord on deployment success
