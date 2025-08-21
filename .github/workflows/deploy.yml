@@ -66,15 +66,15 @@ jobs:
             # =============================
             # Symlink shared configs & data
             # =============================
-            ln -sfn /var/www/aries/shared/.env.production "$APP_DIR/.env.production"
-            ln -sfn /var/www/aries/shared/aries.ini "$APP_DIR/aries.ini"
-            ln -sfn /var/www/aries/shared/uwsgi_params "$APP_DIR/uwsgi_params"
+            ln -sfn /var/www/aries/aries/.env.production "$APP_DIR/.env.production"
+            ln -sfn /var/www/aries/aries/aries.ini "$APP_DIR/aries.ini"
+            ln -sfn /var/www/aries/aries/uwsgi_params "$APP_DIR/uwsgi_params"
             
-            # SQLite DB (if you’re using it in prod, otherwise skip if on Postgres/MySQL)
-            ln -sfn /var/www/aries/shared/db.sqlite3 "$APP_DIR/db.sqlite3"
+            # SQLite DB 
+            ln -sfn /var/www/aries/aries/db.sqlite3 "$APP_DIR/db.sqlite3"
             
             # Media uploads (important so user uploads persist across releases)
-            ln -sfn /var/www/aries/shared/media "$APP_DIR/media"
+            ln -sfn /var/www/aries/aries/media "$APP_DIR/media"
 
             # =============================
             # 1. Create new release folder
