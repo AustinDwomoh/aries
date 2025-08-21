@@ -69,7 +69,7 @@ jobs:
             # 2. Clone code into new release
             # ========================================
             git clone "$REPO" "$NEW_RELEASE"
-            cd "$NEW_RELEASE"
+            cd "$NEW_RELEASE/aries"
             git checkout main
 
             # ========================================

@@ -229,7 +229,6 @@ def edit_profile(request):
             pass_form = PasswordChangeForm(request.user, request.POST)
             social_formset = SocialLinkFormSet(request.POST, instance=profile)
 
-            password_changed = False
 
             with transaction.atomic():
                 if u_form.is_valid():
@@ -241,7 +240,7 @@ def edit_profile(request):
                 if pass_form.is_valid():
                     user = pass_form.save()
                     update_session_auth_hash(request, user)
-                    password_changed = True
+    
             if any([u_form.is_valid(),p_form.is_valid(),social_formset.is_valid(),pass_form.is_valid()]):
                 messages.success(request, "Your changes have been saved.")
                 return redirect('edit_profile')
