@@ -10,10 +10,9 @@ lapworld/
 webguild/
 # Runtime generated stuff inside aries/
 aries/aries/staticfiles/
-aries/aries/media/
+aries/media/
 aries/error_logs/
-media/clan_logos/
-media/profile_pics/
+media/
 # Local settings, envs
 .env
 

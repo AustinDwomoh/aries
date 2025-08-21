@@ -201,7 +201,7 @@ class IndiTournament(models.Model):
     description = models.TextField(blank=True, null=True)
     created_by = models.ForeignKey(User, on_delete=models.CASCADE)
     players = models.ManyToManyField(Profile, related_name="players")
-    logo = models.ImageField(default="tours-defualt.jpg",upload_to='tour_logos')
+    logo = models.ImageField(default="images/tours-defualt.jpg",upload_to='tour_logos')
     tour_type = models.CharField(max_length=100, choices=TOUR_CHOICES)
     home_or_away = models.BooleanField(
         verbose_name="Home or Away",

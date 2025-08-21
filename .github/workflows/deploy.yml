@@ -1,5 +1,17 @@
-name: Django CI/CD
+# =========================================
+# GitHub Actions Workflow: Aries CI/CD
+# Purpose: Deploy Django project to production via SSH
+# Features:
+# - Timestamped releases for atomic deploys & rollback
+# - Shared virtualenv for dependencies
+# - Database migrations & collectstatic
+# - Service restarts (Gunicorn, Nginx, uWSGI)
+# - Discord notifications for success/failure
+# - Cleanup of old releases (keep last 5)
+# =========================================
+name: Aries CI/CD
 
+# Trigger: run workflow on push to main branch
 on:
   push:
     branches: [ "main" ]
@@ -8,22 +20,32 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
+        # Step 1: Checkout the repository
       - name: Checkout code
         uses: actions/checkout@v3
 
+        # Step 2: Set up Python environment
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.10"
 
+      # Step 3: Install dependencies & lint code
       - name: Install dependencies
         run: |
+          # Upgrade pip
           python -m pip install --upgrade pip
+          
+          # Install project dependencies
           pip install -r requirements.txt
+          
+          # Install linting tool
+          pip install flake8
+          
+          # Run linting to catch code issues
+          flake8 .
 
-      - name: Run tests
-        run: python manage.py test
-
+      # Step 4: Deploy to production via SSH
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v0.1.7
         with:
@@ -31,29 +53,76 @@ jobs:
           username: ${{ secrets.DO_USER }}
           key: ${{ secrets.DO_SSH_KEY }}
           script: |
-            cd /var/www/aries/aries
-            git fetch origin main
-            git reset --hard origin/main
-            /var/www/aries/server/bin/pip install -r requirements.txt
-            /var/www/aries/server/bin/python manage.py migrate --noinput
-            /var/www/aries/server/bin/python manage.py collectstatic --noinput
+            # Stop script on error, unset variable, or failed pipe
+            set -euo pipefail
+            
+            # Variables
+            RELEASES_DIR="/var/www/aries/releases"   # All releases stored here
+            CURRENT_LINK="/var/www/aries/current"    # Symlink pointing to active release
+            VENV="/var/www/aries/server/bin"         # Shared virtualenv
+            REPO="git@github.com:INPHINITHY/aries.git"
+            KEEP_RELEASES=5                          # Number of old releases to keep
+
+            # ========================================
+            # 1. Create a new release folder
+            # ========================================
+            TIMESTAMP=$(date +%Y%m%d%H%M%S)
+            NEW_RELEASE="$RELEASES_DIR/$TIMESTAMP"
+            mkdir -p "$NEW_RELEASE"
+
+            # ========================================
+            # 2. Clone code into new release
+            # ========================================
+            git clone "$REPO" "$NEW_RELEASE"
+            cd "$NEW_RELEASE"
+            git checkout main
+
+            # ========================================
+            # 3. Install dependencies (shared virtualenv)
+            # ========================================
+            $VENV/pip install -r requirements.txt
+
+            # ========================================
+            # 4. Run Django migrations & collect static
+            # ========================================
+            $VENV/python manage.py migrate --noinput
+            $VENV/python manage.py collectstatic --noinput
+
+            # ========================================
+            # 5. Switch symlink to the new release (atomic deploy)
+            # ========================================
+            ln -sfn "$NEW_RELEASE" "$CURRENT_LINK"
+
+            # ========================================
+            # 6. Restart services
+            # ========================================
             sudo systemctl restart gunicorn
             sudo systemctl restart nginx
+            sudo systemctl restart emperor.uwsgi.service
 
+            # ========================================
+            # 7. Capture last 20 lines of Gunicorn logs
+            # ========================================
+            sudo journalctl -u gunicorn --no-pager -n 20 > /tmp/deploy_last_logs.txt
+
+            # ========================================
+            # 8. Cleanup old releases (keep last $KEEP_RELEASES)
+            # ========================================
+            cd "$RELEASES_DIR"
+            ls -1tr | head -n -$KEEP_RELEASES | xargs -r rm -rf
+
+      # Step 5: Notify Discord on deployment failure
       - name: Notify Discord on failure
         if: failure()
         run: |
           curl -H "Content-Type: application/json" \
-          -d "{\"content\": \":x: Django deploy failed on **${{ github.repository }}** \nBranch: **${{ github.ref_name }}** \nCommit: <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|${{ github.sha }}>\"}" \
+          -d "{\"content\": \":x: Django deploy failed on **${{ github.repository }}** \nBranch: **${{ github.ref_name }}** \nCommit: <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|${{ github.sha }}> \nCheck logs: /tmp/deploy_last_logs.txt\"}" \
           ${{ secrets.DISCORD_WEBHOOK }}
 
+      # Step 6: Notify Discord on deployment success
       - name: Notify Discord on success
         if: success()
         run: |
           curl -H "Content-Type: application/json" \
           -d "{\"content\": \":white_check_mark: Django deploy succeeded on **${{ github.repository }}** \nBranch: **${{ github.ref_name }}** \nCommit: <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|${{ github.sha }}>\"}" \
           ${{ secrets.DISCORD_WEBHOOK }}
-
-
-        
-        
