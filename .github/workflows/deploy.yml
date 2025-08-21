@@ -86,6 +86,7 @@ jobs:
             ln -sfn /var/www/aries/aries/uwsgi_params "$APP_DIR/uwsgi_params"
             ln -sfn /var/www/aries/aries/db.sqlite3 "$APP_DIR/db.sqlite3"
             ln -sfn /var/www/aries/aries/media "$APP_DIR/media"
+            ln -sfn /var/www/aries/aries/error_logs "$APP_DIR/error_logs"
             # =============================
             # . Install dependencies (shared virtualenv)
             # =============================
@@ -97,11 +98,13 @@ jobs:
             cd "$APP_DIR"
             $VENV/python manage.py migrate --noinput
             $VENV/python manage.py collectstatic --noinput
-
+            
             # =============================
             # 5. Switch symlink to new release (atomic deploy)
             # =============================
             ln -sfn "$RELEASE_ROOT" "$CURRENT_LINK"
+            chown -R www-data:www-data /var/www/aries
+
 
             # =============================
             # 6. Restart services
