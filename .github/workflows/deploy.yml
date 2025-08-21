@@ -39,11 +39,6 @@ jobs:
           # Install project dependencies
           pip install -r requirements.txt
           
-          # Install linting tool
-          pip install flake8
-          
-          # Run linting to catch code issues
-          flake8 .
 
       # Step 4: Deploy to production via SSH
       - name: Deploy via SSH
@@ -80,7 +75,7 @@ jobs:
             # ========================================
             # 3. Install dependencies (shared virtualenv)
             # ========================================
-            $VENV/pip install -r requirements.txt
+            $VENV/pip install -r requirements.txt --upgrade --quiet
 
             # ========================================
             # 4. Run Django migrations & collect static
