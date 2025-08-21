@@ -63,18 +63,8 @@ jobs:
             # Paths for clarity
             RELEASE_ROOT="$RELEASES_DIR/$(date +%Y%m%d%H%M%S)"
             APP_DIR="$RELEASE_ROOT/aries"
-            # =============================
-            # Symlink shared configs & data
-            # =============================
-            ln -sfn /var/www/aries/aries/.env.production "$APP_DIR/.env.production"
-            ln -sfn /var/www/aries/aries/aries.ini "$APP_DIR/aries.ini"
-            ln -sfn /var/www/aries/aries/uwsgi_params "$APP_DIR/uwsgi_params"
-            
-            # SQLite DB 
-            ln -sfn /var/www/aries/aries/db.sqlite3 "$APP_DIR/db.sqlite3"
-            
-            # Media uploads (important so user uploads persist across releases)
-            ln -sfn /var/www/aries/aries/media "$APP_DIR/media"
+        
+    
 
             # =============================
             # 1. Create new release folder
@@ -87,8 +77,17 @@ jobs:
             git clone "$REPO" "$RELEASE_ROOT"
             git -C "$RELEASE_ROOT" checkout main   # ensure on main branch
 
+
             # =============================
-            # 3. Install dependencies (shared virtualenv)
+            # 3. Symlink shared configs & data
+            # =============================
+            ln -sfn /var/www/aries/aries/.env.production "$APP_DIR/.env.production"
+            ln -sfn /var/www/aries/aries/aries.ini "$APP_DIR/aries.ini"
+            ln -sfn /var/www/aries/aries/uwsgi_params "$APP_DIR/uwsgi_params"
+            ln -sfn /var/www/aries/aries/db.sqlite3 "$APP_DIR/db.sqlite3"
+            ln -sfn /var/www/aries/aries/media "$APP_DIR/media"
+            # =============================
+            # . Install dependencies (shared virtualenv)
             # =============================
             $VENV/pip install -r "$RELEASE_ROOT/requirements.txt" --upgrade --quiet
 
