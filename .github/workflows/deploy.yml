@@ -63,6 +63,18 @@ jobs:
             # Paths for clarity
             RELEASE_ROOT="$RELEASES_DIR/$(date +%Y%m%d%H%M%S)"
             APP_DIR="$RELEASE_ROOT/aries"
+            # =============================
+            # Symlink shared configs & data
+            # =============================
+            ln -sfn /var/www/aries/shared/.env.production "$APP_DIR/.env.production"
+            ln -sfn /var/www/aries/shared/aries.ini "$APP_DIR/aries.ini"
+            ln -sfn /var/www/aries/shared/uwsgi_params "$APP_DIR/uwsgi_params"
+            
+            # SQLite DB (if you’re using it in prod, otherwise skip if on Postgres/MySQL)
+            ln -sfn /var/www/aries/shared/db.sqlite3 "$APP_DIR/db.sqlite3"
+            
+            # Media uploads (important so user uploads persist across releases)
+            ln -sfn /var/www/aries/shared/media "$APP_DIR/media"
 
             # =============================
             # 1. Create new release folder
