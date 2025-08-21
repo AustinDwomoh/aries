@@ -51,58 +51,62 @@ jobs:
             # Stop script on error, unset variable, or failed pipe
             set -euo pipefail
             
-            # Variables
+             # =============================
+            # Define variables
+            # =============================
             RELEASES_DIR="/var/www/aries/releases"   # All releases stored here
             CURRENT_LINK="/var/www/aries/current"    # Symlink pointing to active release
             VENV="/var/www/aries/server/bin"         # Shared virtualenv
             REPO="git@github.com:INPHINITHY/aries.git"
             KEEP_RELEASES=5                          # Number of old releases to keep
 
-            # ========================================
-            # 1. Create a new release folder
-            # ========================================
-            TIMESTAMP=$(date +%Y%m%d%H%M%S)
-            NEW_RELEASE="$RELEASES_DIR/$TIMESTAMP"
-            mkdir -p "$NEW_RELEASE"
+            # Paths for clarity
+            RELEASE_ROOT="$RELEASES_DIR/$(date +%Y%m%d%H%M%S)"
+            APP_DIR="$RELEASE_ROOT/aries"
 
-            # ========================================
+            # =============================
+            # 1. Create new release folder
+            # =============================
+            mkdir -p "$RELEASE_ROOT"
+
+            # =============================
             # 2. Clone code into new release
-            # ========================================
-            git clone "$REPO" "$NEW_RELEASE"
-            cd "$NEW_RELEASE/aries"
-            git checkout main
+            # =============================
+            git clone "$REPO" "$RELEASE_ROOT"
+            git -C "$RELEASE_ROOT" checkout main   # ensure on main branch
 
-            # ========================================
+            # =============================
             # 3. Install dependencies (shared virtualenv)
-            # ========================================
-            $VENV/pip install -r requirements.txt --upgrade --quiet
+            # =============================
+            $VENV/pip install -r "$RELEASE_ROOT/requirements.txt" --upgrade --quiet
 
-            # ========================================
+            # =============================
             # 4. Run Django migrations & collect static
-            # ========================================
+            # =============================
+            cd "$APP_DIR"
             $VENV/python manage.py migrate --noinput
             $VENV/python manage.py collectstatic --noinput
 
-            # ========================================
-            # 5. Switch symlink to the new release (atomic deploy)
-            # ========================================
-            ln -sfn "$NEW_RELEASE" "$CURRENT_LINK"
+            # =============================
+            # 5. Switch symlink to new release (atomic deploy)
+            # =============================
+            ln -sfn "$RELEASE_ROOT" "$CURRENT_LINK"
 
-            # ========================================
+            # =============================
             # 6. Restart services
-            # ========================================
+            # =============================
             sudo systemctl restart gunicorn
             sudo systemctl restart nginx
             sudo systemctl restart emperor.uwsgi.service
 
-            # ========================================
+            # =============================
             # 7. Capture last 20 lines of Gunicorn logs
-            # ========================================
+            # =============================
             sudo journalctl -u gunicorn --no-pager -n 20 > /tmp/deploy_last_logs.txt
 
-            # ========================================
+            # =============================
             # 8. Cleanup old releases (keep last $KEEP_RELEASES)
-            # ========================================
+            # =============================
             cd "$RELEASES_DIR"
             ls -1tr | head -n -$KEEP_RELEASES | xargs -r rm -rf
 
