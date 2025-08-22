@@ -61,11 +61,9 @@
                           <div class="row g-2 align-items-center">
                               <div class="col-md-3 col-sm-12">{{ form.link_type|as_crispy_field }}</div>
                               <div class="col-md-5">{{ form.url|as_crispy_field }}</div>
-                              <div class="col-md-2">{{ form.display_order|as_crispy_field }}</div>
-                              <div class="col-md-1">{{ form.is_active|as_crispy_field }}</div>
                               <div class="col-md-1 text-center">
                                   {% if form.instance.pk %}
-                                      {{ form.DELETE }} <small>Delete</small>
+                                      {{ form.DELETE }} <small>Remove</small>
                                   {% else %}
                                       <button type="button" class="btn btn-danger btn-sm remove-form">✖</button>
                                   {% endif %}

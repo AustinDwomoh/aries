@@ -5,6 +5,8 @@ from clans.models import Clans
 from users.models import Profile
 from .tourmanager import TourManager
 import os,json
+from datetime import timedelta
+from django.utils import timezone
 from PIL import Image
 from scripts.error_handle import ErrorHandler
 
@@ -190,7 +192,6 @@ class ClanTournamentPlayer(models.Model):
     class Meta:
         unique_together = ('clan', 'tournament', 'user')
 
-
 class IndiTournament(models.Model):
     """
     Represents a individual-based tournament in the system.
@@ -351,4 +352,3 @@ class IndiTournament(models.Model):
         finally:
             return updated_data
  
-

@@ -25,6 +25,9 @@
       <li class="nav-item">
         <a class="nav-link" data-bs-toggle="tab" href="#social-links" role="tab">Social Links</a>
       </li>
+      <li class="nav-item">
+          <a class="nav-link" data-bs-toggle="tab" href="#password" role="tab">Password</a>
+      </li>
     </ul>
 
     <div class="tab-content mt-3">
@@ -65,12 +68,43 @@
       <!-- Recruitment Tab -->
       <div class="tab-pane fade" id="recruitment" role="tabpanel">
         <div class="container mt-3">
-          <form method="post">
-            {% csrf_token %}
-            {{ recruitment_form|crispy }}
-            <button type="submit" class="btn btn-primary mt-3">Save Recruitment</button>
-          </form>
+            <form method="post">
+                {% csrf_token %}
+                <div class="card shadow-sm p-4 mb-4">
+                    <div class="form-check mb-3">
+                        {{ recruitment_form.is_recruiting }}
+                        <label class="form-check-label fw-bold" for="{{ recruitment_form.is_recruiting.id_for_label }}">
+                            {{ recruitment_form.is_recruiting.label }}
+                        </label>
+                    </div>
+
+                    <div class="mb-3" id="recruitment-requirements-wrapper">
+                        <label for="{{ recruitment_form.recruitment_requirements.id_for_label }}" class="form-label fw-semibold">
+                            {{ recruitment_form.recruitment_requirements.label }}
+                        </label>
+                        {{ recruitment_form.recruitment_requirements }}
+                        {% if recruitment_form.recruitment_requirements.errors %}
+                            <div class="text-danger small mt-1">
+                                {{ recruitment_form.recruitment_requirements.errors }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-success">Save Recruitment</button>
+            </form>
         </div>
+      </div>
+
+       <!-- Password Tab -->
+      <div class="tab-pane fade" id="password" role="tabpanel">
+        <div class="container mt-3">
+          <form method="post" id="password-form">
+              {% csrf_token %}
+              {{ pass_form|crispy }}
+              <button type="submit" class="btn btn-primary mt-3">Change Password</button>
+          </form>
+          </div>
       </div>
 
       <!-- Social Links Tab -->
@@ -85,11 +119,9 @@
                   <div class="row g-2 align-items-center">
                     <div class="col-md-3 col-sm-12">{{ form.link_type|as_crispy_field }}</div>
                     <div class="col-md-5">{{ form.url|as_crispy_field }}</div>
-                    <div class="col-md-2">{{ form.display_order|as_crispy_field }}</div>
-                    <div class="col-md-1">{{ form.is_active|as_crispy_field }}</div>
                     <div class="col-md-1 text-center">
                       {% if form.instance.pk %}
-                        {{ form.DELETE }} <small>Delete</small>
+                        {{ form.DELETE }} <small>Remove</small>
                       {% else %}
                         <button type="button" class="btn btn-danger btn-sm remove-form">✖</button>
                       {% endif %}

@@ -4,8 +4,7 @@ from django.contrib.auth.models import User
 from clans.models import Clans
 from scripts.error_handle import ErrorHandler
 from scripts.follow import *
-from django.conf import settings
-import os
+
 def home(request):
     """
     Renders the home page of the website.
@@ -41,7 +40,7 @@ def trigger_error_view(request):
         # Intentional error
         1 / 0
     except Exception as e:
-        ErrorHandler().handle(e, context="Trigger error test view")
+        ErrorHandler().handle(e, context=f"Trigger error test view by user {request.user.username}")
         return HttpResponse("Error has been logged and admin notified.", status=500)
 
 def follow_list_view(request, ftype, model, profile_id):
@@ -58,7 +57,6 @@ def follow_list_view(request, ftype, model, profile_id):
 
     Handles invalid 'ftype' with a bad request response.
     """
-    print(f"Follow list view called with ftype={ftype}, model={model}, profile_id={profile_id}")
     if ftype == 'followers':
         instance = get_followed_instance(model, profile_id)
         data = get_followers(instance)  

@@ -1,36 +1,33 @@
 from django import forms
 from .models import Clans
 from django.contrib.auth.models import User
-from users.models import Profile
-from django.core.exceptions import ValidationError
 from django.forms import inlineformset_factory
 from .models import ClanSocialLink
 from django.contrib.auth.models import User
-class ClanRegistrationForm(forms.ModelForm):
-    """
-    Form for registering a new clan.
-    Extends ModelForm to create/update Clans model instances.
-    Includes password confirmation fields for validation.
-    """
-    password = forms.CharField(widget=forms.PasswordInput)
-    confirm_password = forms.CharField(widget=forms.PasswordInput)
+from django_countries.widgets import CountrySelectWidget
 
+
+class ClanBasicsForm(forms.ModelForm):
     class Meta:
         model = Clans
-        fields = ['clan_name', 
-                  'email',
-                  'phone',
-                  'password',
-                  'clan_tag',
-                  'clan_description',
-                  'clan_logo',
-                  'clan_profile_pic',
-                  'clan_website',
-                  'primary_game',
-                  'other_games',
-                  'country'
-                  ]
-   
+        fields = ['clan_name', 'clan_tag', 'clan_description']
+        widgets = {
+            'clan_name': forms.TextInput(attrs={'class': 'form-control form-control-lg'}),
+            'clan_tag': forms.TextInput(attrs={'class': 'form-control'}),
+            'clan_description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
+    
+class ClanContactForm(forms.Form):
+    email = forms.EmailField(
+    widget=forms.EmailInput(attrs={
+        'class': 'form-control form-control-lg',
+        'placeholder': 'Enter email address'
+    }),
+    help_text="You can reuse your main Gmail by adding +clan (e.g. yourname+clan@gmail.com).")
+    password = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control'}))
+    confirm_password = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control'}))
+    
+    
     def clean_email(self):
         """Validate email is unique among User and Clans models."""
         email = self.cleaned_data.get('email')
@@ -38,14 +35,6 @@ class ClanRegistrationForm(forms.ModelForm):
         if User.objects.filter(email=email).exists() or Clans.objects.filter(email=email).exists():
             raise forms.ValidationError("This email is already in use.")
         return email
-
-    def clean_phone(self):
-        """Validate phone is unique among Profile and Clans models."""
-        phone = self.cleaned_data.get('phone')
-        # Caution: If phone is None or empty, skip check
-        if phone and (Profile.objects.filter(phone=phone).exists() or Clans.objects.filter(phone=phone).exists()):
-            raise ValidationError("This phone number is already in use.")
-        return phone
     
     def clean(self):
         """
@@ -55,9 +44,28 @@ class ClanRegistrationForm(forms.ModelForm):
         cleaned_data = super().clean()
         password = cleaned_data.get('password')
         confirm_password = cleaned_data.get('confirm_password')
-        if password != confirm_password:
-            raise forms.ValidationError("Passwords do not match.")
-        return cleaned_data
+        if password and confirm_password and password != confirm_password:
+            self.add_error("confirm_password", "Passwords do not match.")
+
+class ClanMediaForm(forms.ModelForm):
+    class Meta:
+        model = Clans
+        fields = ['clan_logo', 'clan_profile_pic']
+        widgets = {
+            'clan_logo': forms.ClearableFileInput(attrs={'class': 'form-control'}),
+            'clan_profile_pic': forms.ClearableFileInput(attrs={'class': 'form-control'}),
+        }
+
+class ClanExtrasForm(forms.ModelForm):
+    class Meta:
+        model = Clans
+        fields = ['clan_website', 'primary_game', 'other_games', 'country']
+        widgets = {
+            'clan_website': forms.URLInput(attrs={'class': 'form-control'}),
+            'primary_game': forms.TextInput(attrs={'class': 'form-control'}),
+            'other_games': forms.TextInput(attrs={'class': 'form-control'}),
+            'country': CountrySelectWidget(attrs={'class': 'form-control'}),
+        }
 
 class AddPlayerToClanForm(forms.Form):
     """
@@ -75,18 +83,14 @@ class AddPlayerToClanForm(forms.Form):
                 empty_label="Select a user"
             )
 
-
 class ClanSocialLinkForm(forms.ModelForm):
     class Meta:
         model = ClanSocialLink
-        fields = ['link_type', 'url', 'display_order', 'is_active']
+        fields = ['link_type', 'url']
         widgets = {
             'link_type': forms.Select(attrs={'class': 'form-select'}),
             'url': forms.URLInput(attrs={'placeholder': 'https://example.com', 'class': 'form-control'}),
-            'display_order': forms.NumberInput(attrs={'class': 'form-control', 'min': 0}),
-            'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
-
 
 ClanSocialLinkFormSet = inlineformset_factory(
     Clans,             # parent model
@@ -95,6 +99,26 @@ ClanSocialLinkFormSet = inlineformset_factory(
     extra=1,
     can_delete=True
 )
+class ClanRecruitmentForm(forms.ModelForm):
+    class Meta:
+        model = Clans
+        fields = ['is_recruiting', 'recruitment_requirements']
+        widgets = {
+            'is_recruiting': forms.CheckboxInput(attrs={
+                'class': 'form-check-input me-2',  # small margin for label
+            }),
+            'recruitment_requirements': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 4,
+                'placeholder': 'Add recruitment requirements here…',
+                'style': 'resize: vertical;',
+            }),
+        }
+        labels = {
+            'is_recruiting': 'Open for Recruitment?',
+            'recruitment_requirements': 'Recruitment Requirements',
+        }
+
 class ClanBasicInfoForm(forms.ModelForm):
     class Meta:
         model = Clans
@@ -112,45 +136,18 @@ class ClanBasicInfoForm(forms.ModelForm):
             'clan_description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'primary_game': forms.TextInput(attrs={'class': 'form-control'}),
             'other_games': forms.TextInput(attrs={'class': 'form-control'}),
-            'country': forms.TextInput(attrs={'class': 'form-control'}),
+            'country': CountrySelectWidget(attrs={'class': 'form-control'}),
         }
 
-class ClanContactForm(forms.ModelForm):
+class ClanContactFormEdit(forms.ModelForm):
     class Meta:
         model = Clans
         fields = [
             'email',
             'clan_website',
-            'phone',
+            
         ]
         widgets = {
             'email': forms.EmailInput(attrs={'class': 'form-control form-control-lg'}),
             'clan_website': forms.URLInput(attrs={'class': 'form-control'}),
-            'phone': forms.TextInput(attrs={'class': 'form-control'}),
         }
-
-class ClanMediaForm(forms.ModelForm):
-    class Meta:
-        model = Clans
-        fields = ['clan_logo', 'clan_profile_pic']
-        widgets = {
-            'clan_logo': forms.ClearableFileInput(attrs={'class': 'form-control'}),
-            'clan_profile_pic': forms.ClearableFileInput(attrs={'class': 'form-control'}),
-        }
-
-class ClanRecruitmentForm(forms.ModelForm):
-    class Meta:
-        model = Clans
-        fields = ['is_recruiting', 'recruitment_requirements']
-        widgets = {
-            'is_recruiting': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-            'recruitment_requirements': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-        }
-
-        # ============================================================================ #
-        #                                 Future Ideas                                 #
-        # ============================================================================ #
-        # You plan to implement an invite system later when you build the PWA.
-        # This would let clan leaders invite players who can accept or reject.
-        # Only upon acceptance would the player be added to the clan.
-        # This approach is better UX and security than just adding players directly.

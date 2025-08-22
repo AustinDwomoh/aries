@@ -16,10 +16,8 @@ import os,environ,logging
 
 logger = logging.getLogger(__name__)
 BASE_DIR = Path(__file__).resolve().parent.parent
-env = environ.Env(
-    DEBUG=(bool, False),
-    ENV=(str, 'production')
-)
+env = environ.Env()
+
 environ.Env.read_env(os.path.join(BASE_DIR, ".env.production"))
 # ============================================================================ #
 #                                    SECRETS                                   #
@@ -78,6 +76,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+     "formtools", "django_countries"
     
 ]
 # Crispy Forms is used for better form rendering with Bootstrap 5 integration

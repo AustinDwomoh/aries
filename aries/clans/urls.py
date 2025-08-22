@@ -5,7 +5,7 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path('', views.clans, name='clan_home'),
-    path('register/', views.clan_register, name='clan_register'),
+     path("register/", views.ClanRegistrationWizard.as_view(views.CLAN_FORMS), name="clan_register"),
     path('dashboard/', views.clan_dashboard, name='clan_dashboard'),
 
     # Players management

@@ -123,11 +123,9 @@ class SocialLink(models.Model):
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='social_links')
     link_type = models.CharField(max_length=20, choices=SOCIAL_CHOICES)
     url = models.URLField(max_length=500)
-    display_order = models.PositiveIntegerField(default=0, help_text="Order in which this link should appear")
-    is_active = models.BooleanField(default=True)
+    
 
     class Meta:
-        ordering = ["display_order", "link_type"]
         unique_together = ("profile", "link_type")
 
     def __str__(self):

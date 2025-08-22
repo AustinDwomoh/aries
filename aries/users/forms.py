@@ -40,12 +40,10 @@ class UserRegisterForm(UserCreationForm):
 class SocialLinkForm(forms.ModelForm):
     class Meta:
         model = SocialLink
-        fields = ['link_type', 'url', 'display_order', 'is_active']
+        fields = ['link_type', 'url']
         widgets = {
             'link_type': forms.Select(attrs={'class': 'form-select'}),
             'url': forms.URLInput(attrs={'placeholder': 'https://example.com', 'class': 'form-control'}),
-            'display_order': forms.NumberInput(attrs={'class': 'form-control', 'min': 0}),
-            'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
 

@@ -1,13 +1,14 @@
 from django.shortcuts import render, redirect,get_object_or_404,HttpResponse
 from django.contrib.auth.decorators import login_required
 from .forms import IndiTournamentForm, ClanTournamentForm,MatchResultForm
+from scripts import email_handle
 from .models import ClanTournament, IndiTournament, ClanTournamentPlayer
-from clans.models import ClanStats,Clans
+import threading
+from django.template.loader import render_to_string
+from clans.models import Clans
 from users.models import Profile
 from django.db.models import Count,Q
 from django.contrib.auth.models import User
-from django.core.exceptions import ObjectDoesNotExist
-from django.utils import timezone
 from django.urls import reverse
 from .tourmanager import TourManager
 
@@ -114,10 +115,34 @@ def create_clan_tournament(request):
             tour.created_by = request.user  
             tour.save()  
             teams = form.cleaned_data.get('teams')
-            tour.teams.set(teams)  
+            tour.teams.set(teams)
+             
             #tour.save()
             tour.logo = form.cleaned_data.get('logo', tour.logo)
             tour.save()  # Save the match instance
+            """ for team in tour.teams:
+                subject = "Clan Tournament"
+                body = f"Your clan has been added to {tour.name}."
+
+                html_content = render_to_string("tournaments/notify.html", {
+                    "tour_name": request.user.username,
+                    "tour_type": clan.clan_name,
+                    "tour_link":request.build_absolute_uri(f"/users/gamer_view/{request.user.pk}/"),
+                    "action":"request"
+                })
+
+                # Send asynchronously
+                threading.Thread(
+                    target=email_handle.send_email_with_attachment,
+                    kwargs={
+                        "subject": subject,
+                        "body": body,
+                        "to_email": clan.email,
+                        "file_path": None,
+                        "from_email": None,
+                        "html_content": html_content
+                    }
+                ).start() """
             return redirect(reverse("cvc_details", kwargs={"tour_id": tour.id}))  
     else:
         form = ClanTournamentForm()
