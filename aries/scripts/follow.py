@@ -223,7 +223,7 @@ def send_follow_notification(follower_instance, followed_instance, action="follo
 
     follow_name = getattr(follower_instance, 'username', None) or getattr(follower_instance, 'clan_name', None)
 
-    html_content = render_to_string("home/follow_notify.html", {
+    html_content = render_to_string("Home/follow_notify.html", {
         "follower_name": follow_name,
         "action": action
     })
