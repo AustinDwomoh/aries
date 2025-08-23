@@ -23,4 +23,4 @@ aries/error_logs/
 # SQLite and other local DBs
 aries/db.sqlite3
 .txt
-
+the.txt

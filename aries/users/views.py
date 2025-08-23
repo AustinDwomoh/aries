@@ -292,7 +292,6 @@ def follow_toggle_view(request, action, model, obj_id):
         ErrorHandler().handle(e, context='User Follow/Unfollow')
         return JsonResponse({"error": "Unexpected error occurred."}, status=500)
  
-
 class CustomLoginView(LoginView):
     form_class = CustomLoginForm
     template_name = 'users/login.html' 

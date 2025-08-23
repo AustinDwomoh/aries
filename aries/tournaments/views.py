@@ -1,10 +1,11 @@
+import time
 from django.shortcuts import render, redirect,get_object_or_404,HttpResponse
 from django.contrib.auth.decorators import login_required
+import resend
 from .forms import IndiTournamentForm, ClanTournamentForm,MatchResultForm
-from scripts import email_handle
 from .models import ClanTournament, IndiTournament, ClanTournamentPlayer
-import threading
-from django.template.loader import render_to_string
+from django.conf import settings
+from scripts.email_handle import notify_tournament_players
 from clans.models import Clans
 from users.models import Profile
 from django.db.models import Count,Q
@@ -90,6 +91,7 @@ def tours_indi_view(request,tour_id):
         'tour_kind': tour_kind
     })
 
+
 @login_required
 def create_clan_tournament(request):
     """
@@ -113,36 +115,13 @@ def create_clan_tournament(request):
         if form.is_valid():
             tour = form.save(commit=False)
             tour.created_by = request.user  
-            tour.save()  
+            tour.save()  # Save to generate ID before setting M2M
             teams = form.cleaned_data.get('teams')
             tour.teams.set(teams)
-             
-            #tour.save()
+            tour.save()  
             tour.logo = form.cleaned_data.get('logo', tour.logo)
             tour.save()  # Save the match instance
-            """ for team in tour.teams:
-                subject = "Clan Tournament"
-                body = f"Your clan has been added to {tour.name}."
-
-                html_content = render_to_string("tournaments/notify.html", {
-                    "tour_name": request.user.username,
-                    "tour_type": clan.clan_name,
-                    "tour_link":request.build_absolute_uri(f"/users/gamer_view/{request.user.pk}/"),
-                    "action":"request"
-                })
-
-                # Send asynchronously
-                threading.Thread(
-                    target=email_handle.send_email_with_attachment,
-                    kwargs={
-                        "subject": subject,
-                        "body": body,
-                        "to_email": clan.email,
-                        "file_path": None,
-                        "from_email": None,
-                        "html_content": html_content
-                    }
-                ).start() """
+            notify_tournament_players('clan',request, tour, action="created")
             return redirect(reverse("cvc_details", kwargs={"tour_id": tour.id}))  
     else:
         form = ClanTournamentForm()
@@ -173,10 +152,11 @@ def create_indi_tournament(request):
         if form.is_valid():
             tour = form.save(commit=False)
             tour.created_by = request.user
-            tour.logo = form.cleaned_data.get('logo', tour.logo)  # Set logo if provided
-            tour.save()
+            tour.save()  # Save to generate ID before setting M2M
+            tour.logo = form.cleaned_data.get('logo', tour.logo)  
             tour.players.set(form.cleaned_data.get('players', []))  # Link players
             tour.save()  # Save just incase
+            notify_tournament_players('indi',request, tour, action="created")
             return redirect(reverse("indi_details", kwargs={"tour_id": tour.id}))
     else:
         form = IndiTournamentForm(current_profile=request.user.profile)
