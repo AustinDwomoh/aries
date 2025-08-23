@@ -5,7 +5,7 @@ import os, json
 from scripts.error_handle import ErrorHandler
 from PIL import Image
 from django.conf import settings
-
+from django_countries.fields import CountryField
 # Custom manager for Clans, mimicking UserManager pattern
 class ClanManager(BaseUserManager):
     def create_clan(self, name, password=None, **extra_fields):
@@ -23,7 +23,7 @@ class Clans(AbstractBaseUser, PermissionsMixin):
     Inherits Django's AbstractBaseUser for auth compatibility.
     """
     clan_name = models.CharField(max_length=255, unique=True)
-    clan_tag = models.CharField(max_length=10)
+    clan_tag = models.CharField(max_length=4,unique=True, help_text="Clan tag must be unique and up to 4 characters long.")
     email = models.EmailField(unique=True)
     password = models.CharField(max_length=128)
     clan_description = models.TextField()
@@ -33,10 +33,9 @@ class Clans(AbstractBaseUser, PermissionsMixin):
     date_joined = models.DateTimeField(auto_now_add=True)
     primary_game = models.CharField(max_length=255, blank=True, null=True)
     other_games = models.CharField(max_length=255, blank=True, null=True)
-    country = models.CharField(max_length=50)  
+    country = CountryField(blank_label='(select country)') 
     is_recruiting = models.BooleanField(default=False)
     recruitment_requirements = models.TextField(blank=True, null=True)
-    phone = models.CharField(max_length=15, blank=True, null=True,unique=True)
     is_verified = models.BooleanField(default=False)
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
 
@@ -208,11 +207,9 @@ class ClanSocialLink(models.Model):
     clan = models.ForeignKey(Clans, on_delete=models.CASCADE, related_name='social_links')
     link_type = models.CharField(max_length=20, choices=SOCIAL_CHOICES)
     url = models.URLField(max_length=500)
-    display_order = models.PositiveIntegerField(default=0, help_text="Order in which this link should appear")
-    is_active = models.BooleanField(default=True)
+
 
     class Meta:
-        ordering = ["display_order", "link_type"]
         unique_together = ("clan", "link_type")
 
     def __str__(self):

@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+{% block content %}
+<div class="container py-5 animate__animated animate__fadeIn">
+  <h2 style="text-align:center" > Extra Info</h2>
+  <form method="post">
+    {% csrf_token %}
+    {{ wizard.management_form }}
+    {{ form|crispy }}
+    <button type="submit" class="btn btn-success">Finish</button>
+  </form>
+</div>
+{% endblock %}

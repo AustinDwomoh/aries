@@ -50,13 +50,13 @@ class IndiTournamentForm(forms.ModelForm):
             ).values_list('follower_object_id', flat=True)
 
             self.fields['players'] = forms.ModelMultipleChoiceField(
-                queryset=Profile.objects.filter(user__id__in=follower_user_ids),  # <-- user__id here
+                queryset=Profile.objects.all() ,#filter(user__id__in=follower_user_ids),  # <-- user__id here
                 widget=forms.SelectMultiple(attrs={'class': 'select2','data-placeholder': 'Select players that follow you'})
             )
           
         else:
             # Fallback: No followers, empty queryset for 'players'
-            self.fields['players'] = forms.ModelMultipleChoiceField(queryset=Profile.objects.none(), widget=forms.SelectMultiple(attrs={'class': 'select2','data-placeholder': 'Select players that follow you'}))
+            self.fields['players'] = forms.ModelMultipleChoiceField(queryset=Profile.objects.all(), widget=forms.SelectMultiple(attrs={'class': 'select2','data-placeholder': 'Select players that follow you'}))
     #
 
 class ClanTournamentForm(forms.ModelForm):

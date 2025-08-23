@@ -1,13 +1,15 @@
+import time
 from django.shortcuts import render, redirect,get_object_or_404,HttpResponse
 from django.contrib.auth.decorators import login_required
+import resend
 from .forms import IndiTournamentForm, ClanTournamentForm,MatchResultForm
 from .models import ClanTournament, IndiTournament, ClanTournamentPlayer
-from clans.models import ClanStats,Clans
+from django.conf import settings
+from scripts.email_handle import notify_tournament_players
+from clans.models import Clans
 from users.models import Profile
 from django.db.models import Count,Q
 from django.contrib.auth.models import User
-from django.core.exceptions import ObjectDoesNotExist
-from django.utils import timezone
 from django.urls import reverse
 from .tourmanager import TourManager
 
@@ -89,6 +91,7 @@ def tours_indi_view(request,tour_id):
         'tour_kind': tour_kind
     })
 
+
 @login_required
 def create_clan_tournament(request):
     """
@@ -112,12 +115,13 @@ def create_clan_tournament(request):
         if form.is_valid():
             tour = form.save(commit=False)
             tour.created_by = request.user  
-            tour.save()  
+            tour.save()  # Save to generate ID before setting M2M
             teams = form.cleaned_data.get('teams')
-            tour.teams.set(teams)  
-            #tour.save()
+            tour.teams.set(teams)
+            tour.save()  
             tour.logo = form.cleaned_data.get('logo', tour.logo)
             tour.save()  # Save the match instance
+            notify_tournament_players('clan',request, tour, action="created")
             return redirect(reverse("cvc_details", kwargs={"tour_id": tour.id}))  
     else:
         form = ClanTournamentForm()
@@ -148,10 +152,11 @@ def create_indi_tournament(request):
         if form.is_valid():
             tour = form.save(commit=False)
             tour.created_by = request.user
-            tour.logo = form.cleaned_data.get('logo', tour.logo)  # Set logo if provided
-            tour.save()
+            tour.save()  # Save to generate ID before setting M2M
+            tour.logo = form.cleaned_data.get('logo', tour.logo)  
             tour.players.set(form.cleaned_data.get('players', []))  # Link players
             tour.save()  # Save just incase
+            notify_tournament_players('indi',request, tour, action="created")
             return redirect(reverse("indi_details", kwargs={"tour_id": tour.id}))
     else:
         form = IndiTournamentForm(current_profile=request.user.profile)

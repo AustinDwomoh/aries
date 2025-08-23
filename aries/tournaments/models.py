@@ -5,6 +5,8 @@ from clans.models import Clans
 from users.models import Profile
 from .tourmanager import TourManager
 import os,json
+from datetime import timedelta
+from django.utils import timezone
 from PIL import Image
 from scripts.error_handle import ErrorHandler
 
@@ -127,7 +129,6 @@ class ClanTournament(models.Model):
                 tour_name=self.name
             )
             self.match_data = tour_manager.create_tournament()
-            print(self.match_data)
         
             self.save_match_data_to_file()
         except Exception as e:
@@ -173,7 +174,8 @@ class ClanTournament(models.Model):
         
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
-        self.create_matches()
+        if self.teams.exists():
+            self.create_matches()
 
         img = Image.open(self.logo.path)
 
@@ -190,7 +192,6 @@ class ClanTournamentPlayer(models.Model):
     class Meta:
         unique_together = ('clan', 'tournament', 'user')
 
-
 class IndiTournament(models.Model):
     """
     Represents a individual-based tournament in the system.
@@ -201,7 +202,7 @@ class IndiTournament(models.Model):
     description = models.TextField(blank=True, null=True)
     created_by = models.ForeignKey(User, on_delete=models.CASCADE)
     players = models.ManyToManyField(Profile, related_name="players")
-    logo = models.ImageField(default="images/tours-defualt.jpg",upload_to='tour_logos')
+    logo = models.ImageField(default="tours-defualt.jpg",upload_to='tour_logos')
     tour_type = models.CharField(max_length=100, choices=TOUR_CHOICES)
     home_or_away = models.BooleanField(
         verbose_name="Home or Away",
@@ -301,7 +302,8 @@ class IndiTournament(models.Model):
         if not hasattr(self, '_saving'):
             self._saving = True  
             super().save(*args, **kwargs)
-            self.create_matches()
+            if self.players.exists():
+                self.create_matches()
 
             super().save(*args, **kwargs)
             del self._saving  
@@ -351,4 +353,3 @@ class IndiTournament(models.Model):
         finally:
             return updated_data
  
-

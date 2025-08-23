@@ -55,6 +55,7 @@ def profile(request):
     indi_tournaments = []
     cvc_tournaments = []
     query = request.GET.get('q', '')
+    socials = {}
     try:
         player = request.user
         match_data = player.profile.stats.load_match_data_from_file()
@@ -229,19 +230,23 @@ def edit_profile(request):
             pass_form = PasswordChangeForm(request.user, request.POST)
             social_formset = SocialLinkFormSet(request.POST, instance=profile)
 
-
+            any_changes = False
             with transaction.atomic():
                 if u_form.is_valid():
                     u_form.save()
+                    any_changes = True
                 if p_form.is_valid():
                     p_form.save()
+                    any_changes = True
                 if social_formset.is_valid():
                     social_formset.save()
+                    any_changes = True
                 if pass_form.is_valid():
                     user = pass_form.save()
                     update_session_auth_hash(request, user)
+                    any_changes = True
     
-            if any([u_form.is_valid(),p_form.is_valid(),social_formset.is_valid(),pass_form.is_valid()]):
+            if any_changes:
                 messages.success(request, "Your changes have been saved.")
                 return redirect('edit_profile')
             else:
@@ -287,7 +292,6 @@ def follow_toggle_view(request, action, model, obj_id):
         ErrorHandler().handle(e, context='User Follow/Unfollow')
         return JsonResponse({"error": "Unexpected error occurred."}, status=500)
  
-
 class CustomLoginView(LoginView):
     form_class = CustomLoginForm
     template_name = 'users/login.html' 
@@ -437,8 +441,7 @@ def verification_pending(request):
 
     clan = Clans.objects.filter(
         Q(clan_name__iexact=identifier) |
-        Q(email__iexact=identifier) |
-        Q(phone__iexact=identifier)
+        Q(email__iexact=identifier) 
     ).first()
     account = user or clan
     is_verified = (account.profile.is_verified if user else getattr(account, 'is_verified', False) )
@@ -470,8 +473,7 @@ def resend_verification(request):
 
         clan = Clans.objects.filter(
         Q(clan_name__iexact=identifier) |
-        Q(email__iexact=identifier) |
-        Q(phone__iexact=identifier)
+        Q(email__iexact=identifier) 
         ).first()
         account = clan or user
         model = 'user' if user else 'clan'

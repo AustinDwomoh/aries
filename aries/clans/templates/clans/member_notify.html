@@ -1,0 +1,53 @@
+<div style="font-family: Arial, sans-serif; background: #f4f4f4; padding: 20px;">
+  <div style="max-width: 600px; margin: auto; background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+
+    {% if action == 'left' %}
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="font-size:24px;">👋</span>
+        <h2 style="color: #333; margin: 0;">{{ member_name }} has left {{ clan_name }}</h2>
+      </div>
+      <p style="margin-top: 15px;">You can view the member's profile for more details:</p>
+      <a href="{{ profile_link }}" style="display:inline-block; padding:12px 25px; background:#ff4d4f; color:white; text-decoration:none; border-radius:5px; font-weight:bold;">
+        View Profile
+      </a>
+      <p style="color:#999; font-size:12px; margin-top:20px;">Automated notification from Aries.</p>
+
+    {% elif action == 'request' %}
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="font-size:24px;">📩</span>
+        <h2 style="color:#333; margin: 0;">New Clan Join Request!</h2>
+      </div>
+      <p style="margin-top: 15px;">Hello,</p>
+      <p><strong>{{ member_name }}</strong> has requested to join your clan <strong>{{ clan_name }}</strong>.</p>
+      <p>Click the button below to review and take action:</p>
+      <a href="{{ profile_link }}" style="display:inline-block; padding:12px 25px; background:#28a745; color:white; text-decoration:none; border-radius:5px; font-weight:bold;">
+        View Profile & Respond
+      </a>
+      <p style="color:#999; font-size:12px; margin-top:20px;">You received this email because you are an administrator of {{ clan_name }}.</p>
+
+    {% elif action == 'status' %}
+      <div style="display: flex; align-items: center; gap: 10px;">
+        {% if status == "approve" %}
+          <span style="font-size:24px;">✅</span>
+          <h2 style="color: #28a745; margin: 0;">Request Approved!</h2>
+        {% else %}
+          <span style="font-size:24px;">❌</span>
+          <h2 style="color: #ff4d4f; margin: 0;">Request Rejected</h2>
+        {% endif %}
+      </div>
+      <p style="margin-top: 15px;">Hello <strong>{{ member_name }}</strong>,</p>
+      {% if status == "approve" %}
+        <p>Your request to join the clan <strong>{{ clan_name }}</strong> has been <strong style="color:#28a745;">approved</strong>! 🎉</p>
+      {% else %}
+        <p>We're sorry. Your request to join the clan <strong>{{ clan_name }}</strong> has been <strong style="color:#ff4d4f;">rejected</strong>.</p>
+      {% endif %}
+      <p>You can view your profile or the clan for more details:</p>
+      <a href="{{ profile_link }}" style="display:inline-block; padding:12px 25px; background:#007bff; color:white; text-decoration:none; border-radius:5px; font-weight:bold;">
+        View Profile
+      </a>
+      <p style="color:#999; font-size:12px; margin-top:20px;">Automated notification from Aries.</p>
+
+    {% endif %}
+
+  </div>
+</div>

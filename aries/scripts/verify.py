@@ -57,15 +57,15 @@ class ClanBackend(BaseBackend):
     """
     def custom_authenticate(self, request, username=None, password=None, **kwargs):
         """
-        Authenticate a Clan by clan_name, email, or phone number.
+        Authenticate a Clan by clan_name, email,
 
-        - Searches Clans model for a clan matching the given username/email/phone.
+        - Searches Clans model for a clan matching the given username/email/
         - Compares the provided password directly (no hashing) with clan.password — **insecure, should be hashed**.
         - Returns the clan object if authenticated and verified; otherwise returns None with an error code.
         """
         try:
             clan = Clans.objects.filter(
-                Q(clan_name=username) | Q(email=username) | Q(phone=username)
+                Q(clan_name=username) | Q(email=username)
             ).first()
             if clan and clan.check_password(password):
                 if not clan.is_verified:

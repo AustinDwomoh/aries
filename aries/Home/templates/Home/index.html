@@ -9,16 +9,18 @@
       <div class="row justify-content-evenly  text-center">
         <p class="lead mb-4">Clan gaming just got better. Join and play both individual tournaments and clan tournaments. Your acheivements will all be recorded</p>
        
-        <div class="col-md-5 d-flex justify-content-evenly mb-2 align-items-center gap-4">
+        <div class="col-md-5 d-flex mb-2 align-items-center gap-4 justify-content-evenly mx-auto">
           <div>
-            <a class="btn btn-primary "href="{% url 'register' %}">Sign Up</a>
+            <a class="btn btn-primary "href="{% url 'register' %}">Register</a>
           </div>
           <div>
-            <a class="btn btn-success" href="{% url 'tournament-home'%}">Create Tournament</a>
+            <a class="btn btn-success" href="{% url 'tournament-home'%}">Play</a>
           </div>
           <div>
-            <a class="btn btn-primary" href="{% url 'clan_home' %}">Join A Clan</a>
+            <a class="btn btn-primary" href="{% url 'clan_register' %}">Start Clan</a>
           </div>
+          
+          
         </div>
       </div>
     </div>
@@ -182,11 +184,14 @@
     </div>
     <div class="col-lg-6 text-center">
       <h1 class="display-5  fw-bold lh-1 mb-3" data-aos="fade-right">Associate</h1>
-      <p class="lead">We have tournaments, Caln pages, user pages and we keep track of all your games for you</p>
-      <div class="col-md-5 d-flex justify-content-evenly mb-2 align-items-center gap-4">
+      <p class="lead">We have tournaments, Clan pages, user pages and we keep track of all your games for you</p>
+      <div  class="col-md-5 d-flex justify-content-evenly mb-2 align-items-center gap-4">
         <div>
-          <a href="{% url 'gamers'%}" class="btn btn-primary">Users</a>
+          <a href="{% url 'gamers'%}" class="btn btn-primary">Gamers</a>
         </div>
+        <div>
+            <a class="btn btn-success" href="{% url 'tournament-home'%}">Tournaments</a>
+          </div>
         <div>
           <a href="{% url 'clan_home'%}" class="btn btn-primary">Clans</a>
         </div>

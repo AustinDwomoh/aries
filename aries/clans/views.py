@@ -1,7 +1,9 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from .models import Clans, ClanStats,ClanJoinRequest,ClanSocialLink
 from django.utils.safestring import mark_safe
-import markdown
+import markdown,os
+from django.core.files.storage import FileSystemStorage
+from django.conf import settings
 from tournaments.models import ClanTournament
 from django.contrib.auth.models import User
 from users.models import Profile
@@ -10,14 +12,16 @@ from django.views.decorators.http import require_POST
 from scripts import verify
 from scripts.context import make_social_links_dict
 from django.contrib.auth.decorators import login_required
-from .forms import ClanRegistrationForm,AddPlayerToClanForm,ClanSocialLinkFormSet,ClanBasicInfoForm,ClanContactForm,ClanMediaForm,ClanRecruitmentForm
+from .forms import *
 from django.http import JsonResponse
 from django.db.models import Q
 from scripts.error_handle import ErrorHandler
 from django.contrib import messages
 from django.db import transaction
 from threading import Thread
-
+from formtools.wizard.views import SessionWizardView
+from django.contrib.auth.forms import PasswordChangeForm, SetPasswordForm
+from django.contrib.auth import update_session_auth_hash
 def clan_login_required(view_func):
     """
     Custom decorator to ensure that only logged-in clans can access certain views.
@@ -109,11 +113,33 @@ def request_to_join_clan(request, clan_id):
     """
     try:
         clan = get_object_or_404(Clans, id=clan_id)
-
+       
         if ClanJoinRequest.objects.filter(player=request.user, clan=clan, status="pending").exists():
             return JsonResponse({"message": "You have already requested to join this clan. Contact admin if possible"}, status=400)
 
         ClanJoinRequest.objects.create(player=request.user, clan=clan)
+        subject = "Join Request"
+        body = f"{request.user.username} has requested to join your clan."
+
+        html_content = render_to_string("clans/member_notify.html", {
+            "member_name": request.user.username,
+            "clan_name": clan.clan_name,
+            "profile_link":request.build_absolute_uri(f"/users/gamer_view/{request.user.pk}/"),
+            "action":"request"
+        })
+
+        # Send asynchronously
+        threading.Thread(
+            target=email_handle.send_email_with_attachment,
+            kwargs={
+                "subject": subject,
+                "body": body,
+                "to_email": clan.email,
+                "file_path": None,
+                "from_email": None,
+                "html_content": html_content
+            }
+        ).start()
         return JsonResponse({"message": "Request sent"}, status=200)
 
     except Exception as e:
@@ -121,7 +147,6 @@ def request_to_join_clan(request, clan_id):
         return JsonResponse({"message": "An error occurred while processing your request."}, status=500)
 
 @login_required
-
 def leave_clan(request,clan_id):
     """
     Allows a logged-in player to leave their current clan.
@@ -143,87 +168,40 @@ def leave_clan(request,clan_id):
     """
     try:
         profile = User.objects.get(username=request.user.username).profile
+        clan = profile.clan
         if not profile.clan or profile.clan.id != clan_id:
             messages.error(request, "You are not a member of this clan.")
             return redirect("clan_home")
         profile.clan = None
         profile.save()
+        subject = "A Member Has Left Your Clan"
+        body = f"{profile.user.username} has left your clan."
+
+        html_content = render_to_string("clans/member_notify.html", {
+            "member_name": profile.user.username,
+            "clan_name": clan.clan_name,
+            "profile_link": request.build_absolute_uri(f"/users/gamer_view/{profile.pk}/"),
+            "action":"left"
+        })
+
+        # Send asynchronously
+        threading.Thread(
+            target=email_handle.send_email_with_attachment,
+            kwargs={
+                "subject": subject,
+                "body": body,
+                "to_email": clan.email,
+                "file_path": None,
+                "from_email": None,
+                "html_content": html_content
+            }
+        ).start()
         messages.success(request, 'You have successfully left the clan.')
     except Exception as e:
         ErrorHandler().handle(e, context='Leaving Clan')
         messages.error(request, 'An error occurred while trying to leave the clan.')
     return redirect("clan_home")
 
-@login_required
-@clan_login_required
-@require_POST
-def change_recruitment_state(request,clan_id):
-    """
-    Toggles the recruitment state of a clan, switching it between open and closed.
-
-    Access Control:
-    Only the user who created the clan can toggle the recruitment state.
-
-    Workflow:
-    - Fetch clan by ID, 404 if not found.
-    - Verify request.user is the creator of the clan.
-    - Flip the 'is_recruiting' boolean.
-    - Save changes.
-    - Provide success or error feedback through Django messages.
-    - Redirect back to the clan dashboard.
-
-    Args:
-        request: HttpRequest object representing the current request.
-        clan_id: Integer primary key for the target clan.
-
-    Returns:
-        HttpResponseRedirect to the clan dashboard view.
-    """
-    try:
-        clan = get_object_or_404(Clans, id=clan_id)                                                                                                          
-        clan.is_recruiting = not clan.is_recruiting
-        clan.save()
-        messages.success(request,'Recruitment stage changed')
-    except Exception as e:
-        ErrorHandler().handle(e,context='Failed to change state')
-        messages.error(request,'An error occurred while trying to change state')
-    return redirect('clan_dashboard')
- 
-@login_required
-@clan_login_required
-@require_POST   
-def change_description(request, clan_id):
-    """
-    Updates the description of a clan.
-    
-    Only accepts POST requests and requires the user to be the clan creator.
-    
-
-    Args:
-        request: HttpRequest object with POST data.
-        clan_id: ID of the clan to update.
-
-    Returns:
-        JsonResponse with success or error message.
-    """
-    try:
-        clan = get_object_or_404(Clans, id=clan_id)
-
-        if request.method == "POST":
-            new_description = request.POST.get("clan_description", "").strip()
-
-            if not new_description:
-                return JsonResponse({"error": "Description cannot be empty."}, status=400)
-
-            clan.clan_description = new_description
-            clan.save()
-            return JsonResponse({"message": "Description updated successfully!"}) 
-        
-        return JsonResponse({"error": "Invalid request method."}, status=405)
-
-    except Exception as e:
-        ErrorHandler().handle(e, context='Description Changed')
-        return JsonResponse({"error": "An unexpected error occurred."}, status=500)
 
 @login_required
 def clan_view(request, clan_id):
@@ -288,48 +266,6 @@ def clan_view(request, clan_id):
         return render(request, 'clans/clan_view.html', {
             'error': "Something went wrong while loading the clan view."
         })
-
-@login_required
-def clan_register(request):
-    """
-    Handles clan registration.
-    
-    - Only authenticated users can create clans (via @login_required).
-    - Accepts POST requests with ClanRegistrationForm data.
-    - Creates a Clan object, links it to the user's profile, and sends verification.
-    """
-    if request.method == 'POST':
-        form = ClanRegistrationForm(request.POST,request.FILES)  
-        if form.is_valid():
-            try:
-                with transaction.atomic():
-                    # Ensures DB consistency
-                    # Create clan but don't commit to DB yet
-                    clan = form.save(commit=False)
-                    clan.created_by = request.user
-                    request.user.profile.clan = clan
-                    clan.set_password(form.cleaned_data['password'])
-                    request.session['pending_verification'] = clan.email or clan.clan_name
-                    request.session['pending_model'] = 'clan'  # Store model type for verification
-                    clan.save()
-                     # Link user's profile to this clan
-                    profile = request.user.profile
-                    profile.clan = clan
-                    profile.save()
-                    Thread(target=verify.send_verification, kwargs={"account": clan, 
-                                                                    "model_type": "clan", 
-                                                                    "method": "email"
-                                                                    }).start()
-
-                messages.info(request, "We've sent you a verification email.")
-                return redirect('verification_pending')
-            except Exception as e:
-                ErrorHandler().handle(e, context='clan_register')
-                form.add_error(None, "Something went wrong during registration.")  
-    else:
-        form = ClanRegistrationForm()  
-    return render(request, 'clans/create_clan.html', {'form': form})
-
 
 @clan_login_required
 def clan_dashboard(request):
@@ -420,7 +356,31 @@ def approve_reject(request):
 
         join_request = get_object_or_404(ClanJoinRequest, id=request_id)
         #not needed
-        #clan = join_request.clan
+        player = join_request.player
+        clan = join_request.clan
+        subject = "Join Request"
+        body = f"Welcome to {clan.clan_name}" if action == "approve" else f"Join request declined."
+
+        html_content = render_to_string("clans/member_notify.html", {
+            "member_name": player.username,
+            "clan_name": clan.clan_name,
+            "profile_link":request.build_absolute_uri(f"/clans/{clan.pk}/"),
+            "action": "status",
+            "status": action
+        })
+
+        # Send asynchronously
+        threading.Thread(
+            target=email_handle.send_email_with_attachment,
+            kwargs={
+                "subject": subject,
+                "body": body,
+                "to_email": join_request.player.email,
+                "file_path": None,
+                "from_email": None,
+                "html_content": html_content
+            }
+        ).start()
 
         if action == "approve":
             join_request.approve()
@@ -477,10 +437,11 @@ def edit_clan_profile(request):
     try:
         if request.method == "POST":
             basic_form = ClanBasicInfoForm(request.POST, instance=clan)
-            contact_form = ClanContactForm(request.POST, instance=clan)
+            contact_form = ClanContactFormEdit(request.POST, instance=clan)
             media_form = ClanMediaForm(request.POST, request.FILES, instance=clan)
             recruitment_form = ClanRecruitmentForm(request.POST, instance=clan)
             social_formset = ClanSocialLinkFormSet(request.POST, instance=clan)
+            pass_form = PasswordChangeForm(request.user, request.POST)
 
             with transaction.atomic():
                 if basic_form.is_valid():
@@ -493,6 +454,10 @@ def edit_clan_profile(request):
                     recruitment_form.save()
                 if social_formset.is_valid():
                     social_formset.save()
+                if pass_form.is_valid():
+                    user = pass_form.save()
+                    update_session_auth_hash(request, user)
+                   
 
             
             forms_status = [
@@ -500,7 +465,7 @@ def edit_clan_profile(request):
                 contact_form.is_valid(),
                 media_form.is_valid(),
                 recruitment_form.is_valid(),
-                social_formset.is_valid()
+                social_formset.is_valid(),pass_form.is_valid()
             ]
 
             if any(forms_status):
@@ -512,19 +477,21 @@ def edit_clan_profile(request):
 
         else:
             basic_form = ClanBasicInfoForm(instance=clan)
-            contact_form = ClanContactForm(instance=clan)
+            contact_form = ClanContactFormEdit(instance=clan)
             media_form = ClanMediaForm(instance=clan)
             recruitment_form = ClanRecruitmentForm(instance=clan)
             social_formset = ClanSocialLinkFormSet(instance=clan)
+            pass_form = PasswordChangeForm(request.user)
 
     except Exception as e:
         messages.error(request, "There was an error updating your clan profile.")
         ErrorHandler().handle(e, context=f"edit_clan_profile view for clan {clan.clan_name}")
         basic_form = ClanBasicInfoForm(instance=clan)
-        contact_form = ClanContactForm(instance=clan)
+        contact_form = ClanContactFormEdit(instance=clan)
         media_form = ClanMediaForm(instance=clan)
         recruitment_form = ClanRecruitmentForm(instance=clan)
         social_formset = ClanSocialLinkFormSet(instance=clan)
+        pass_form = PasswordChangeForm(request.user)
 
     return render(request, 'clans/edit_clan_profile.html', {
         'basic_form': basic_form,
@@ -532,8 +499,69 @@ def edit_clan_profile(request):
         'media_form': media_form,
         'recruitment_form': recruitment_form,
         'social_formset': social_formset,
+        'pass_form':pass_form
         
     })
 
- 
+CLAN_FORMS = [
+    ("basics", ClanBasicsForm),
+    ("contact", ClanContactForm),
+    ("media", ClanMediaForm),
+    ("extra", ClanExtrasForm),
+]
+
+from django.contrib.auth.mixins import LoginRequiredMixin
+class ClanRegistrationWizard(LoginRequiredMixin,SessionWizardView):
+    file_storage = FileSystemStorage(location=os.path.join(settings.MEDIA_ROOT, 'tmp'))
+    form_list = CLAN_FORMS
+
+    def get_form_kwargs(self, step):
+        """Pass request.FILES to forms that need file uploads"""
+        kwargs = super().get_form_kwargs(step)
+        if self.request.method == "POST":
+            kwargs.update({'files': self.request.FILES})
+        return kwargs
+
+    def get_template_names(self):
+        return [f"clans/register/{self.steps.current}.html"]
+
+    def done(self, form_list, **kwargs):
+        """Called after all steps are completed and valid."""
+        data = self.get_all_cleaned_data()
+        try:
+            with transaction.atomic():
+                clan = Clans(
+                    clan_name=data['clan_name'],
+                    email=data['email'],
+                    clan_tag=data['clan_tag'],
+                    clan_description=data['clan_description'],
+                    clan_logo=data.get('clan_logo'),
+                    clan_profile_pic=data.get('clan_profile_pic'),
+                    clan_website=data.get('clan_website'),
+                    primary_game=data.get('primary_game'),
+                    other_games=data.get('other_games'),
+                    country=data.get('country'),
+                    created_by=self.request.user,
+                    is_recruiting = True
+                )
+                clan.set_password(data['password'])
+                clan.save()
+                self.request.session['pending_verification'] = clan.email or clan.clan_name
+                self.request.session['pending_model'] = 'clan'  # Store model type for verification
+                profile = self.request.user.profile
+                profile.clan = clan
+                profile.save()
+
+                Thread(
+                    target=verify.send_verification,
+                    kwargs={"account": clan, "model_type": "clan", "method": "email"}
+                ).start()
+
+            messages.info(self.request, "We've sent you a verification email.")
+            return redirect("verification_pending")
+        except Exception as e:
+            ErrorHandler().handle(e, context="clan_register_wizard")
+            messages.error(self.request, "Something went wrong during registration.")
+            return redirect("clan_register")
+
 
