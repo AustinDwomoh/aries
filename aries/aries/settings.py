@@ -33,8 +33,10 @@ SITE_PROTOCOL = env("SITE_PROTOCOL")
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL")
 SECURE_HSTS_SECONDS = 31536000
 SECURE_HSTS_PRELOAD = True
+LOG_BASE_DIR = os.path.join(BASE_DIR, "error_logs")
+os.makedirs(LOG_BASE_DIR, exist_ok=True)
 # ============================================================================ #
-#                                 cokkie stuff                                 #
+#                                 cookie stuff                                 #
 # ============================================================================ #
 SESSION_COOKIE_SECURE = env.bool("SESSION_COOKIE_SECURE")
 CSRF_COOKIE_SECURE = env.bool("CSRF_COOKIE_SECURE")
@@ -70,6 +72,7 @@ INSTALLED_APPS = [
     'users.apps.UsersConfig',
     'crispy_forms',           # Form rendering with Crispy Forms
     "crispy_bootstrap5",      # Bootstrap 5 templates for crispy forms
+    'jet','jet.dashboard',  # Django JET admin interface and dashboard
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -97,7 +100,7 @@ LOGGING = {
         'file': {
             'level': 'ERROR',
             'class': 'logging.FileHandler',
-            'filename': os.path.join(BASE_DIR, 'error_logs', 'django_errors.log'),
+            'filename': os.path.join(LOG_BASE_DIR, 'django_errors.log'),
         },
     },
     'loggers': {
@@ -182,8 +185,9 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 
 USE_TZ = True
-
-
+JET_SIDE_MENU_COMPACT = True
+JET_DEFAULT_THEME = 'light-gray'
+JET_MODULE_GOOGLE_ANALYTICS_CLIENT_SECRETS_FILE = os.path.join(BASE_DIR, 'client_secrets.json')
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 LOGIN_REDIRECT_URL = 'Home'   # Redirect users here after successful login
@@ -207,6 +211,6 @@ CRISPY_TEMPLATE_PACK = "bootstrap5"           # Use Bootstrap 5 templates for re
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-LOG_BASE_DIR = 'error_logs' # Custom base directory for application error logs
+ # Custom base directory for application error logs
 
     

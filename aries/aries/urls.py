@@ -20,9 +20,11 @@ from users import views as user_views
 from django.conf import settings
 from django.conf.urls.static import static
 from Home.views import trigger_error_view
-
+#from jet.dashboard.dashboard_modules import google_analytics_views
 
 urlpatterns = [
+    path('jet/', include('jet.urls')),  # Django JET admin interface
+    path('jet/dashboard/', include('jet.dashboard.urls', namespace='jet-dashboard')),  # Django JET dashboard
     path('admin/', admin.site.urls),  # Default Django admin interface
     path('', include('Home.urls')),   # Home app: serves main landing/index pages
 

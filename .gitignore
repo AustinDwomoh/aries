@@ -5,8 +5,7 @@ __pycache__/
 
 # Virtual environments
 aries_venv/
-server_venv/
-lapworld/
+server/
 webguild/
 
 # Django staticfiles (collected output)
