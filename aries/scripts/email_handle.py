@@ -27,7 +27,7 @@ def send_email_with_attachment(subject, body, to_email, file_path=None, from_ema
         html_content (str, optional): HTML content of the email. If provided, overrides plain text body.
     """
     from_email = from_email or settings.DEFAULT_FROM_EMAIL
-    fallback_path = os.path.join(settings.LOG_BASE_DIR, "logs", "notify_failures.txt")
+    fallback_path = os.path.join(settings.LOG_BASE_DIR, "email_logs", "notify_failures.txt")
   # Ensure the Resend API key is set
 
     if not isinstance(to_email, (list, tuple)):
