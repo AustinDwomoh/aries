@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}Help - Aries{% endblock %}
+
+{% block content %}
+<header class="py-5 text-center bg-primary text-white">
+    <div class="container">
+        <h1 class="display-5 fw-bold">Frequently Asked Questions</h1>
+        <p class="lead">Find quick answers to common questions.</p>
+    </div>
+</header>
+
+<main class="container my-5">
+    <!-- Nav Tabs for Categories -->
+    <ul class="nav nav-pills mb-4 justify-content-center" id="faq-tabs" role="tablist">
+        <li class="nav-item"><button class="nav-link active" id="basics-tab" data-bs-toggle="pill" data-bs-target="#basics" type="button">Basics</button></li>
+        <li class="nav-item"><button class="nav-link" id="mobile-tab" data-bs-toggle="pill" data-bs-target="#mobile" type="button">Mobile</button></li>
+        <li class="nav-item"><button class="nav-link" id="account-tab" data-bs-toggle="pill" data-bs-target="#account" type="button">Account</button></li>
+        <li class="nav-item"><button class="nav-link" id="payments-tab" data-bs-toggle="pill" data-bs-target="#payments" type="button">Payments</button></li>
+        <li class="nav-item"><button class="nav-link" id="privacy-tab" data-bs-toggle="pill" data-bs-target="#privacy" type="button">Privacy</button></li>
+        <li class="nav-item"><button class="nav-link" id="delivery-tab" data-bs-toggle="pill" data-bs-target="#delivery" type="button">Delivery</button></li>
+    </ul>
+
+    <!-- Tab Content -->
+    <div class="tab-content">
+        <!-- Basics -->
+        <div class="tab-pane fade show active" id="basics" role="tabpanel">
+            <div class="accordion" id="accordionBasics">
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingOne">
+                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne">
+                            How do I change my password?
+                        </button>
+                    </h2>
+                    <div id="collapseOne" class="accordion-collapse collapse show" data-bs-parent="#accordionBasics">
+                        <div class="accordion-body">
+                            Lorem ipsum dolor sit amet, consectetur adipisicing elit. Quae quidem blanditiis delectus corporis, possimus officia...
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingTwo">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo">
+                            How do I sign up?
+                        </button>
+                    </h2>
+                    <div id="collapseTwo" class="accordion-collapse collapse" data-bs-parent="#accordionBasics">
+                        <div class="accordion-body">
+                            Lorem ipsum dolor sit amet, consectetur adipisicing elit. Quasi cupiditate et laudantium esse adipisci consequatur modi...
+                        </div>
+                    </div>
+                </div>
+                <!-- Add more Basics questions here -->
+            </div>
+        </div>
+
+        <!-- Mobile -->
+        <div class="tab-pane fade" id="mobile" role="tabpanel">
+            <div class="accordion" id="accordionMobile">
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingMobile1">
+                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseMobile1">
+                            How does syncing work?
+                        </button>
+                    </h2>
+                    <div id="collapseMobile1" class="accordion-collapse collapse show" data-bs-parent="#accordionMobile">
+                        <div class="accordion-body">
+                            Lorem ipsum dolor sit amet, consectetur adipisicing elit. Impedit quidem delectus rerum eligendi mollitia...
+                        </div>
+                    </div>
+                </div>
+                <!-- Add more Mobile questions here -->
+            </div>
+        </div>
+
+        <!-- Repeat same structure for Account, Payments, Privacy, Delivery -->
+    </div>
+</main>
+{% endblock %}

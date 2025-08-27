@@ -46,7 +46,7 @@
         </p>
         {% endif %}
         {% if socials %}
-        <div class="mt-2 d-flex flex-wrap gap-3 justify-content-center">
+        <div class="mt-2 d-flex flex-wrap gap-3 justify-content-start">
           {% for name, data in socials.items %}
             <a href="{{ data.url }}" target="_blank" class="text-decoration-none fs-4">
               {{ data.icon|safe }}
