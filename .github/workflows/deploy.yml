@@ -57,7 +57,7 @@ jobs:
             RELEASES_DIR="/var/www/aries/releases"   # All releases stored here
             CURRENT_LINK="/var/www/aries/current"    # Symlink pointing to active release
             VENV="/var/www/aries/server/bin"         # Shared virtualenv
-            REPO="git@github.com:INPHINITHY/aries.git"
+            REPO="git@github.com:AustinDwomoh/aries.git"
             KEEP_RELEASES=5                          # Number of old releases to keep
 
             # Paths for clarity
