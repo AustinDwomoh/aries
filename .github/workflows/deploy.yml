@@ -38,7 +38,13 @@ jobs:
           
           # Install project dependencies
           pip install -r requirements.txt
-          
+      #step 3.5 confirm host on new devices or new deploys
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
 
       # Step 4: Deploy to production via SSH
       - name: Deploy via SSH
