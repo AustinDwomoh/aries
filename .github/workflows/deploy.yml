@@ -130,5 +130,5 @@ jobs:
         if: success()
         run: |
           curl -H "Content-Type: application/json" \
-          -d "{\"content\": \":white_check_mark: Aries deploy succeeded on **${{ github.repository }}** \nBranch: **${{ github.ref_name }}** \
+          -d "{\"content\": \":white_check_mark: Aries deploy succeeded on **${{ github.repository }}** \nBranch: **${{ github.ref_name }}**\"}" \
           ${{ secrets.DISCORD_WEBHOOK }}
