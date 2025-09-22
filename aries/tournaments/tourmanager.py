@@ -5,7 +5,7 @@ from typing import Dict
 from scripts.error_handle import ErrorHandler
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.models import User
-from clans.models import Clans
+from clans.models import Clan
 
 class TourManager:
     """ 
@@ -981,5 +981,4 @@ class TourManager:
         
         # Update database statistics for the teams
         self.update_team_db_stats(team_a,team_b,goals_a, goals_b)
-
 

@@ -1,7 +1,7 @@
 from django.contrib.contenttypes.models import ContentType
 from django.shortcuts import get_object_or_404
 from Home.models import Follow  
-from clans.models import Clans  
+from clans.models import Clan
 from django.contrib.auth.models import User
 from . import email_handle
 import threading
@@ -15,8 +15,8 @@ def get_logged_in_entity(request):
         return request.user
     elif request.session.get('is_clan'):
         try:
-            return Clans.objects.get(id=request.session.get('clan_id'))
-        except Clans.DoesNotExist:
+            return Clan.objects.get(id=request.session.get('clan_id'))
+        except Clan.DoesNotExist:
             request.session.pop('clan_id', None)
             request.session.pop('is_clan', None)
             return None
@@ -24,11 +24,11 @@ def get_logged_in_entity(request):
 
 def get_followed_instance(followed_model, followed_id):
     """
-    Retrieves and returns an instance of User or Clans based on model type string and ID.
+    Retrieves and returns an instance of User or Clan based on model type string and ID.
     Raises ValueError if the model type is invalid.
     """
     model_map = {
-        "clan": Clans,
+        "clan": Clan,
         "user": User,
     }
     Model = model_map.get(followed_model.lower())
@@ -105,7 +105,7 @@ def is_follower(follower_instance, followed_instance):
 
 def get_following(instance):
     """
-    Returns a dict with lists of users and clans that the instance is following.
+    Returns a dict with lists of users and Clan that the instance is following.
     """
     content_type = ContentType.objects.get_for_model(instance)
     follows = Follow.objects.filter(
@@ -114,19 +114,19 @@ def get_following(instance):
         status='accepted'
     )
 
-    result = {"users": [], "clans": []}
+    result = {"users": [], "Clan": []}
     for f in follows:
         obj = f.followed
         if isinstance(obj, User):
             result["users"].append(obj)
-        elif isinstance(obj, Clans):
-            result["clans"].append(obj)
+        elif isinstance(obj, Clan):
+            result["Clan"].append(obj)
 
     return result
 
 def get_followers(instance):
     """
-    Returns a dict with lists of users and clans that are following the instance.
+    Returns a dict with lists of users and Clan that are following the instance.
     """
     content_type = ContentType.objects.get_for_model(instance)
     follows = Follow.objects.filter(
@@ -134,14 +134,14 @@ def get_followers(instance):
         followed_object_id=instance.id,
         status='accepted'
     )
-    result = {"users": [], "clans": []}
+    result = {"users": [], "Clan": []}
 
     for f in follows:
         obj = f.follower
         if isinstance(obj, User):
             result["users"].append(obj)
-        elif isinstance(obj, Clans):
-            result["clans"].append(obj)
+        elif isinstance(obj, Clan):
+            result["Clan"].append(obj)
     return result
 
 def count_following(instance):

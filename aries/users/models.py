@@ -2,7 +2,7 @@ from django.utils import timezone
 from django.db import models
 from django.conf import settings
 from django.contrib.auth.models import User
-from clans.models import Clans  
+from clans.models import Clan 
 import os,json
 from PIL import Image
 
@@ -14,7 +14,7 @@ class Profile(models.Model):
     """
     ROLE_CHOICES = [('admin', 'Admin'),('captain', 'Captain'),('member', 'Member'),]
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    clan = models.ForeignKey(Clans, null=True, blank=True, on_delete=models.SET_NULL, related_name="members") 
+    clan = models.ForeignKey(Clan, null=True, blank=True, on_delete=models.SET_NULL, related_name="members") 
     profile_picture = models.ImageField(default="default.jpg",upload_to='profile_pics')
     role = models.CharField(max_length=100,choices=ROLE_CHOICES, blank=True, null=True)
     is_organizer =  models.BooleanField(default=False)

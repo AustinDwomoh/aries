@@ -18,19 +18,28 @@ logger = logging.getLogger(__name__)
 BASE_DIR = Path(__file__).resolve().parent.parent
 env = environ.Env()
 
-environ.Env.read_env(os.path.join(BASE_DIR, ".env.production"))
+# Try to read environment file, fallback to defaults
+try:
+    environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
+except:
+    print("[SETTINGS] No .env.production file found, using defaults")
+
 # ============================================================================ #
 #                                    SECRETS                                   #
 # ============================================================================ #
-SECRET_KEY = env("SECRET_KEY")
-DEBUG = env("DEBUG")
-ENV = env("ENV")
+SECRET_KEY = env("SECRET_KEY", default="django-insecure-change-me-in-production")
+DEBUG = env.bool("DEBUG", default=True)
+ENV = env("ENV", default="development")
 
-ALLOWED_HOSTS = env.list("ALLOWED_HOSTS")
-RESEND_API_KEY = env("RESEND_API") #mail api
-SITE_DOMAIN = env("SITE_DOMAIN") #swicthes between http and https depe
-SITE_PROTOCOL = env("SITE_PROTOCOL")
-DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL")
+ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["localhost", "127.0.0.1", "0.0.0.0"])
+RESEND_API_KEY = env("RESEND_API", default="your-resend-api-key-here") #mail api
+
+print(f"[SETTINGS] Environment loaded - DEBUG: {DEBUG}, ENV: {ENV}")
+print(f"[SETTINGS] Allowed hosts: {ALLOWED_HOSTS}")
+print(f"[SETTINGS] Resend API key set: {bool(RESEND_API_KEY and RESEND_API_KEY != 'your-resend-api-key-here')}")
+SITE_DOMAIN = env("SITE_DOMAIN", default="localhost:8000") #swicthes between http and https depe
+SITE_PROTOCOL = env("SITE_PROTOCOL", default="http")
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="noreply@aries.com")
 SECURE_HSTS_SECONDS = 31536000
 SECURE_HSTS_PRELOAD = True
 LOG_BASE_DIR = os.path.join(BASE_DIR, "error_logs")
@@ -68,10 +77,12 @@ SOCIAL_ICONS = {
 INSTALLED_APPS = [
     'Home.apps.HomeConfig',
     'clans.apps.ClansConfig',
+    'organizations.apps.OrganizationsConfig',  # New unified organizations app
     'tournaments.apps.TournamentsConfig',
     'users.apps.UsersConfig',
-    'crispy_forms',           # Form rendering with Crispy Forms
-    "crispy_bootstrap5",      # Bootstrap 5 templates for crispy forms
+    'rest_framework',         # Django REST Framework
+    'django_filters',         # Django Filter for API filtering
+    'corsheaders',           # CORS headers for frontend
     'jet','jet.dashboard',  # Django JET admin interface and dashboard
     'django.contrib.admin',
     'django.contrib.auth',
@@ -79,12 +90,12 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-     "formtools", "django_countries"
-    
+    "django_countries"  # For country field in models
 ]
-# Crispy Forms is used for better form rendering with Bootstrap 5 integration
+# API-only backend configuration
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',  # CORS middleware
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -198,18 +209,56 @@ MEDIA_URL = '/media/'         # Base URL to serve user-uploaded media files
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')  # Filesystem path where media files are stored
 
 STATIC_URL = '/static/'       # URL prefix for serving static files (CSS, JS, images)
-STATICFILES_DIRS = [
-    BASE_DIR / 'static',      # Additional static files directory (for development)
-]
+# STATICFILES_DIRS removed - using API-only backend, no static files needed
 STATIC_ROOT = BASE_DIR / 'staticfiles'  # Directory where 'collectstatic' will gather all static files for production
 
-CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"  # Allow only Bootstrap 5 template pack in crispy-forms
-CRISPY_TEMPLATE_PACK = "bootstrap5"           # Use Bootstrap 5 templates for rendering crispy forms
+# Template-related settings removed for API-only backend
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# ============================================================================ #
+#                              REST FRAMEWORK                                 #
+# ============================================================================ #
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.TokenAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticatedOrReadOnly',
+    ],
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 20,
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend',
+        'rest_framework.filters.SearchFilter',
+        'rest_framework.filters.OrderingFilter',
+    ],
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',
+    ],
+}
+
+# ============================================================================ #
+#                                  CORS                                       #
+# ============================================================================ #
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:3001",  # Vite dev server port
+    "http://127.0.0.1:3001",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]
+
+CORS_ALLOW_CREDENTIALS = True
+
+CORS_ALLOW_ALL_ORIGINS = env.bool("DEBUG", default=False)  # Only allow all origins in debug mode
 
  # Custom base directory for application error logs
 

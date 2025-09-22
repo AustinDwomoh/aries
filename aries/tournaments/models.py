@@ -1,54 +1,81 @@
 from django.db import models
-from django.conf import settings
 from django.contrib.auth.models import User
-from clans.models import Clans
-from users.models import Profile
+from organizations.models import Organization
+from clans.models import Clan
 from .tourmanager import TourManager
-import os,json
-from datetime import timedelta
-from django.utils import timezone
+import os
+import json
 from PIL import Image
 from scripts.error_handle import ErrorHandler
 
 # Create your models here.
-class ClanTournament(models.Model):
+class Tournament(models.Model):
     """
-    Represents a clan-based tournament in the system.
-    Stores tournament metadata (name, description, format, teams, etc.), manages match schedules/results via JSON files, and handles related file cleanup.
+    Tournament model that supports both individual and clan-based tournaments.
+    Individual tournaments: Users participate directly
+    Clan tournaments: Clans participate as teams
+    Organizations are the organizers, not participants
     """
     TOUR_CHOICES = [('league', 'League'),('cup', 'Cup'),('groups_knockout', 'Groups + Knockout')]
-    PLAYER_MODE_CHOICES = [('fixed', 'Fixed'), ('dynamic', 'Dynamic')]
+    TOURNAMENT_TYPE_CHOICES = [
+        ('individual', 'Individual Tournament'),
+        ('clan', 'Clan Tournament'),
+    ]
+    STATUS_CHOICES = [
+        ('upcoming', 'Upcoming'),
+        ('ongoing', 'Ongoing'),
+        ('completed', 'Completed'),
+        ('cancelled', 'Cancelled'),
+    ]
+    
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
     created_by = models.ForeignKey(User, on_delete=models.CASCADE)
-    teams = models.ManyToManyField(Clans, related_name="clans")
-    player_mode = models.CharField(max_length=10,choices=PLAYER_MODE_CHOICES,default='dynamic',help_text="Whether clans can change players mid-tournament")
+    organizer = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name='organized_tournaments')
+    tournament_type = models.CharField(max_length=20, choices=TOURNAMENT_TYPE_CHOICES, default='individual')
+    tour_format = models.CharField(max_length=100, choices=TOUR_CHOICES, default='league')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='upcoming')
+    
+    # Tournament settings
+    start_date = models.DateTimeField()
+    end_date = models.DateTimeField(blank=True, null=True)
+    max_participants = models.PositiveIntegerField(blank=True, null=True)
+    entry_fee = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    prize_pool = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    
+    # Format settings
     home_or_away = models.BooleanField(
         verbose_name="Home or Away",
         default=False,
         help_text="Select if this tournament is played home/away format.",
     )
-    logo = models.ImageField(default="tours-defualt.jpg", upload_to='tour_logos')
-    tour_type = models.CharField(max_length=100, choices=TOUR_CHOICES)
     
-
+    # Media
+    logo = models.ImageField(default="tours-default.jpg", upload_to='tour_logos')
+    
+    # Match data stored in JSON
+    match_data = models.JSONField(blank=True, null=True, default=dict)
+    
+    class Meta:
+        ordering = ['-start_date']
+        verbose_name = "Tournament"
+        verbose_name_plural = "Tournaments"
+    
+    def __str__(self):
+        return self.name
     
     def get_json_file_path(self):
         """Returns the absolute path to the JSON file storing match data for this tournament."""
         try:
             directory = os.path.join(settings.MEDIA_ROOT, 'tournament_data')
             os.makedirs(directory, exist_ok=True)  
-            return os.path.join(directory, f'tournament_clan_{self.pk}.json')
+            return os.path.join(directory, f'tournament_{self.pk}.json')
         except Exception as e:
-            ErrorHandler().handle(e,context='Json for clan tournament')
-            return RuntimeError("Failed to get JSON file path for clan tournament.")
+            ErrorHandler().handle(e, context='Json for tournament')
+            return None
     
     def load_match_data_from_file(self):
-        """
-        Loads match data from the JSON file.
-
-        Returns:
-            A dictionary containing the match data, or an empty dict if file doesnt exist or is invalid."""
+        """Loads match data from the JSON file."""
         try:
             file_path = self.get_json_file_path()
             if not file_path:
@@ -59,297 +86,201 @@ class ClanTournament(models.Model):
                     try:
                         return json.load(json_file)
                     except json.JSONDecodeError as e:
-                        ErrorHandler().handle(e, context='Invalid JSON in clan match file')
+                        ErrorHandler().handle(e, context='Invalid JSON in tournament file')
         except Exception as e:
             ErrorHandler().handle(e, context='Loading match data from file')
 
         return {}
-        
+    
     def save_match_data_to_file(self):
-        """
-        Saves the provided match data to the tournament's JSON file.
-
-        Args:
-            match_data (dict): Dictionary containing tournament matches and related data.
-        """
+        """Saves the match data to the tournament's JSON file."""
         try:
             file_path = self.get_json_file_path()
-            #self.match_data = self.load_match_data_from_file()
-            with open(file_path, 'w') as json_file:
-                json.dump(self.match_data, json_file)
+            if file_path:
+                with open(file_path, 'w') as json_file:
+                    json.dump(self.match_data, json_file, indent=4)
         except Exception as e:
-            ErrorHandler().handle(e,context='Save Fail for tour data')
-
+            ErrorHandler().handle(e, context='Save Fail for tournament data')
+    
     def delete(self, *args, **kwargs):
-        """
-        Purpose: Removes the JSON data file when the tournament object is deleted.
-
-        Extra: Calls super().delete() to actually remove the database entry.
-        """
+        """Removes the JSON data file when the tournament object is deleted."""
         try:
             file_path = self.get_json_file_path()
-            if os.path.exists(file_path):
+            if file_path and os.path.exists(file_path):
                 os.remove(file_path)
         except Exception as e:
             ErrorHandler().handle(e, context=f"Error deleting JSON file for tournament {self.name}")
         finally:
             super().delete(*args, **kwargs)
-
-
-    def __str__(self):
-        return self.name
     
-    def get_team_names(self):
-        """Returns a list of clan names for the participating teams"""
-        return [team.clan_name for team in self.teams.all()]
-
-    def toggle_player_mode(self):
-        """Switches player_mode between dynamic and fixed and saves the change"""
-        try:
-            self.player_mode = 'fixed' if self.player_mode == 'dynamic' else 'dynamic'
-            self.save()
-        except Exception as e:
-            ErrorHandler().handle(e,context='Changing tour mode')
+    def get_participants(self):
+        """Get all participants in this tournament."""
+        if self.tournament_type == 'individual':
+            return [participant.user for participant in self.participants.all()]
+        else:  # clan tournament
+            return [participant.clan for participant in self.participants.all()]
+    
+    def get_participant_names(self):
+        """Get participant names for tournament management."""
+        if self.tournament_type == 'individual':
+            return [participant.user.username for participant in self.participants.all()]
+        else:  # clan tournament
+            return [participant.clan.name for participant in self.participants.all()]
     
     def create_matches(self):
-        """
-        Generates the match schedule for the clan tournament using TourManager.
-
-        Fails if no teams are registered or if matches already exist.
-        """
+        """Generates the match schedule for the tournament using TourManager."""
         try:
-            team_names = self.get_team_names()
+            participant_names = self.get_participant_names()
+            if not participant_names:
+                return
+            
             self.match_data = self.load_match_data_from_file()
-           
+            
             tour_manager = TourManager(
                 json_data=self.match_data,
-                teams_names=team_names,
-                tournament_type=self.tour_type,
+                teams_names=participant_names,
+                tournament_type=self.tour_format,
                 home_or_away=self.home_or_away,
                 tour_name=self.name
             )
             self.match_data = tour_manager.create_tournament()
-        
             self.save_match_data_to_file()
         except Exception as e:
-            ErrorHandler().handle(e, context="Creating Clan tournament matches")
-
-
-    def update_tour(self, round_number, match_results, KO=None):
-        """
-        Updates the match results for the given round, handling the specific tournament type (league, knockout, or groups + knockout).
-
-        Args:
-            round_number: The round being updated.
-            match_results: List of match results.
-            KO: Knockout stage ID (for groups_knockout format).
-
-        Returns:
-            Updated match data dict.
-        """
+            ErrorHandler().handle(e, context="Creating tournament matches")
+    
+    def update_tournament(self, round_number, match_results, KO=None):
+        """Updates the match results for the given round."""
         try:
-            team_names = self.get_team_names()
+            participant_names = self.get_participant_names()
             match_data = self.load_match_data_from_file()
-            tour_manager = TourManager(json_data=match_data, teams_names=team_names, tournament_type=self.tour_type,home_or_away=self.home_or_away,tour_name= self.name)
-            if self.tour_type == "league":
+            
+            tour_manager = TourManager(
+                json_data=match_data, 
+                teams_names=participant_names, 
+                tournament_type=self.tour_format,
+                home_or_away=self.home_or_away,
+                tour_name=self.name
+            )
+            
+            if self.tour_format == "league":
                 match_data = tour_manager.update_league(round_number, match_results)
-            elif self.tour_type == "cup":
+            elif self.tour_format == "cup":
                 match_data = tour_manager.update_knockout(round_number, match_results)
-            elif self.tour_type == "groups_knockout":
+            elif self.tour_format == "groups_knockout":
                 if KO:
-                    match_data = tour_manager.update_knockout_stage(round_number,match_results)
+                    match_data = tour_manager.update_knockout_stage(round_number, match_results)
                 else:
-                    match_data = tour_manager.update_groups_stages(round_number,match_results)
+                    match_data = tour_manager.update_groups_stages(round_number, match_results)
             else:
-                raise ValueError(f"Invalid tournament type: {self.tour_type}")
+                raise ValueError(f"Invalid tournament format: {self.tour_format}")
 
-            self.save_match_data_to_file(match_data)
+            self.match_data = match_data
+            self.save_match_data_to_file()
             
         except Exception as e:
-            ErrorHandler().handle(e,context='Update macthes error')
+            ErrorHandler().handle(e, context='Update matches error')
             if settings.DEBUG:
                 raise
         finally:
-            return match_data
-        
+            return self.match_data
+    
     def save(self, *args, **kwargs):
+        """Save the tournament and create matches if participants exist."""
         super().save(*args, **kwargs)
-        if self.teams.exists():
-            self.create_matches()
-
-        img = Image.open(self.logo.path)
-
-        if img.height > 300 or img.width > 300:
-            output_size = (300,300)
-            img.thumbnail(output_size)
-            img.save(self.logo.path)
         
-class ClanTournamentPlayer(models.Model):
-    clan = models.ForeignKey(Clans, on_delete=models.CASCADE)
-    tournament = models.ForeignKey(ClanTournament, on_delete=models.CASCADE)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+        # Resize logo if needed
+        if self.logo:
+            try:
+                img = Image.open(self.logo.path)
+                if img.height > 300 or img.width > 300:
+                    output_size = (300, 300)
+                    img.thumbnail(output_size)
+                    img.save(self.logo.path)
+            except Exception as e:
+                ErrorHandler().handle(e, context=f"Error resizing tournament logo for {self.name}")
 
+
+class TournamentParticipant(models.Model):
+    """
+    Represents a participant in a tournament.
+    Can be either an individual user or a clan.
+    """
+    tournament = models.ForeignKey(Tournament, on_delete=models.CASCADE, related_name='participants')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+    clan = models.ForeignKey(Clan, on_delete=models.CASCADE, null=True, blank=True)
+    joined_at = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=20, choices=[
+        ('active', 'Active'),
+        ('eliminated', 'Eliminated'),
+        ('withdrawn', 'Withdrawn'),
+    ], default='active')
+    
     class Meta:
-        unique_together = ('clan', 'tournament', 'user')
-
-class IndiTournament(models.Model):
-    """
-    Represents a individual-based tournament in the system.
-    Stores tournament metadata (name, description, format, teams, etc.), manages match schedules/results via JSON files, and handles related file cleanup.
-    """
-    TOUR_CHOICES = [('league', 'League'),('cup', 'Cup'),('groups_knockout', 'Groups + Knockout')]
-    name = models.CharField(max_length=255)
-    description = models.TextField(blank=True, null=True)
-    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
-    players = models.ManyToManyField(Profile, related_name="players")
-    logo = models.ImageField(default="tours-defualt.jpg",upload_to='tour_logos')
-    tour_type = models.CharField(max_length=100, choices=TOUR_CHOICES)
-    home_or_away = models.BooleanField(
-        verbose_name="Home or Away",
-        default=False,
-        help_text="Select if this tournament is played home/away format.",
-    )
+        unique_together = [
+            ('tournament', 'user'),
+            ('tournament', 'clan'),
+        ]
+        verbose_name = "Tournament Participant"
+        verbose_name_plural = "Tournament Participants"
+    
+    def clean(self):
+        """Ensure either user or clan is set, but not both."""
+        from django.core.exceptions import ValidationError
+        
+        if not self.user and not self.clan:
+            raise ValidationError("Either user or clan must be specified.")
+        
+        if self.user and self.clan:
+            raise ValidationError("Cannot specify both user and clan.")
+    
     def __str__(self):
-        return self.name
-    
-    def get_team_names(self):
-        """Extract team names from the related teams."""
-        return [team.user.username for team in self.players.all()]
-
-    def get_json_file_path(self):
-        """Returns the absolute path to the JSON file storing match data for this tournament."""
-        try:
-            directory = os.path.join(settings.MEDIA_ROOT, 'tournament_data')
-            os.makedirs(directory, exist_ok=True)  
-        except Exception as e:
-            ErrorHandler().handle(e,context='Json for Indi tournament')
-            return RuntimeError("Failed to get JSON file path for clan tournament.")
-        finally:
-            return os.path.join(directory, f'tournament_indi_{self.pk}.json')
-
-    def save_match_data_to_file(self):
-        """
-        Saves the provided match data to the tournament's JSON file.
-        """
-        try:
-            file_path = self.get_json_file_path()
-            with open(file_path, 'w') as json_file:
-                json.dump(self.match_data, json_file)
-        except Exception as e:
-            ErrorHandler().handle(e,context='Save Fail for tour data')
-    
-    def load_match_data_from_file(self):
-        """
-        Loads match data from the JSON file.
-
-        Returns:
-            A dictionary containing the match data, or an empty dict if file doesnt exist or is invalid."""
-        try:
-            file_path = self.get_json_file_path()
-            if not file_path:
-                return {}
-
-            if os.path.exists(file_path) and os.path.getsize(file_path) > 0:
-                with open(file_path, 'r') as json_file:
-                    try:
-                        return json.load(json_file)
-                    except json.JSONDecodeError as e:
-                        ErrorHandler().handle(e, context='Invalid JSON in clan match file')
-        except Exception as e:
-            ErrorHandler().handle(e, context='Loading match data from file')
-
-        return {}
-    
-    def delete(self, *args, **kwargs):
-        """
-        Purpose: Removes the JSON data file when the tournament object is deleted.
-
-        Extra: Calls super().delete() to actually remove the database entry.
-        """
-        try:
-            file_path = self.get_json_file_path()
-            if os.path.exists(file_path):
-                os.remove(file_path)
-        except Exception as e:
-            ErrorHandler().handle(e, context=f"Error deleting JSON file for tournament {self.name}")
-        finally:
-            super().delete(*args, **kwargs)
-
-    def __str__(self):
-        return self.name
-
-    def create_matches(self):
-        """
-        Generates the match schedule for the individual tournament using TourManager.
-
-        Fails if no teams are registered or if matches already exist.
-        """
-        try:
-            team_names = self.get_team_names()
-            self.match_data = self.load_match_data_from_file()
-            tour_manager = TourManager(json_data=self.match_data, teams_names=team_names,home_or_away=self.home_or_away, tournament_type=self.tour_type,tour_name=self.name)
-            matches = tour_manager.create_tournament()
-            self.match_data =  matches  
-            self.save_match_data_to_file()
-        except Exception as e:
-            ErrorHandler().handle(e, context="Creating indi tournament matches")
-
-            
-    def save(self, *args, **kwargs):
-        """
-        Save the tournament and create matches.
-        """
-        if not hasattr(self, '_saving'):
-            self._saving = True  
-            super().save(*args, **kwargs)
-            if self.players.exists():
-                self.create_matches()
-
-            super().save(*args, **kwargs)
-            del self._saving  
+        if self.user:
+            return f"{self.user.username} in {self.tournament.name}"
         else:
-            super().save(*args, **kwargs)
+            return f"{self.clan.name} in {self.tournament.name}"
 
-        img = Image.open(self.logo.path)
 
-        if img.height > 300 or img.width > 300:
-            output_size = (300,300)
-            img.thumbnail(output_size)
-            img.save(self.logo.path)
-
-    def update_tour(self, round_number, match_results, KO=None):
-        """
-        Updates the match results for the given round, handling the specific tournament type (league, knockout, or groups + knockout).
-
-        Args:
-            round_number: The round being updated.
-            match_results: List of match results.
-            KO: Knockout stage ID (for groups_knockout format).
-
-        Returns:
-            Updated match data dict.
-        """
-        try:
-            team_names = self.get_team_names()
-            self.match_data = self.load_match_data_from_file()
-            tour_manager =TourManager(json_data=self.match_data, teams_names=team_names,home_or_away=self.home_or_away, tournament_type=self.tour_type,tour_name=self.name)
-            if self.tour_type == "league":
-                updated_data = tour_manager.update_league(round_number, match_results)
-            elif self.tour_type == "cup":
-                updated_data = tour_manager.update_knockout(round_number, match_results)
-            elif self.tour_type == "groups_knockout":
-                if KO:
-                    updated_data = tour_manager.update_knockout_stage(round_number,match_results)
-                else:
-                    updated_data = tour_manager.update_groups_stages(round_number,match_results)
-            else:
-                raise ValueError(f"Invalid tournament type: {self.tour_type}")
-            self.save_match_data_to_file()
-            
-        except Exception as e:
-            ErrorHandler().handle(e,context='Update macthes error')
-            if settings.DEBUG:
-                raise
-        finally:
-            return updated_data
- 
+class Match(models.Model):
+    """
+    Represents a match in a tournament.
+    """
+    STATUS_CHOICES = [
+        ('scheduled', 'Scheduled'),
+        ('ongoing', 'Ongoing'),
+        ('completed', 'Completed'),
+        ('cancelled', 'Cancelled'),
+    ]
+    
+    tournament = models.ForeignKey(Tournament, on_delete=models.CASCADE, related_name='matches')
+    round_number = models.PositiveIntegerField()
+    home_participant = models.ForeignKey(TournamentParticipant, on_delete=models.CASCADE, related_name='home_matches')
+    away_participant = models.ForeignKey(TournamentParticipant, on_delete=models.CASCADE, related_name='away_matches')
+    home_score = models.PositiveIntegerField(null=True, blank=True)
+    away_score = models.PositiveIntegerField(null=True, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='scheduled')
+    scheduled_at = models.DateTimeField()
+    completed_at = models.DateTimeField(null=True, blank=True)
+    is_knockout = models.BooleanField(default=False)
+    knockout_stage = models.CharField(max_length=50, blank=True, null=True)
+    
+    class Meta:
+        ordering = ['round_number', 'scheduled_at']
+        verbose_name = "Match"
+        verbose_name_plural = "Matches"
+    
+    def __str__(self):
+        home_name = self.home_participant.user.username if self.home_participant.user else self.home_participant.organization.name
+        away_name = self.away_participant.user.username if self.away_participant.user else self.away_participant.organization.name
+        return f"{home_name} vs {away_name} - Round {self.round_number}"
+    
+    def get_winner(self):
+        """Get the winner of the match."""
+        if self.status != 'completed' or self.home_score is None or self.away_score is None:
+            return None
+        
+        if self.home_score > self.away_score:
+            return self.home_participant
+        elif self.away_score > self.home_score:
+            return self.away_participant
+        else:
+            return None  # Draw

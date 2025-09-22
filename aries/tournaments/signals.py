@@ -1,21 +1,20 @@
 import os
 from django.db.models.signals import pre_delete
 from django.dispatch import receiver
-from .models import ClanTournament, IndiTournament
+from .models import Tournament
 
-@receiver(pre_delete, sender=ClanTournament)
-@receiver(pre_delete, sender=IndiTournament)
+@receiver(pre_delete, sender=Tournament)
 def delete_json_file(sender, instance, **kwargs):
     """
     Signal handler that deletes the JSON file associated with a tournament instance 
     before the instance itself is deleted.
 
-    This function is triggered when a `ClanTournament` or `IndiTournament` instance 
+    This function is triggered when a `Tournament` instance 
     is about to be deleted. It retrieves the JSON file path from the instance and 
     attempts to delete it.
 
     Parameters:
-        sender (Model): The model class that sent the signal (`ClanTournament` or `IndiTournament`).
+        sender (Model): The model class that sent the signal (`Tournament`).
         instance (Model instance): The specific tournament instance being deleted.
         kwargs (dict): Additional keyword arguments.
 
