@@ -18,18 +18,29 @@ logger = logging.getLogger(__name__)
 BASE_DIR = Path(__file__).resolve().parent.parent
 env = environ.Env()
 
-environ.Env.read_env(os.path.join(BASE_DIR, ".env.production"))
+environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
 # ============================================================================ #
 #                                    SECRETS                                   #
 # ============================================================================ #
-SECRET_KEY = env("SECRET_KEY")
-DEBUG = env("DEBUG")
 ENV = env("ENV")
+print(ENV)
+if ENV =="production":
+    DEBUG = False
+    SECRET_KEY = env("PRODUCTION_SECRET_KEY")
+    SITE_DOMAIN = env("PRODUCTION_SITE_DOMAIN") 
+    SITE_PROTOCOL = env("PRODUCTION_SITE_PROTOCOL")
+    ALLOWED_HOSTS = env.list("PRODUCTION_ALLOWED_HOSTS")
+else:
+    DEBUG =True
+    SECRET_KEY = env("TEST_SECRET_KEY")
+    SITE_DOMAIN = env("TEST_SITE_DOMAIN") 
+    SITE_PROTOCOL = env("TEST_SITE_PROTOCOL")
+    ALLOWED_HOSTS = env.list("TEST_ALLOWED_HOSTS")
 
-ALLOWED_HOSTS = env.list("ALLOWED_HOSTS")
+
+
+
 RESEND_API_KEY = env("RESEND_API") #mail api
-SITE_DOMAIN = env("SITE_DOMAIN") #swicthes between http and https depe
-SITE_PROTOCOL = env("SITE_PROTOCOL")
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL")
 SECURE_HSTS_SECONDS = 31536000
 SECURE_HSTS_PRELOAD = True
