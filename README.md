@@ -1,7 +1,10 @@
 # Aries - Modern Gaming Platform
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 **Aries** is a comprehensive gaming platform that revolutionizes esports tournaments and community building. Built with Django REST Framework and React TypeScript, it provides a unified platform for organizations, individual players, and tournament management.
+=======
+**Aries** is a modern web application designed to revolutionize gaming tournaments and community building in esports. Built with Django REST Framework and React TypeScript, it provides a unified platform for organizations, individual players, and tournament management.
 =======
 **Aries** is a modern web application designed to revolutionize gaming tournaments and community building in esports. Built with Django REST Framework and React TypeScript, it provides a unified platform for organizations, individual players, and tournament management.
 
@@ -34,6 +37,110 @@
 - **Modern Tooling**: Vite, ESLint, Prettier, and more
 - **Documentation**: Comprehensive API and component documentation
 
+## 🏗️ Architecture
+
+### **Backend (Django)**
+- **Django 5.1.4** with REST Framework
+- **Unified Organization Model** that works like users
+- **PostgreSQL/SQLite** database support
+- **JWT Authentication** with session fallback
+- **CORS Support** for frontend integration
+
+### **Frontend (React TypeScript)**
+- **React 18** with TypeScript
+- **Vite** for fast development and building
+- **Tailwind CSS** for styling
+- **Zustand** for state management
+- **Axios** for API communication
+- **Framer Motion** for animations
+
+## 📁 Project Structure
+
+```
+aries/
+├── aries/                    # Django backend
+│   ├── organizations/        # Unified organizations app
+│   ├── tournaments/         # Tournament management
+│   ├── users/              # User management
+│   └── settings.py         # Django configuration
+├── src/                    # React TypeScript frontend
+│   ├── components/         # Reusable UI components
+│   ├── pages/             # Page components
+│   ├── store/             # State management
+│   ├── services/          # API services
+│   └── types/             # TypeScript definitions
+├── requirements.txt        # Python dependencies
+├── package.json           # Node.js dependencies
+└── README.md             # This file
+```
+
+## 🚀 Quick Start
+
+### **Prerequisites**
+- Python 3.10+
+- Node.js 18+
+- npm or yarn
+
+### **1. Clone the Repository**
+```bash
+git clone https://github.com/INPHINITHY/aries.git
+cd aries
+```
+# Aries Frontend - Modern TypeScript Gaming Platform
+
+This is the modern TypeScript frontend for the Aries gaming platform, featuring a unified organization system and modern UI components.
+>>>>>>> Stashed changes
+
+## 🚀 Features
+
+<<<<<<< Updated upstream
+### **Unified Organization System**
+- **Multiple Organization Types**: Clans, Organizations, Teams, and Guilds
+- **Member Management**: Role-based permissions (Admin, Captain, Member, Recruit)
+- **Join Requests**: Request-based joining with approval workflow
+- **Social Integration**: Multiple social media platform support
+- **Performance Tracking**: Statistics, rankings, and ELO rating system
+
+### **Tournament Management**
+- **Individual Tournaments**: Players compete directly
+- **Organization Tournaments**: Organizations participate through their members
+- **Multiple Formats**: League, Cup, and Groups + Knockout
+- **Real-time Updates**: Live match results and standings
+- **Prize Management**: Entry fees and prize pool distribution
+
+### **Modern User Experience**
+- **TypeScript Frontend**: React 18 with Vite for fast development
+- **Responsive Design**: Mobile-first approach with Tailwind CSS
+- **Beautiful UI**: Modern card-based design with smooth animations
+- **State Management**: Efficient state management with Zustand
+- **Real-time Features**: Live updates and notifications
+=======
+- **Modern TypeScript/React Frontend**: Built with Vite, React 18, and TypeScript
+- **Unified Organization System**: Organizations work like users for both clans and organizations
+- **Beautiful UI Components**: Modern card-based design with Tailwind CSS
+- **State Management**: Zustand for efficient state management
+- **REST API Integration**: Seamless communication with Django backend
+- **Responsive Design**: Mobile-first approach with modern animations
+
+## Tech Stack
+
+- **Frontend**: React 18, TypeScript, Vite
+- **Styling**: Tailwind CSS
+- **State Management**: Zustand
+- **HTTP Client**: Axios
+- **Animations**: Framer Motion
+- **Icons**: Lucide React
+- **Forms**: React Hook Form
+- **Notifications**: React Hot Toast
+>>>>>>> Stashed changes
+
+### **Developer Experience**
+- **REST API**: Comprehensive Django REST Framework API
+- **Type Safety**: Full TypeScript support throughout
+- **Modern Tooling**: Vite, ESLint, Prettier, and more
+- **Documentation**: Comprehensive API and component documentation
+
+<<<<<<< Updated upstream
 ## 🏗️ Architecture
 
 ### **Backend (Django)**
@@ -177,6 +284,8 @@ aries/
 - Node.js 18+
 - npm or yarn
 =======
+=======
+>>>>>>> Stashed changes
 ### Prerequisites
 
 - Node.js 18+ 
@@ -205,12 +314,96 @@ aries/
    ```bash
    npm run type-check
    ```
+<<<<<<< Updated upstream
+=======
 
 5. **Linting**:
    ```bash
    npm run lint
    ```
 
+### Development
+
+The frontend runs on `http://localhost:3000` and automatically proxies API requests to the Django backend at `http://localhost:8000`.
+
+### Project Structure
+
+```
+src/
+├── components/          # Reusable UI components
+│   ├── ui/             # Base UI components (Card, Button, Modal, etc.)
+│   ├── OrganizationCard.tsx
+│   ├── TournamentCard.tsx
+│   └── Dashboard.tsx
+├── pages/              # Page components
+│   ├── LoginPage.tsx
+│   └── RegisterPage.tsx
+├── store/              # State management
+│   ├── authStore.ts
+│   ├── organizationStore.ts
+│   └── tournamentStore.ts
+├── services/           # API services
+│   └── api.ts
+├── types/              # TypeScript type definitions
+│   └── index.ts
+├── App.tsx             # Main app component
+├── main.tsx           # Entry point
+└── index.css          # Global styles
+```
+
+## Key Features
+
+### Unified Organization System
+
+The new system treats organizations as first-class users, supporting:
+- **Multiple Organization Types**: Clans, Organizations, Teams, Guilds
+- **Member Management**: Role-based permissions (Admin, Captain, Member, Recruit)
+- **Join Requests**: Request-based joining with approval workflow
+- **Social Links**: Multiple social media platform support
+- **Statistics**: Performance tracking and ranking system
+
+### Modern UI Components
+
+- **Organization Cards**: Beautiful cards with stats, social links, and actions
+- **Tournament Cards**: Comprehensive tournament information with join functionality
+- **Dashboard**: Modern dashboard with stats, filtering, and grid/list views
+- **Responsive Design**: Mobile-first approach with smooth animations
+
+### State Management
+
+- **Auth Store**: User authentication and profile management
+- **Organization Store**: Organization data and member management
+- **Tournament Store**: Tournament data and participation management
+
+## API Integration
+
+The frontend communicates with the Django backend through REST API endpoints:
+
+- `GET /api/organizations/` - List organizations
+- `POST /api/organizations/` - Create organization
+- `GET /api/organizations/{id}/` - Get organization details
+- `POST /api/organizations/{id}/join/` - Join organization
+- `POST /api/organizations/{id}/leave/` - Leave organization
+
+## Development Workflow
+
+1. **Start Django backend**: `python manage.py runserver`
+2. **Start frontend**: `npm run dev`
+3. **Access application**: `http://localhost:3000`
+
+## Building for Production
+
+1. **Build frontend**: `npm run build`
+2. **Serve static files**: The built files will be in the `dist/` directory
+3. **Configure Django**: Update Django settings to serve the built files
+>>>>>>> Stashed changes
+
+5. **Linting**:
+   ```bash
+   npm run lint
+   ```
+
+<<<<<<< Updated upstream
 ### Development
 
 The frontend runs on `http://localhost:3000` and automatically proxies API requests to the Django backend at `http://localhost:8000`.
@@ -465,6 +658,13 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 Created by [Austin Nana Dwomoh (INPHINITHY)](https://austindwomoh.xyz/).  
 Connect on [GitHub](https://github.com/INPHINITHY), [Instagram](https://www.instagram.com/inphinithy1/), or [LinkedIn](https://www.linkedin.com/in/austin-dwomoh/).
+=======
+1. Follow TypeScript best practices
+2. Use Tailwind CSS for styling
+3. Write reusable components
+4. Add proper TypeScript types
+5. Test components thoroughly
+>>>>>>> Stashed changes
 
 =======
 1. Follow TypeScript best practices
@@ -642,6 +842,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 Created by [Austin Nana Dwomoh (INPHINITHY)](https://austindwomoh.xyz/).  
 Connect on [GitHub](https://github.com/INPHINITHY), [Instagram](https://www.instagram.com/inphinithy1/), or [LinkedIn](https://www.linkedin.com/in/austin-dwomoh/).
 
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 ---
 
