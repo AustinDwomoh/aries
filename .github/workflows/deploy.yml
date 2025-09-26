@@ -80,7 +80,7 @@ jobs:
             # =============================
             # 3. Symlink shared configs & data
             # =============================
-            ln -sfn /var/www/aries/aries/.env.production "$APP_DIR/.env.production"
+            ln -sfn /var/www/aries/aries/.env "$APP_DIR/.env"
             ln -sfn /var/www/aries/aries/aries.ini "$APP_DIR/aries.ini"
             ln -sfn /var/www/aries/aries/uwsgi_params "$APP_DIR/uwsgi_params"
             ln -sfn /var/www/aries/aries/db.sqlite3 "$APP_DIR/db.sqlite3"
