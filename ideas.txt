@@ -83,4 +83,8 @@ class ClanTournamentInvite(models.Model):
 
     @property
     def is_expired(self):
-        return self.status == "pending" and timezone.now() > self.expires_at
+        return self.status == "pending" and timezone.now() > self.expires_at\
+
+
+
+Make try using the supa base for auth(reason the other ways then i dont have to do manually)
