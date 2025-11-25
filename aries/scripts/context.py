@@ -2,6 +2,7 @@ from clans.models import Clans
 from django.contrib.auth.models import User
 from scripts.error_handle import ErrorHandler
 from django.conf import settings
+
 def profile_picture_context(request):
     """
     Context processor that provides profile picture URL and authentication status
@@ -24,14 +25,20 @@ def profile_picture_context(request):
     try:
          # Check if the current session belongs to a regular user
         if request.session.get('is_user'):
-            user = User.objects.get(id=request.session.get('user_id'))
-            if user.profile.profile_picture:
+            # Use select_related to fetch profile in same query
+            user = User.objects.select_related('profile').filter(
+                id=request.session.get('user_id')
+            ).first()
+            if user and user.profile.profile_picture:
                 profile_pic_url = user.profile.profile_picture.url
             is_user_authenticated = True
         # Check if the current session belongs to a clan
         elif request.session.get('is_clan'):
-            clan = Clans.objects.get(id=request.session.get('clan_id'))
-            if clan.clan_profile_pic:
+            # Use only() to fetch only needed fields
+            clan = Clans.objects.only('clan_profile_pic').filter(
+                id=request.session.get('clan_id')
+            ).first()
+            if clan and clan.clan_profile_pic:
                 profile_pic_url = clan.clan_profile_pic.url
             is_clan_authenticated = True
     except Exception as e:

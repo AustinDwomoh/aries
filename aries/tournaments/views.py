@@ -12,6 +12,7 @@ from django.db.models import Count,Q
 from django.contrib.auth.models import User
 from django.urls import reverse
 from .tourmanager import TourManager
+from functools import lru_cache
 
 def tours(request):
     """
@@ -56,7 +57,11 @@ def tours_cvc_view(request,tour_id):
     match_data = cvc_tournaments.load_match_data_from_file()
     tour_kind = 'cvc'
 
-    match_data, rounds = process_tournament_data(cvc_tournaments.tour_type,match_data,resolver=resolve_team_clan,tournament=cvc_tournaments)
+    try:
+        match_data, rounds = process_tournament_data(cvc_tournaments.tour_type,match_data,resolver=resolve_team_clan,tournament=cvc_tournaments)
+    finally:
+        _clear_resolution_cache()  # Clear cache after processing
+        
     return render(request, 'tournaments/tours_veiw.html', {
         'tour': cvc_tournaments,
         'match_data': match_data,
@@ -77,12 +82,15 @@ def tours_indi_view(request,tour_id):
     match_data = indi_tournaments.load_match_data_from_file()
     tour_kind = 'indi'
 
-    match_data, rounds = process_tournament_data(
-        indi_tournaments.tour_type,
-        match_data,
-        resolver=resolve_team_user,
-        tournament=indi_tournaments
-    )
+    try:
+        match_data, rounds = process_tournament_data(
+            indi_tournaments.tour_type,
+            match_data,
+            resolver=resolve_team_user,
+            tournament=indi_tournaments
+        )
+    finally:
+        _clear_resolution_cache()  # Clear cache after processing
 
     return render(request, 'tournaments/tours_veiw.html', {
         'tour': indi_tournaments,
@@ -342,6 +350,29 @@ def update_clan_tour(request, tour_id):
     })
 
 # ============================= Non veiw function ============================ #
+
+# Cache for team resolution to avoid repeated DB queries within a single request
+_clan_cache = {}
+_user_cache = {}
+
+def _get_clan_by_name(name):
+    """Get clan by name with caching."""
+    if name not in _clan_cache:
+        _clan_cache[name] = Clans.objects.filter(clan_name=name).first()
+    return _clan_cache[name]
+
+def _get_user_by_name(name):
+    """Get user by username with caching."""
+    if name not in _user_cache:
+        _user_cache[name] = User.objects.select_related('profile').filter(username=name).first()
+    return _user_cache[name]
+
+def _clear_resolution_cache():
+    """Clear the resolution caches."""
+    global _clan_cache, _user_cache
+    _clan_cache = {}
+    _user_cache = {}
+
 def resolve_team_clan(name):
     """
     Resolves a clan name into display metadata (name + logo).
@@ -357,7 +388,9 @@ def resolve_team_clan(name):
     """
     if name == "Bye" or name is None:
         return {"display_name": "TBD", "logo": None}
-    clan = get_object_or_404(Clans, clan_name=name)
+    clan = _get_clan_by_name(name)
+    if not clan:
+        return {"display_name": name, "logo": None}
     return {"display_name": clan.clan_name, "logo": clan.clan_logo}
 
 def resolve_team_user(name):
@@ -375,7 +408,9 @@ def resolve_team_user(name):
     """
     if name == "Bye" or name is None:
         return {"display_name": "TBD", "logo": None}
-    user = User.objects.get(username=name)
+    user = _get_user_by_name(name)
+    if not user:
+        return {"display_name": name, "logo": None}
     return {"display_name": user.username, "logo": user.profile.profile_picture}
 
 def process_tournament_data(tour_type, match_data, resolver, tournament):

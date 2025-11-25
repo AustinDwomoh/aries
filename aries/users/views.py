@@ -1,6 +1,5 @@
 from django.shortcuts import render,redirect,get_object_or_404
 from django.contrib import messages
-from itertools import chain
 from django.db.models import Q
 from django.contrib.auth import logout,login
 from django.contrib.auth.decorators import login_required
@@ -56,37 +55,43 @@ def profile(request):
     cvc_tournaments = []
     query = request.GET.get('q', '')
     socials = {}
+    followers = 0
+    following = 0
     try:
         player = request.user
         match_data = player.profile.stats.load_match_data_from_file()
-        match_results = []
         followers = follow.count_followers(player)
         following = follow.count_following(player)
-        player_tour_ids = ClanTournamentPlayer.objects.filter(user=request.user).values_list('tournament_id', flat=True)
-        cvc_tournaments =  ClanTournament.objects.filter(Q(created_by=request.user) | Q(id__in=player_tour_ids)).distinct().order_by('-id')[:5]
-        indi_1 = IndiTournament.objects.filter(created_by=request.user).order_by('-id')[:5]
-        indi_2 = IndiTournament.objects.filter(players=request.user.profile).order_by('-id')[:5]
-        combined = list(chain(indi_1, indi_2))
-        indi_tournaments = sorted(set(combined), key=lambda x: x.id, reverse=True)[:5]
-        socials = make_social_links_dict(SocialLink.objects.filter(profile=player.profile).all())
-        if match_data:
-            for match in match_data["matches"][-5:]:
-                result = match["result"]
-                if result == "win":
-                    match_results.append("W")
-                elif result == "loss":
-                    match_results.append("L")
-                else:
-                    match_results.append("D")
-            match_data["matches"] = match_data["matches"][:5]
+        
+        # Optimize tournament queries with a single query using Q objects
+        player_tour_ids = ClanTournamentPlayer.objects.filter(
+            user=request.user
+        ).values_list('tournament_id', flat=True)
+        cvc_tournaments = ClanTournament.objects.filter(
+            Q(created_by=request.user) | Q(id__in=player_tour_ids)
+        ).distinct().order_by('-id')[:5]
+        
+        # Combine individual tournament queries into one using Q objects
+        indi_tournaments = IndiTournament.objects.filter(
+            Q(created_by=request.user) | Q(players=request.user.profile)
+        ).distinct().order_by('-id')[:5]
+        
+        socials = make_social_links_dict(SocialLink.objects.filter(profile=player.profile))
+        
+        if match_data and match_data.get("matches"):
+            match_results = _convert_match_results(match_data["matches"])
+            match_data["matches"] = match_data["matches"][-5:]
+            
         if query:
             query_lower = query.lower()
-            filtered_matches = []
-            for match in match_data["matches"]:
-                if any(query_lower in (match.get(field, "") or "").lower()
-                        for field in ['date', 'tour_name', 'opponent', 'result', 'score']):
-                    filtered_matches.append(match)
-            match_data["matches"] = filtered_matches
+            search_fields = ['date', 'tour_name', 'opponent', 'result', 'score']
+            match_data["matches"] = [
+                match for match in match_data.get("matches", [])
+                if any(
+                    query_lower in (match.get(field, "") or "").lower()
+                    for field in search_fields
+                )
+            ]
    
     except Exception as e:
         messages.error(request,'There has been an error loading your profile')
@@ -110,6 +115,22 @@ def logout_view(request):
     logout(request)
     return redirect('Home')
 
+def _convert_match_results(matches, limit=5):
+    """Helper function to convert match results to W/L/D format.
+    
+    Args:
+        matches: List of match dictionaries with 'result' key
+        limit: Maximum number of matches to process (default 5)
+    
+    Returns:
+        List of result strings ('W', 'L', or 'D')
+    """
+    result_map = {'win': 'W', 'loss': 'L'}
+    return [
+        result_map.get(match.get("result", "").lower(), "D")
+        for match in matches[-limit:]
+    ]
+
 @login_required
 def all_gamers(request):
     """View to display all gamers with sorting and search functionality"""
@@ -118,7 +139,11 @@ def all_gamers(request):
     no_results = False
 
     try:
-        players_qs = User.objects.select_related('profile__stats').all()
+        # Use select_related for profile, stats, and clan to avoid N+1 queries
+        players_qs = User.objects.select_related(
+            'profile__stats', 
+            'profile__clan'
+        ).all()
         if request.session.get("is_user"):
             user_id = request.session.get("user_id")
             if user_id:
@@ -131,8 +156,12 @@ def all_gamers(request):
             )
         
         players_qs = players_qs.order_by('-profile__stats__elo_rating')
+        
+        # Check if results exist before iterating (avoid second query with exists())
+        players_list = list(players_qs)
+        no_results = len(players_list) == 0
 
-        for player in players_qs:
+        for player in players_list:
             player_stats = getattr(player.profile, 'stats', None)
             match_data = None
             match_results = []
@@ -141,23 +170,20 @@ def all_gamers(request):
                 match_data = player_stats.load_match_data_from_file()
 
             if match_data and "matches" in match_data:
-                recent_matches = match_data["matches"][-5:]
-                for match in recent_matches:
-                    result = match.get("result", "").lower()
-                    if result == "win":
-                        match_results.append("W")
-                    elif result == "loss":
-                        match_results.append("L")
-                    else:
-                        match_results.append("D")
-            background_image = player.profile.clan.clan_profile_pic.url if player.profile.clan and player.profile.clan.clan_profile_pic else '/static/images/areis-1.png'
+                match_results = _convert_match_results(match_data["matches"])
+                
+            # Access clan through already-fetched relation
+            clan = getattr(player.profile, 'clan', None)
+            background_image = (
+                clan.clan_profile_pic.url 
+                if clan and clan.clan_profile_pic 
+                else '/static/images/areis-1.png'
+            )
             players.append({
                 "player": player,
                 "background_image": background_image,
                 "match_results": match_results,
             })
-
-        no_results = not players_qs.exists()
 
     except Exception as e:
         messages.error(request, "An error occurred while loading gamers.")
@@ -173,34 +199,32 @@ def all_gamers(request):
 @login_required
 def gamer_view(request,player_id):
     """View to display details of a specific gamer based on player id"""
-    player = get_object_or_404(User, id=player_id)
+    player = get_object_or_404(
+        User.objects.select_related('profile__stats', 'profile__clan'), 
+        id=player_id
+    )
     player_stats = player.profile.stats  
     match_data = player_stats.load_match_data_from_file()
-    socials = make_social_links_dict(SocialLink.objects.filter(profile=player.profile).all())
+    socials = make_social_links_dict(SocialLink.objects.filter(profile=player.profile))
     followers = follow.count_followers(player)
     following = follow.count_following(player)
-    is_following =  follow.is_follower(follow.get_logged_in_entity(request),player)
+    is_following = follow.is_follower(follow.get_logged_in_entity(request), player)
+    
     match_results = []
-    if match_data:
-        for match in match_data["matches"][-5:]:
-            result = match["result"]
-            if result == "win":
-                match_results.append("W")
-            elif result == "loss":
-                match_results.append("L")
-            else:
-                match_results.append("D")
-        match_data["matches"] = match_data["matches"][:5]
+    if match_data and match_data.get("matches"):
+        match_results = _convert_match_results(match_data["matches"])
+        match_data["matches"] = match_data["matches"][-5:]
+        
     query = request.GET.get('q', '')
     if query:
-        # Filter players using list comprehension
+        query_lower = query.lower()
+        search_fields = ['date', 'tour_name', 'opponent', 'result', 'score']
         match_data["matches"] = [
-        match for match in match_data['matches']
-        if (query.lower() in match['date'].lower() or
-            query.lower() in match['tour_name'].lower() or
-            query.lower() in match['opponent'].lower() or
-            query.lower() in match['result'].lower() or
-            query.lower() in match['score'].lower())
+            match for match in match_data.get("matches", [])
+            if any(
+                query_lower in str(match.get(field, "")).lower()
+                for field in search_fields
+            )
         ]
     context ={
         'player':player,
