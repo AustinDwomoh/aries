@@ -62,7 +62,6 @@ def profile(request):
         match_data = player.profile.stats.load_match_data_from_file()
         followers = follow.count_followers(player)
         following = follow.count_following(player)
-        
         # Optimize tournament queries with a single query using Q objects
         player_tour_ids = ClanTournamentPlayer.objects.filter(
             user=request.user

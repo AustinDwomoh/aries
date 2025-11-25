@@ -351,27 +351,43 @@ def update_clan_tour(request, tour_id):
 
 # ============================= Non veiw function ============================ #
 
-# Cache for team resolution to avoid repeated DB queries within a single request
-_clan_cache = {}
-_user_cache = {}
+import threading
+
+# Thread-local storage for team resolution caches to ensure thread safety
+_thread_local = threading.local()
+
+def _get_clan_cache():
+    """Get thread-local clan cache."""
+    if not hasattr(_thread_local, 'clan_cache'):
+        _thread_local.clan_cache = {}
+    return _thread_local.clan_cache
+
+def _get_user_cache():
+    """Get thread-local user cache."""
+    if not hasattr(_thread_local, 'user_cache'):
+        _thread_local.user_cache = {}
+    return _thread_local.user_cache
 
 def _get_clan_by_name(name):
-    """Get clan by name with caching."""
-    if name not in _clan_cache:
-        _clan_cache[name] = Clans.objects.filter(clan_name=name).first()
-    return _clan_cache[name]
+    """Get clan by name with thread-local caching."""
+    cache = _get_clan_cache()
+    if name not in cache:
+        cache[name] = Clans.objects.filter(clan_name=name).first()
+    return cache[name]
 
 def _get_user_by_name(name):
-    """Get user by username with caching."""
-    if name not in _user_cache:
-        _user_cache[name] = User.objects.select_related('profile').filter(username=name).first()
-    return _user_cache[name]
+    """Get user by username with thread-local caching."""
+    cache = _get_user_cache()
+    if name not in cache:
+        cache[name] = User.objects.select_related('profile').filter(username=name).first()
+    return cache[name]
 
 def _clear_resolution_cache():
-    """Clear the resolution caches."""
-    global _clan_cache, _user_cache
-    _clan_cache = {}
-    _user_cache = {}
+    """Clear the thread-local resolution caches."""
+    if hasattr(_thread_local, 'clan_cache'):
+        _thread_local.clan_cache = {}
+    if hasattr(_thread_local, 'user_cache'):
+        _thread_local.user_cache = {}
 
 def resolve_team_clan(name):
     """
@@ -385,12 +401,17 @@ def resolve_team_clan(name):
             "display_name": (str) Clan's display name or "TBD" if unknown,
             "logo": (ImageField or None) Clan's logo if found
         }
+    
+    Raises:
+        Http404: If the clan name is expected but not found in database.
     """
     if name == "Bye" or name is None:
         return {"display_name": "TBD", "logo": None}
     clan = _get_clan_by_name(name)
     if not clan:
-        return {"display_name": name, "logo": None}
+        # Raise 404 to maintain data integrity - if a clan is in tournament data,
+        # it should exist in the database
+        clan = get_object_or_404(Clans, clan_name=name)
     return {"display_name": clan.clan_name, "logo": clan.clan_logo}
 
 def resolve_team_user(name):
@@ -405,12 +426,18 @@ def resolve_team_user(name):
             "display_name": (str) User's username or "TBD" if unknown,
             "logo": (ImageField or None) User's profile picture if found
         }
+    
+    Raises:
+        Http404: If the username is expected but not found in database.
     """
     if name == "Bye" or name is None:
         return {"display_name": "TBD", "logo": None}
     user = _get_user_by_name(name)
     if not user:
-        return {"display_name": name, "logo": None}
+        # Raise 404 to maintain data integrity - if a user is in tournament data,
+        # it should exist in the database
+        user = get_object_or_404(User, username=name)
+        user = User.objects.select_related('profile').get(username=name)
     return {"display_name": user.username, "logo": user.profile.profile_picture}
 
 def process_tournament_data(tour_type, match_data, resolver, tournament):
