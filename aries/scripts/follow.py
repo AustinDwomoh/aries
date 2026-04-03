@@ -6,6 +6,14 @@ from django.contrib.auth.models import User
 from . import email_handle
 import threading
 from django.template.loader import render_to_string
+from functools import lru_cache
+
+# Cache ContentType lookups to avoid repeated database queries
+@lru_cache(maxsize=16)
+def _get_content_type(model_class):
+    """Get ContentType for a model class with caching."""
+    return ContentType.objects.get_for_model(model_class)
+
 def get_logged_in_entity(request):
     """
     Returns the logged-in user or clan instance based on session flags.
@@ -45,10 +53,14 @@ def follow(follower_instance, followed_instance, status='accepted'):
     if (follower_instance.__class__ == followed_instance.__class__ and follower_instance.id == followed_instance.id):
         raise ValueError("Cannot follow yourself.")#safeguard against self-follow 
 
+    # Cache content types to avoid repeated DB lookups
+    follower_ct = _get_content_type(follower_instance.__class__)
+    followed_ct = _get_content_type(followed_instance.__class__)
+    
     follow_obj, created = Follow.objects.get_or_create(
-        follower_content_type=ContentType.objects.get_for_model(follower_instance),
+        follower_content_type=follower_ct,
         follower_object_id=follower_instance.id,
-        followed_content_type=ContentType.objects.get_for_model(followed_instance),
+        followed_content_type=followed_ct,
         followed_object_id=followed_instance.id,
         defaults={'status': status}
     )
@@ -58,11 +70,11 @@ def follow(follower_instance, followed_instance, status='accepted'):
         follow_obj.status = status
         follow_obj.save()
 
-    # Handle is_mutual
+    # Handle is_mutual - reuse cached content types
     reverse = Follow.objects.filter(
-        follower_content_type=ContentType.objects.get_for_model(followed_instance),
+        follower_content_type=followed_ct,
         follower_object_id=followed_instance.id,
-        followed_content_type=ContentType.objects.get_for_model(follower_instance),
+        followed_content_type=follower_ct,
         followed_object_id=follower_instance.id,
         status='accepted'
     ).first()
@@ -85,9 +97,9 @@ def unfollow(follower_instance, followed_instance):
     """
     send_follow_notification(follower_instance, followed_instance, action="unfollowed")
     return Follow.objects.filter(
-        follower_content_type=ContentType.objects.get_for_model(follower_instance),
+        follower_content_type=_get_content_type(follower_instance.__class__),
         follower_object_id=follower_instance.id,
-        followed_content_type=ContentType.objects.get_for_model(followed_instance),
+        followed_content_type=_get_content_type(followed_instance.__class__),
         followed_object_id=followed_instance.id
     ).delete()
 
@@ -97,9 +109,9 @@ def is_follower(follower_instance, followed_instance):
     Returns True if exists, False otherwise.
     """
     return Follow.objects.filter(
-        follower_content_type=ContentType.objects.get_for_model(follower_instance),
+        follower_content_type=_get_content_type(follower_instance.__class__),
         follower_object_id=follower_instance.id,
-        followed_content_type=ContentType.objects.get_for_model(followed_instance),
+        followed_content_type=_get_content_type(followed_instance.__class__),
         followed_object_id=followed_instance.id
     ).exists()
 
@@ -107,20 +119,34 @@ def get_following(instance):
     """
     Returns a dict with lists of users and clans that the instance is following.
     """
-    content_type = ContentType.objects.get_for_model(instance)
+    content_type = _get_content_type(instance.__class__)
+    # Use select_related to prefetch content types for followed objects
     follows = Follow.objects.filter(
         follower_content_type=content_type,
         follower_object_id=instance.id,
         status='accepted'
-    )
+    ).select_related('followed_content_type')
 
     result = {"users": [], "clans": []}
+    
+    # Cache content types for User and Clans to avoid repeated lookups
+    user_ct = _get_content_type(User)
+    clan_ct = _get_content_type(Clans)
+    
+    # Group follows by content type to batch fetch
+    user_ids = []
+    clan_ids = []
     for f in follows:
-        obj = f.followed
-        if isinstance(obj, User):
-            result["users"].append(obj)
-        elif isinstance(obj, Clans):
-            result["clans"].append(obj)
+        if f.followed_content_type_id == user_ct.id:
+            user_ids.append(f.followed_object_id)
+        elif f.followed_content_type_id == clan_ct.id:
+            clan_ids.append(f.followed_object_id)
+    
+    # Batch fetch users and clans
+    if user_ids:
+        result["users"] = list(User.objects.filter(id__in=user_ids))
+    if clan_ids:
+        result["clans"] = list(Clans.objects.filter(id__in=clan_ids))
 
     return result
 
@@ -128,24 +154,39 @@ def get_followers(instance):
     """
     Returns a dict with lists of users and clans that are following the instance.
     """
-    content_type = ContentType.objects.get_for_model(instance)
+    content_type = _get_content_type(instance.__class__)
+    # Use select_related to prefetch content types for follower objects
     follows = Follow.objects.filter(
         followed_content_type=content_type,
         followed_object_id=instance.id,
         status='accepted'
-    )
+    ).select_related('follower_content_type')
+    
     result = {"users": [], "clans": []}
-
+    
+    # Cache content types for User and Clans to avoid repeated lookups
+    user_ct = _get_content_type(User)
+    clan_ct = _get_content_type(Clans)
+    
+    # Group follows by content type to batch fetch
+    user_ids = []
+    clan_ids = []
     for f in follows:
-        obj = f.follower
-        if isinstance(obj, User):
-            result["users"].append(obj)
-        elif isinstance(obj, Clans):
-            result["clans"].append(obj)
+        if f.follower_content_type_id == user_ct.id:
+            user_ids.append(f.follower_object_id)
+        elif f.follower_content_type_id == clan_ct.id:
+            clan_ids.append(f.follower_object_id)
+    
+    # Batch fetch users and clans
+    if user_ids:
+        result["users"] = list(User.objects.filter(id__in=user_ids))
+    if clan_ids:
+        result["clans"] = list(Clans.objects.filter(id__in=clan_ids))
+    
     return result
 
 def count_following(instance):
-    content_type = ContentType.objects.get_for_model(instance)
+    content_type = _get_content_type(instance.__class__)
     return Follow.objects.filter(
         follower_content_type=content_type,
         follower_object_id=instance.id,
@@ -153,7 +194,7 @@ def count_following(instance):
     ).count()
 
 def count_followers(instance):
-    content_type = ContentType.objects.get_for_model(instance)
+    content_type = _get_content_type(instance.__class__)
     return Follow.objects.filter(
         followed_content_type=content_type,
         followed_object_id=instance.id,
@@ -166,10 +207,13 @@ def accept_follow_request(followed_instance, follower_instance):
     Updates mutual status if reciprocal accepted follow exists.
     Returns the updated follow object or None.
     """
+    follower_ct = _get_content_type(follower_instance.__class__)
+    followed_ct = _get_content_type(followed_instance.__class__)
+    
     follow_obj = Follow.objects.filter(
-        follower_content_type=ContentType.objects.get_for_model(follower_instance),
+        follower_content_type=follower_ct,
         follower_object_id=follower_instance.id,
-        followed_content_type=ContentType.objects.get_for_model(followed_instance),
+        followed_content_type=followed_ct,
         followed_object_id=followed_instance.id,
         status='pending'
     ).first()
@@ -178,9 +222,9 @@ def accept_follow_request(followed_instance, follower_instance):
         follow_obj.status = 'accepted'
         follow_obj.save()
         reverse = Follow.objects.filter(
-            follower_content_type=ContentType.objects.get_for_model(followed_instance),
+            follower_content_type=followed_ct,
             follower_object_id=followed_instance.id,
-            followed_content_type=ContentType.objects.get_for_model(follower_instance),
+            followed_content_type=follower_ct,
             followed_object_id=follower_instance.id,
             status='accepted'
         ).first()
@@ -200,7 +244,7 @@ def get_unnotified_follows_for(instance):
     Returns all accepted follow records where instance is followed and notification is pending.
     """
     return Follow.objects.filter(
-        followed_content_type=ContentType.objects.get_for_model(instance),
+        followed_content_type=_get_content_type(instance.__class__),
         followed_object_id=instance.id,
         notified=False,
         status='accepted'

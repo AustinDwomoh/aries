@@ -22,6 +22,23 @@ from threading import Thread
 from formtools.wizard.views import SessionWizardView
 from django.contrib.auth.forms import PasswordChangeForm, SetPasswordForm
 from django.contrib.auth import update_session_auth_hash
+
+def _convert_match_results(matches, limit=5):
+    """Helper function to convert match results to W/L/D format.
+    
+    Args:
+        matches: List of match dictionaries with 'result' key
+        limit: Maximum number of matches to process (default 5)
+    
+    Returns:
+        List of result strings ('W', 'L', or 'D')
+    """
+    result_map = {'win': 'W', 'loss': 'L'}
+    return [
+        result_map.get(m.get("result", "").lower(), "D")
+        for m in matches[-limit:]
+    ]
+
 def clan_login_required(view_func):
     """
     Custom decorator to ensure that only logged-in clans can access certain views.
@@ -60,32 +77,35 @@ def clans(request):
             - no_results: boolean indicating if the query returned no clans
     """
     query = request.GET.get('q', '')
-    clans = Clans.objects.none()  
+    clans_list = []
     no_results = True
 
     try:
-        clans = Clans.objects.filter(is_verified=True)
+        # Use select_related to fetch stats in same query
+        clans_qs = Clans.objects.select_related('stat').filter(is_verified=True)
         #to avoid users cuasing any potential follow issues
         if request.session.get('is_clan'):
             clan_id = request.session.get('clan_id')
             if clan_id:
-                clans = clans.exclude(id=clan_id)
+                clans_qs = clans_qs.exclude(id=clan_id)
         if query:
-            clans = clans.filter(
+            clans_qs = clans_qs.filter(
                 Q(clan_name__icontains=query) |
                 Q(stat__rank__icontains=query) |
                 Q(country__icontains=query) |
                 Q(primary_game__icontains=query)
             ).distinct()
         
-        no_results = not clans.exists()
+        # Convert to list to avoid extra exists() query
+        clans_list = list(clans_qs)
+        no_results = len(clans_list) == 0
 
     except Exception as e:
         ErrorHandler().handle(e, context='Clans loading view')
 
     return render(request, 'clans/clans.html', {
         'query': query,
-        'clans': clans,
+        'clans': clans_list,
         'no_results': no_results
     })
 
@@ -216,35 +236,34 @@ def clan_view(request, clan_id):
         Rendered clan detail page or error page.
     """
     try:
-        clan = get_object_or_404(Clans, id=clan_id)
-        clan_stats = get_object_or_404(ClanStats, id=clan_id)
+        # Use select_related to fetch stats in same query
+        clan = get_object_or_404(Clans.objects.select_related('stat'), id=clan_id)
+        clan_stats = clan.stat
         match_data = clan_stats.load_match_data_from_file()
         clan.clan_description = mark_safe(markdown.markdown(clan.clan_description))
         followers = count_followers(clan)
         following = count_following(clan)
         is_following = is_follower(get_logged_in_entity(request),clan)
         
-        socials  = make_social_links_dict(ClanSocialLink.objects.filter(clan=clan).all())
+        socials = make_social_links_dict(ClanSocialLink.objects.filter(clan=clan))
         tournaments = ClanTournament.objects.filter(teams=clan).order_by('-id')[:5]
         
         match_results = []
         if match_data and "matches" in match_data:
-            last_5_matches = match_data["matches"][-5:]
-            match_results = [
-                "W" if m["result"] == "win" else "L" if m["result"] == "loss" else "D"
-                for m in last_5_matches
-            ]
-            match_data["matches"] = last_5_matches
+            match_results = _convert_match_results(match_data["matches"])
+            match_data["matches"] = match_data["matches"][-5:]
 
         query = request.GET.get('q', '')
         if query:
             q_lower = query.lower()
+            search_fields = ['date', 'tour_name', 'opponent', 'result', 'score']
             match_data["matches"] = [
-                m for m in match_data["matches"]
-                if any(q_lower in str(m[f]).lower() for f in ['date', 'tour_name', 'opponent', 'result', 'score'])
+                m for m in match_data.get("matches", [])
+                if any(q_lower in str(m.get(f, "")).lower() for f in search_fields)
             ]
 
-        members = User.objects.filter(profile__clan=clan)
+        # Use select_related for profile to avoid N+1
+        members = User.objects.select_related('profile').filter(profile__clan=clan)
         context = {
             'clan': clan,
             'stats': clan_stats,
@@ -281,9 +300,9 @@ def clan_dashboard(request):
         if not clan_id:
             messages.error(request, "Clan session missing.")
             return redirect("login")
-        clan = get_object_or_404(Clans, id=clan_id)
-        
-        clan_stats = get_object_or_404(ClanStats, id=clan_id)
+        # Use select_related to fetch stats in same query
+        clan = get_object_or_404(Clans.objects.select_related('stat'), id=clan_id)
+        clan_stats = clan.stat
         try:
             match_data = clan_stats.load_match_data_from_file()
         except Exception as e:
@@ -291,32 +310,28 @@ def clan_dashboard(request):
             match_data = {"matches": []}
         clan.clan_description = mark_safe(markdown.markdown(clan.clan_description))
         form = AddPlayerToClanForm(request.POST or None, clan=clan)
-        members =User.objects.filter(profile__clan=clan)
+        # Use select_related for profile
+        members = User.objects.select_related('profile').filter(profile__clan=clan)
         tournaments = ClanTournament.objects.filter(teams=clan)
-        join_requests = ClanJoinRequest.objects.filter(clan=clan, status="pending")
-        socials  = make_social_links_dict(ClanSocialLink.objects.filter(clan=clan).all())
+        join_requests = ClanJoinRequest.objects.select_related('player').filter(clan=clan, status="pending")
+        socials = make_social_links_dict(ClanSocialLink.objects.filter(clan=clan))
         followers = count_followers(clan)
         following = count_following(clan)
     # ============================ get last 5 matches ============================ #
     # Match results
         match_results = []
         if match_data.get("matches"):
-            last_5 = match_data["matches"][-5:]
-            match_results = [
-                "W" if m["result"] == "win"
-                else "L" if m["result"] == "loss"
-                else "D"
-                for m in last_5
-            ]
-            match_data["matches"] = last_5
+            match_results = _convert_match_results(match_data["matches"])
+            match_data["matches"] = match_data["matches"][-5:]
 
         # Search functionality
         query = request.GET.get('q', '').strip().lower()
         if query and match_data.get("matches"):
+            search_fields = ['date', 'tour_name', 'opponent', 'result', 'score']
             match_data["matches"] = [
                 m for m in match_data["matches"]
                 if any(query in str(m.get(field, '')).lower()
-                       for field in ['date', 'tour_name', 'opponent', 'result', 'score'])
+                       for field in search_fields)
             ] 
         context = {
             "clan": clan,

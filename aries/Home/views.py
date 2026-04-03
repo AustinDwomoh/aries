@@ -11,7 +11,8 @@ def home(request):
     """
     try:
         clans = Clans.objects.select_related('stat').filter(is_verified=True).order_by('-stat__elo_rating')[:10]
-        players = User.objects.all().order_by('-profile__stats__elo_rating')[:10]
+        # Add select_related for profile and stats to avoid N+1 queries
+        players = User.objects.select_related('profile__stats').order_by('-profile__stats__elo_rating')[:10]
         context ={
             "players":players,
             "clans":clans
