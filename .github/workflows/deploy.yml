@@ -96,7 +96,9 @@ jobs:
             # =============================
             cd "$APP_DIR"
             $VENV/python manage.py migrate --noinput
+            
             $VENV/python manage.py collectstatic --noinput
+            ln -sfn "$APP_DIR/staticfiles" /var/www/aries/aries/staticfiles
             
             # =============================
             # 5. Switch symlink to new release (atomic deploy)
